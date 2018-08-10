@@ -282,6 +282,9 @@ document.addEventListener('DOMContentLoaded', function(){
 
     var cityViewScore = true;
 
+    const containsPreSelectedDriverInNewList = ((filteredCarNoList.length > 0) &&
+        (filteredCarNoList[0].gyoshaCdShuun === currentSelectedCarNo.gyoshaCdShuun));
+
     function newCityRender(h) {
         h = h || generateCoast({npts:4096, extent: defaultExtent});
         return {

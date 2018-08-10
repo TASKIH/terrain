@@ -1,0 +1,47 @@
+path, line {
+    fill: none;
+    stroke: black;
+    stroke-linecap: round;
+}
+
+.field {
+    stroke: none;
+    fill-opacity: 1.0;
+}
+
+.slope {
+    stroke-width: 1px;
+}
+
+.river {
+    stroke-width: 2px;
+}
+
+.coast {
+    stroke-width: 4px;
+}
+
+.border {
+    stroke-width: 5px;
+    stroke-dasharray: 4,4;
+    stroke-linecap: butt;
+}
+
+text {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    color: black;
+    stroke: white;
+    stroke-width: 5px;
+    stroke-linejoin: round;
+    paint-order: stroke;
+}
+
+text.region {
+    stroke-width:10px;
+    font-variant: small-caps;
+}
+
+svg {
+    float: right;
+    background-color: white;
+}
