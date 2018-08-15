@@ -1,5 +1,20 @@
-document.addEventListener('DOMContentLoaded', function(){
-    function addSVG(div) {
+import * as d3 from 'd3';
+import './terrain';
+import {
+    add, cityScore, cleanCoast,
+    cone,
+    contour, defaultExtent, defaultParams, doErosion, doMap, drawMap,
+    drawPaths, erosionRate, fillSinks, generateCoast,
+    generateGoodMesh,
+    generatePoints, getBorders, getRivers, getTerritories,
+    improvePoints,
+    makeMesh, mountains, normalize, peaky, placeCity,
+    randomVector, relax, runif, setSeaLevel, slope, visualizeCities, visualizePoints, visualizeSlopes, visualizeVoronoi,
+    zero
+} from './terrain';
+
+export function drawTerrainControll() {
+    function addSVG(div: any) {
         return div.insert("svg", ":first-child")
             .attr("height", 400)
             .attr("width", 400)
@@ -8,8 +23,8 @@ document.addEventListener('DOMContentLoaded', function(){
     var meshDiv = d3.select("div#mesh");
     var meshSVG = addSVG(meshDiv);
 
-    var meshPts = null;
-    var meshVxs = null;
+    var meshPts: any = null;
+    var meshVxs: any = null;
     var meshDual = false;
 
     function meshDraw() {
@@ -63,6 +78,7 @@ document.addEventListener('DOMContentLoaded', function(){
     primDiv.append("button")
         .text("Reset to flat")
         .on("click", function () {
+            // @ts-ignore
             primH = zero(primH.mesh);
             primDraw();
         });
@@ -70,6 +86,7 @@ document.addEventListener('DOMContentLoaded', function(){
     primDiv.append("button")
         .text("Add random slope")
         .on("click", function () {
+            // @ts-ignore
             primH = add(primH, slope(primH.mesh, randomVector(4)));
             primDraw();
         });
@@ -77,6 +94,7 @@ document.addEventListener('DOMContentLoaded', function(){
     primDiv.append("button")
         .text("Add cone")
         .on("click", function () {
+            // @ts-ignore
             primH = add(primH, cone(primH.mesh, -0.5));
             primDraw();
         });
@@ -84,6 +102,7 @@ document.addEventListener('DOMContentLoaded', function(){
     primDiv.append("button")
         .text("Add inverted cone")
         .on("click", function () {
+            // @ts-ignore
             primH = add(primH, cone(primH.mesh, 0.5));
             primDraw();
         });
@@ -91,6 +110,7 @@ document.addEventListener('DOMContentLoaded', function(){
     primDiv.append("button")
         .text("Add five blobs")
         .on("click", function () {
+            // @ts-ignore
             primH = add(primH, mountains(primH.mesh, 5));
             primDraw();
         });
@@ -226,6 +246,7 @@ document.addEventListener('DOMContentLoaded', function(){
         if (physViewSlope) {
             visualizeSlopes(physSVG, {h:physH});
         } else {
+            // @ts-ignore
             visualizeSlopes(physSVG, {h:zero(physH.mesh)});
         }
     }
@@ -282,10 +303,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
     var cityViewScore = true;
 
-    const containsPreSelectedDriverInNewList = ((filteredCarNoList.length > 0) &&
-        (filteredCarNoList[0].gyoshaCdShuun === currentSelectedCarNo.gyoshaCdShuun));
-
-    function newCityRender(h) {
+    function newCityRender(h?: any) {
         h = h || generateCoast({npts:4096, extent: defaultExtent});
         return {
             params: defaultParams,
@@ -295,11 +313,14 @@ document.addEventListener('DOMContentLoaded', function(){
     }
     var cityRender = newCityRender(physH);
     function cityDraw() {
+        // @ts-ignore
         cityRender.terr = getTerritories(cityRender);
         if (cityViewScore) {
             var score = cityScore(cityRender.h, cityRender.cities);
+            // @ts-ignore
             visualizeVoronoi(citySVG, score, d3.max(score) - 0.5);
         } else {
+            // @ts-ignore
             visualizeVoronoi(citySVG, cityRender.terr);
         }
         drawPaths(citySVG, 'coast', contour(cityRender.h, 0));
@@ -351,6 +372,4 @@ document.addEventListener('DOMContentLoaded', function(){
         .on("click", function () {
             doMap(finalSVG, defaultParams);
         });
-
-
-}, false);
+}
