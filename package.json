@@ -1,0 +1,35 @@
+{
+  "name": "terrain",
+  "version": "1.0.0",
+  "description": "This is code for generating fantasy maps, using the algorithm behind [@unchartedatlas][uncharted]. For more details, see [these notes][notes].",
+  "main": "index.js",
+  "dependencies": {
+    "@types/d3": "^4.2.38",
+    "@types/geojson": "^1.0.6",
+    "@types/js-priority-queue": "0.0.5",
+    "ts-loader": "^4.4.2",
+    "ts-priority-queue": "^0.1.1",
+    "tsc": "^1.20150623.0",
+    "typescript": "^3.0.1",
+    "webpack": "^4.16.5",
+    "webpack-cli": "^3.1.0",
+    "webpack-dev-server": "^3.1.5"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "webpack --mode=development",
+    "start": "webpack-dev-server --mode=development"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/TASKIH/terrain.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/TASKIH/terrain/issues"
+  },
+  "homepage": "https://github.com/TASKIH/terrain#readme"
+}
