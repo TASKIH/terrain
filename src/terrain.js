@@ -96,8 +96,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function makeMesh(pts, extent) {
         extent = extent || exports.defaultExtent;
         var vor = voronoi(pts, extent);
-        var vxs = [];
         var vxids = {};
+        var vxs = [];
         var adj = [];
         var edges = [];
         var tris = [];
@@ -127,14 +127,14 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             adj[e1].push(e0);
             edges.push([e0, e1, e.left, e.right]);
             tris[e0] = tris[e0] || [];
-            if (!tris[e0].includes(e.left))
+            if (tris[e0].indexOf(e.left) === -1)
                 tris[e0].push(e.left);
-            if (e.right && !tris[e0].includes(e.right))
+            if (e.right && tris[e0].indexOf(e.right) === -1)
                 tris[e0].push(e.right);
             tris[e1] = tris[e1] || [];
-            if (!tris[e1].includes(e.left))
+            if (tris[e1].indexOf(e.left) === -1)
                 tris[e1].push(e.left);
-            if (e.right && !tris[e1].includes(e.right))
+            if (e.right && tris[e0].indexOf(e.right) === -1)
                 tris[e1].push(e.right);
         }
         var mesh = {
@@ -901,8 +901,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return newh;
     }
     exports.dropEdge = dropEdge;
-    function generateCoast(params) {
-        var mesh = generateGoodMesh(params.npts, params.extent);
+    function generateCoast(npts, extent) {
+        var mesh = generateGoodMesh(npts, extent);
         var h = add(slope(mesh, randomVector(4)), cone(mesh, runif(-1, -1)), mountains(mesh, 50));
         for (var i = 0; i < 10; i++) {
             h = relax(h);
@@ -1142,7 +1142,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             1000 * params.extent.width + ' ' +
             1000 * params.extent.height);
         svg.selectAll().remove();
-        render.h = params.generator(params);
+        render.h = params.generator(params.npts, params.extent);
         placeCities(render);
         drawMap(svg, render);
     }

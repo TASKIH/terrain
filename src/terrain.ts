@@ -2,8 +2,10 @@
 import * as d3 from 'd3';
 import * as language from './language';
 import 'js-priority-queue';
-import { Numeric } from 'd3';
 import * as PriorityQueue from 'js-priority-queue';
+import { MapExportParam, MapExtent } from './terrain-interfaces';
+import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3-voronoi';
+import { VoronoiDiagram } from 'd3';
 
 
 // 乱数を生成する
@@ -92,12 +94,12 @@ export function voronoi(pts: any[], extent: any) {
 
 export function makeMesh(pts: any, extent?: any) {
     extent = extent || defaultExtent;
-    var vor = voronoi(pts, extent);
-    var vxs: any[] = [];
-    var vxids: any = {};
-    var adj: any[] = [];
-    var edges = [];
-    var tris: any[] = [];
+    var vor: VoronoiDiagram<[number, number]> = voronoi(pts, extent);
+    var vxids: {[key:number]: number} = {};
+    var vxs: [number, number][] = [];
+    var adj: [number, number][] = [];
+    var edges: number[][] = [];
+    var tris: {[key:number]: VoronoiSite<[number, number]>[]}  = [];
 
     for (var i = 0; i < vor.edges.length; i++) {
         var e = vor.edges[i];
@@ -124,11 +126,11 @@ export function makeMesh(pts: any, extent?: any) {
         adj[e1].push(e0);
         edges.push([e0, e1, e.left, e.right]);
         tris[e0] = tris[e0] || [];
-        if (!tris[e0].includes(e.left)) tris[e0].push(e.left);
-        if (e.right && !tris[e0].includes(e.right)) tris[e0].push(e.right);
+        if (tris[e0].indexOf(e.left) === -1) tris[e0].push(e.left);
+        if (e.right && tris[e0].indexOf(e.right) === -1) tris[e0].push(e.right);
         tris[e1] = tris[e1] || [];
-        if (!tris[e1].includes(e.left)) tris[e1].push(e.left);
-        if (e.right && !tris[e1].includes(e.right)) tris[e1].push(e.right);
+        if (tris[e1].indexOf(e.left) === -1) tris[e1].push(e.left);
+        if (e.right && tris[e0].indexOf(e.right) === -1) tris[e1].push(e.right);
     }
 
     var mesh = {
@@ -861,8 +863,8 @@ export function dropEdge(h: any, p: number) {
     return newh;
 }
 
-export function generateCoast(params: any) {
-    var mesh = generateGoodMesh(params.npts, params.extent);
+export function generateCoast(npts: number, extent: MapExtent): any {
+    var mesh = generateGoodMesh(npts, extent);
     var h = add(
         slope(mesh, randomVector(4)),
         cone(mesh, runif(-1, -1)),
@@ -1086,7 +1088,7 @@ export function drawMap(svg: any, render: any) {
     drawLabels(svg, render);
 }
 
-export function doMap(svg: any, params: any) {
+export function doMap(svg: any, params: MapExportParam) {
     var render: any = {
         params: params
     };
@@ -1097,12 +1099,12 @@ export function doMap(svg: any, params: any) {
         1000 * params.extent.width + ' ' +
         1000 * params.extent.height);
     svg.selectAll().remove();
-    render.h = params.generator(params);
+    render.h = params.generator(params.npts, params.extent);
     placeCities(render);
     drawMap(svg, render);
 }
 
-export var defaultParams = {
+export var defaultParams: MapExportParam = {
     extent: defaultExtent,
     generator: generateCoast,
     npts: 16384,

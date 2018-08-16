@@ -253,7 +253,7 @@ export function drawTerrainControll() {
     physDiv.append("button")
         .text("Generate random heightmap")
         .on("click", function () {
-            physH = generateCoast({npts:4096, extent:defaultExtent});
+            physH = generateCoast(4096, defaultExtent);
             physDraw();
         });
 
@@ -304,7 +304,7 @@ export function drawTerrainControll() {
     var cityViewScore = true;
 
     function newCityRender(h?: any) {
-        h = h || generateCoast({npts:4096, extent: defaultExtent});
+        h = h || generateCoast(4096, defaultExtent);
         return {
             params: defaultParams,
             h: h,
