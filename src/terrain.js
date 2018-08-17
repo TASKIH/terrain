@@ -50,7 +50,10 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         extent = extent || exports.defaultExtent;
         var pts = [];
         for (var i = 0; i < n; i++) {
-            pts.push([(Math.random() - 0.5) * extent.width, (Math.random() - 0.5) * extent.height]);
+            // ランダムな数値を得て、領域全体に散らばるように補正(領域のwidth/heightを乗じる）
+            var x = (Math.random() - 0.5) * extent.width;
+            var y = (Math.random() - 0.5) * extent.height;
+            pts.push([x, y]);
         }
         return pts;
     }
@@ -90,6 +93,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         extent = extent || exports.defaultExtent;
         var w = extent.width / 2;
         var h = extent.height / 2;
+        // voronoi図の範囲を示し、VoronoiDiagramを作成する
         return d3.voronoi().extent([[-w, -h], [w, h]])(pts);
     }
     exports.voronoi = voronoi;
@@ -125,7 +129,12 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             adj[e0].push(e1);
             adj[e1] = adj[e1] || [];
             adj[e1].push(e0);
-            edges.push([e0, e1, e.left, e.right]);
+            edges.push({
+                point1: e0,
+                point2: e1,
+                left: e.left,
+                right: e.right
+            });
             tris[e0] = tris[e0] || [];
             if (tris[e0].indexOf(e.left) === -1)
                 tris[e0].push(e.left);
@@ -145,9 +154,9 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             tris: tris,
             edges: edges,
             extent: extent,
-            map: function (f) { }
+            map: function (f) {
+            }
         };
-        console.log(mesh);
         mesh.map = function (f) {
             var mapped = vxs.map(f);
             // @ts-ignore
@@ -210,14 +219,14 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.zero = zero;
     function slope(mesh, direction) {
-        return mesh.map(function (x) {
-            return x[0] * direction[0] + x[1] * direction[1];
+        return mesh.map(function (param) {
+            return param[0] * direction[0] + param[1] * direction[1];
         });
     }
     exports.slope = slope;
     function cone(mesh, slope) {
-        return mesh.map(function (x) {
-            return Math.pow(x[0] * x[0] + x[1] * x[1], 0.5) * slope;
+        return mesh.map(function (param) {
+            return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
         });
     }
     exports.cone = cone;

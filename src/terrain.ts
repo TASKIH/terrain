@@ -13,9 +13,9 @@ export function runif(lo: number, hi: number) {
     return lo + Math.random() * (hi - lo);
 }
 
-var rnorm = (function () {
+var rnorm = (function (): () => number {
     let z2:number | null = null;
-    function rnorm() {
+    function rnorm(): number {
         if (z2 != null) {
             var tmp = z2;
             z2 = null;
