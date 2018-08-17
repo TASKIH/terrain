@@ -12,16 +12,24 @@ export interface MapExtent {
     height: number;
 }
 
+export interface Edge {
+    point1: [number, number];
+    point2: [number, number];
+    left: VoronoiSite<[number, number]> | null;
+    right: VoronoiSite<[number, number]> | null;
+}
+
 export interface MapMesh {
     pts: number[];
-    vor: VoronoiDiagram<[number, number]> ;
+    vor: VoronoiDiagram<[number, number]>;
     vxs: [number, number][];
     adj: [number, number][],
-    tris: {[key:number]: VoronoiSite<[number, number]>[]},
-    edges: number[][],
+    tris: { [key: number]: VoronoiSite<[number, number]>[] },
+    edges: Edge[],
     extent: MapExtent,
-    map: (f: any) => {}
+    map: (f: any) => any,
 }
+
 
 export interface MapExportParam {
     extent: MapExtent;

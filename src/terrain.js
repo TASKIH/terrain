@@ -147,6 +147,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             extent: extent,
             map: function (f) { }
         };
+        console.log(mesh);
         mesh.map = function (f) {
             var mapped = vxs.map(f);
             // @ts-ignore

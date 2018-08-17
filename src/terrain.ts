@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import * as language from './language';
 import 'js-priority-queue';
 import * as PriorityQueue from 'js-priority-queue';
-import { MapExportParam, MapExtent } from './terrain-interfaces';
+import { Edge, MapExportParam, MapExtent, MapMesh } from './terrain-interfaces';
 import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3-voronoi';
 import { VoronoiDiagram } from 'd3';
 
@@ -36,7 +36,7 @@ var rnorm = (function () {
     return rnorm;
 })();
 
-export function randomVector(scale: number) {
+export function randomVector(scale: number): [number, number] {
     return [scale * rnorm(), scale * rnorm()];
 }
 
@@ -45,11 +45,15 @@ export var defaultExtent = {
     height: 1
 };
 
-export function generatePoints(n: number, extent?: any) {
+export function generatePoints(n: number, extent?: MapExtent): [number, number][] {
     extent = extent || defaultExtent;
-    var pts = [];
+    var pts:[number, number][] = [];
+
     for (var i = 0; i < n; i++) {
-        pts.push([(Math.random() - 0.5) * extent.width, (Math.random() - 0.5) * extent.height]);
+        // ランダムな数値を得て、領域全体に散らばるように補正(領域のwidth/heightを乗じる）
+        const x = (Math.random() - 0.5) * extent.width;
+        const y = (Math.random() - 0.5) * extent.height;
+        pts.push([x, y]);
     }
     return pts;
 }
@@ -64,7 +68,7 @@ export function centroid(pts: any) {
     return [x/pts.length, y/pts.length];
 }
 
-export function improvePoints(pts: any[], n?: number, extent?: any) {
+export function improvePoints(pts: [number, number][], n?: number, extent?: MapExtent) {
     n = n || 1;
     extent = extent || defaultExtent;
     for (var i = 0; i < n; i++) {
@@ -76,7 +80,7 @@ export function improvePoints(pts: any[], n?: number, extent?: any) {
     return pts;
 }
 
-export function generateGoodPoints(n: number, extent: any) {
+export function generateGoodPoints(n: number, extent: MapExtent) {
     extent = extent || defaultExtent;
     let pts = generatePoints(n, extent);
     pts = pts.sort(function (a, b) {
@@ -85,20 +89,22 @@ export function generateGoodPoints(n: number, extent: any) {
     return improvePoints(pts, 1, extent);
 }
 
-export function voronoi(pts: any[], extent: any) {
+export function voronoi(pts: [number, number][], extent: MapExtent): VoronoiDiagram<[number, number]> {
     extent = extent || defaultExtent;
     var w = extent.width/2;
     var h = extent.height/2;
+
+    // voronoi図の範囲を示し、VoronoiDiagramを作成する
     return d3.voronoi().extent([[-w, -h], [w, h]])(pts);
 }
 
-export function makeMesh(pts: any, extent?: any) {
+export function makeMesh(pts: any, extent?: MapExtent): MapMesh {
     extent = extent || defaultExtent;
     var vor: VoronoiDiagram<[number, number]> = voronoi(pts, extent);
     var vxids: {[key:number]: number} = {};
     var vxs: [number, number][] = [];
     var adj: [number, number][] = [];
-    var edges: number[][] = [];
+    var edges: Edge[] = [];
     var tris: {[key:number]: VoronoiSite<[number, number]>[]}  = [];
 
     for (var i = 0; i < vor.edges.length; i++) {
@@ -124,7 +130,12 @@ export function makeMesh(pts: any, extent?: any) {
         adj[e0].push(e1);
         adj[e1] = adj[e1] || [];
         adj[e1].push(e0);
-        edges.push([e0, e1, e.left, e.right]);
+        edges.push({
+                point1: e0,
+                point2: e1,
+                left: e.left,
+                right: e.right
+        });
         tris[e0] = tris[e0] || [];
         if (tris[e0].indexOf(e.left) === -1) tris[e0].push(e.left);
         if (e.right && tris[e0].indexOf(e.right) === -1) tris[e0].push(e.right);
@@ -133,7 +144,7 @@ export function makeMesh(pts: any, extent?: any) {
         if (e.right && tris[e0].indexOf(e.right) === -1) tris[e1].push(e.right);
     }
 
-    var mesh = {
+    var mesh: MapMesh = {
         pts: pts,
         vor: vor,
         vxs: vxs,
@@ -141,10 +152,11 @@ export function makeMesh(pts: any, extent?: any) {
         tris: tris,
         edges: edges,
         extent: extent,
-        map: (f: any) => {}
+        map: (f: any) => {
+        }
     };
 
-    mesh.map = function (f: any) {
+    mesh.map = function (f: (param : [number, number]) => any) {
         var mapped = vxs.map(f);
         // @ts-ignore
         mapped.mesh = mesh;
@@ -155,16 +167,16 @@ export function makeMesh(pts: any, extent?: any) {
 
 
 
-export function generateGoodMesh(n: number, extent?: any) {
+export function generateGoodMesh(n: number, extent?: MapExtent): MapMesh {
     extent = extent || defaultExtent;
     var pts = generateGoodPoints(n, extent);
     return makeMesh(pts, extent);
 }
-export function isedge(mesh: any, i: number) {
+export function isedge(mesh: MapMesh, i: number) {
     return (mesh.adj[i].length < 3);
 }
 
-export function isnearedge(mesh: any, i: number) {
+export function isnearedge(mesh: MapMesh, i: number) {
     var x = mesh.vxs[i][0];
     var y = mesh.vxs[i][1];
     var w = mesh.extent.width;
@@ -172,7 +184,7 @@ export function isnearedge(mesh: any, i: number) {
     return x < -0.45 * w || x > 0.45 * w || y < -0.45 * h || y > 0.45 * h;
 }
 
-export function neighbours(mesh: any, i: number) {
+export function neighbours(mesh: MapMesh, i: number) {
     var onbs = mesh.adj[i];
     var nbs = [];
     for (var i = 0; i < onbs.length; i++) {
@@ -181,7 +193,7 @@ export function neighbours(mesh: any, i: number) {
     return nbs;
 }
 
-export function distance(mesh: any, i: number, j: number) {
+export function distance(mesh: MapMesh, i: number, j: number) {
     var p = mesh.vxs[i];
     var q = mesh.vxs[j];
     return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
@@ -196,7 +208,7 @@ export function quantile(h: any[], q: any) {
     return d3.quantile(sortedh, q);
 }
 
-export function zero(mesh: any) {
+export function zero(mesh: MapMesh) {
     var z = [];
     for (var i = 0; i < mesh.vxs.length; i++) {
         z[i] = 0;
@@ -206,15 +218,15 @@ export function zero(mesh: any) {
     return z;
 }
 
-export function slope(mesh: any, direction: any[]) {
-    return mesh.map(function (x: any[]) {
-        return x[0] * direction[0] + x[1] * direction[1];
+export function slope(mesh: MapMesh, direction: [number, number]): number[] {
+    return mesh.map(function (param : [number, number]) {
+        return param[0] * direction[0] + param[1] * direction[1];
     });
 }
 
-export function cone(mesh: any, slope: number) {
-    return mesh.map(function (x: any[]) {
-        return Math.pow(x[0] * x[0] + x[1] * x[1], 0.5) * slope;
+export function cone(mesh: MapMesh, slope: number): number[] {
+    return mesh.map(function (param : [number, number]) {
+        return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
     });
 }
 
@@ -246,7 +258,7 @@ export function add(...args: any[]) {
     return newvals;
 }
 
-export function mountains(mesh: any, n: number, r?: number) {
+export function mountains(mesh: MapMesh, n: number, r?: number) {
     r = r || 0.05;
     var mounts = [];
     for (var i = 0; i < n; i++) {
