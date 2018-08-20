@@ -213,7 +213,6 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         for (var i = 0; i < mesh.vxs.length; i++) {
             z[i] = 0;
         }
-        // @ts-ignore
         z.mesh = mesh;
         return z;
     }
@@ -240,7 +239,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function normalize(h) {
         var lo = d3.min(h);
         var hi = d3.max(h);
-        return map(h, function (x) { return (x - lo) / (hi - lo); });
+        return map(h, function (x) { return (x - (lo || 0)) / (hi || 0 - (lo || 0)); });
     }
     exports.normalize = normalize;
     function peaky(h) {
@@ -373,6 +372,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                     }
                 }
             }
+            newh.mesh = function () { };
             if (!changed)
                 return newh;
         }
@@ -531,6 +531,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var score = map(getFlux(h), Math.sqrt);
         for (var i = 0; i < h.length; i++) {
             if (h[i] <= 0 || isnearedge(h.mesh, i)) {
+                score[i] = -999999;
                 score[i] = -999999;
                 continue;
             }
@@ -1142,9 +1143,6 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.drawMap = drawMap;
     function doMap(svg, params) {
-        var render = {
-            params: params
-        };
         var width = svg.attr('width');
         svg.attr('height', width * params.extent.height / params.extent.width);
         svg.attr('viewBox', -1000 * params.extent.width / 2 + ' ' +
@@ -1152,7 +1150,10 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             1000 * params.extent.width + ' ' +
             1000 * params.extent.height);
         svg.selectAll().remove();
-        render.h = params.generator(params.npts, params.extent);
+        var render = {
+            params: params,
+            h: params.generator(params.npts, params.extent)
+        };
         placeCities(render);
         drawMap(svg, render);
     }

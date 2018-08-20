@@ -13,8 +13,8 @@ export interface MapExtent {
 }
 
 export interface Edge {
-    point1: [number, number];
-    point2: [number, number];
+    index1: number;
+    index2: number;
     left: VoronoiSite<[number, number]> | null;
     right: VoronoiSite<[number, number]> | null;
 }
@@ -30,6 +30,19 @@ export interface MapMesh {
     map: (f: any) => any,
 }
 
+export interface MapRender {
+    params: MapExportParam,
+    h: any,
+    cities?: any[],
+    terr?: any[],
+    rivers?: any[],
+    coasts?: any[],
+    borders?: any[],
+}
+
+export interface TerrainHeights extends Array<number> {
+    mesh?: MapMesh;
+}
 
 export interface MapExportParam {
     extent: MapExtent;

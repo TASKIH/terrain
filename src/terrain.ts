@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import * as language from './language';
 import 'js-priority-queue';
 import * as PriorityQueue from 'js-priority-queue';
-import { Edge, MapExportParam, MapExtent, MapMesh } from './terrain-interfaces';
+import { Edge, MapExportParam, MapExtent, MapMesh, MapRender, TerrainHeights } from './terrain-interfaces';
 import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3-voronoi';
 import { VoronoiDiagram } from 'd3';
 
@@ -131,8 +131,8 @@ export function makeMesh(pts: any, extent?: MapExtent): MapMesh {
         adj[e1] = adj[e1] || [];
         adj[e1].push(e0);
         edges.push({
-                point1: e0,
-                point2: e1,
+                index1: e0,
+                index2: e1,
                 left: e.left,
                 right: e.right
         });
@@ -199,7 +199,7 @@ export function distance(mesh: MapMesh, i: number, j: number) {
     return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
 }
 
-export function quantile(h: any[], q: any) {
+export function quantile(h: TerrainHeights, q: any): number | undefined {
     var sortedh = [];
     for (var i = 0; i < h.length; i++) {
         sortedh[i] = h[i];
@@ -208,12 +208,11 @@ export function quantile(h: any[], q: any) {
     return d3.quantile(sortedh, q);
 }
 
-export function zero(mesh: MapMesh) {
-    var z = [];
+export function zero(mesh: MapMesh): TerrainHeights {
+    var z: TerrainHeights = [];
     for (var i = 0; i < mesh.vxs.length; i++) {
         z[i] = 0;
     }
-    // @ts-ignore
     z.mesh = mesh;
     return z;
 }
@@ -230,26 +229,27 @@ export function cone(mesh: MapMesh, slope: number): number[] {
     });
 }
 
-export function map(h: any, f: any) {
-    var newh = h.map(f);
-    // @ts-ignore
+export function map(h: TerrainHeights, f: any): TerrainHeights {
+    var newh: TerrainHeights = h.map(f);
     newh.mesh = h.mesh;
     return newh;
 }
 
-export function normalize(h: any[]) {
+export function normalize(h: TerrainHeights): TerrainHeights {
     var lo = d3.min(h);
     var hi = d3.max(h);
-    return map(h, function (x: number) {return (x - lo) / (hi - lo);});
+    return map(h, function (x: number) {
+        return (x - (lo || 0)) / (hi || 0 - (lo || 0));
+    });
 }
 
-export function peaky(h: any[]) {
-    return map(normalize(h), Math.sqrt);
+export function peaky(heights: TerrainHeights) {
+    return map(normalize(heights), Math.sqrt);
 }
 
-export function add(...args: any[]) {
+export function add(...args: TerrainHeights[]) {
     var n = args[0].length;
-    var newvals = zero(args[0].mesh);
+    var newvals = zero(args[0].mesh!);
     for (var i = 0; i < n; i++) {
         for (var j = 0; j < arguments.length; j++) {
             newvals[i] += arguments[j][i];
@@ -275,9 +275,9 @@ export function mountains(mesh: MapMesh, n: number, r?: number) {
     return newvals;
 }
 
-export function relax(h: any[]) {
+export function relax(h: TerrainHeights) {
     // @ts-ignore
-    var newh = zero(h.mesh);
+    var newh = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         // @ts-ignore
         var nbs = neighbours(h.mesh, i);
@@ -290,7 +290,7 @@ export function relax(h: any[]) {
     return newh;
 }
 
-export function downhill(h: any[]) {
+export function downhill(h: TerrainHeights) {
     // @ts-ignore
     if (h.downhill) return h.downhill;
     function downfrom(i: number) {
@@ -336,12 +336,12 @@ export function findSinks(h: any) {
     }
 }
 
-export function fillSinks(h: any, epsilon?: number) {
+export function fillSinks(h: TerrainHeights, epsilon?: number): TerrainHeights {
     epsilon = epsilon || 1e-5;
     var infinity = 999999;
-    var newh = zero(h.mesh);
+    var newh: TerrainHeights = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
-        if (isnearedge(h.mesh, i)) {
+        if (isnearedge(h.mesh!, i)) {
             newh[i] = h[i];
         } else {
             newh[i] = infinity;
@@ -351,7 +351,7 @@ export function fillSinks(h: any, epsilon?: number) {
         var changed = false;
         for (var i = 0; i < h.length; i++) {
             if (newh[i] == h[i]) continue;
-            var nbs = neighbours(h.mesh, i);
+            var nbs = neighbours(h.mesh!, i);
             for (var j = 0; j < nbs.length; j++) {
                 if (h[i] >= newh[nbs[j]] + epsilon) {
                     newh[i] = h[i];
@@ -369,10 +369,10 @@ export function fillSinks(h: any, epsilon?: number) {
     }
 }
 
-export function getFlux(h: any) {
+export function getFlux(h: TerrainHeights) {
     var dh = downhill(h);
     var idxs = [];
-    var flux = zero(h.mesh);
+    var flux = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         idxs[i] = i;
         flux[i] = 1/h.length;
@@ -389,9 +389,9 @@ export function getFlux(h: any) {
     return flux;
 }
 
-export function getSlope(h: any) {
+export function getSlope(h: TerrainHeights) {
     var dh = downhill(h);
-    var slope = zero(h.mesh);
+    var slope = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         var s = trislope(h, i);
         slope[i] = Math.sqrt(s[0] * s[0] + s[1] * s[1]);
@@ -399,16 +399,16 @@ export function getSlope(h: any) {
         if (dh[i] < 0) {
             slope[i] = 0;
         } else {
-            slope[i] = (h[i] - h[dh[i]]) / distance(h.mesh, i, dh[i]);
+            slope[i] = (h[i] - h[dh[i]]) / distance(h.mesh!, i, dh[i]);
         }
     }
     return slope;
 }
 
-export function erosionRate(h: any) {
+export function erosionRate(h: TerrainHeights) {
     var flux = getFlux(h);
     var slope = getSlope(h);
-    var newh = zero(h.mesh);
+    var newh = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         var river = Math.sqrt(flux[i]) * slope[i];
         var creep = slope[i] * slope[i];
@@ -419,9 +419,9 @@ export function erosionRate(h: any) {
     return newh;
 }
 
-export function erode(h: any, amount: number) {
+export function erode(h: TerrainHeights, amount: number) {
     var er = erosionRate(h);
-    var newh = zero(h.mesh);
+    var newh = zero(h.mesh!);
     var maxr = d3.max(er) || 0;
     for (var i = 0; i < h.length; i++) {
         newh[i] = h[i] - amount * (er[i] / maxr);
@@ -429,7 +429,7 @@ export function erode(h: any, amount: number) {
     return newh;
 }
 
-export function doErosion(h: any, amount: number, n?: number) {
+export function doErosion(h: TerrainHeights, amount: number, n?: number) {
     n = n || 1;
     h = fillSinks(h);
     for (var i = 0; i < n; i++) {
@@ -439,8 +439,8 @@ export function doErosion(h: any, amount: number, n?: number) {
     return h;
 }
 
-export function setSeaLevel(h: any, q: any) {
-    var newh = zero(h.mesh);
+export function setSeaLevel(h: TerrainHeights, q: any) {
+    var newh = zero(h.mesh!);
     var delta = quantile(h, q) || 0;
     for (var i = 0; i < h.length; i++) {
         newh[i] = h[i] - delta;
@@ -448,13 +448,13 @@ export function setSeaLevel(h: any, q: any) {
     return newh;
 }
 
-export function cleanCoast(h: any, iters: number) {
+export function cleanCoast(h: TerrainHeights, iters: number) {
     for (var iter = 0; iter < iters; iter++) {
         var changed = 0;
-        var newh = zero(h.mesh);
+        var newh = zero(h.mesh!);
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i];
-            var nbs = neighbours(h.mesh, i);
+            var nbs = neighbours(h.mesh!, i);
             if (h[i] <= 0 || nbs.length != 3) continue;
             var count = 0;
             var best = -999999;
@@ -470,10 +470,10 @@ export function cleanCoast(h: any, iters: number) {
             changed++;
         }
         h = newh;
-        newh = zero(h.mesh);
+        newh = zero(h.mesh!);
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i];
-            var nbs = neighbours(h.mesh, i);
+            var nbs = neighbours(h.mesh!, i);
             if (h[i] > 0 || nbs.length != 3) continue;
             var count = 0;
             var best = 999999;
@@ -493,12 +493,12 @@ export function cleanCoast(h: any, iters: number) {
     return h;
 }
 
-export function trislope(h: any, i: number) {
-    var nbs = neighbours(h.mesh, i);
+export function trislope(h: TerrainHeights, i: number) {
+    var nbs = neighbours(h.mesh!, i);
     if (nbs.length != 3) return [0,0];
-    var p0 = h.mesh.vxs[nbs[0]];
-    var p1 = h.mesh.vxs[nbs[1]];
-    var p2 = h.mesh.vxs[nbs[2]];
+    var p0 = h.mesh!.vxs[nbs[0]];
+    var p1 = h.mesh!.vxs[nbs[1]];
+    var p2 = h.mesh!.vxs[nbs[2]];
 
     var x1 = p1[0] - p0[0];
     var x2 = p2[0] - p0[0];
@@ -513,29 +513,30 @@ export function trislope(h: any, i: number) {
         (-x2 * h1 + x1 * h2) / det];
 }
 
-export function cityScore(h: any, cities: any[]) {
+export function cityScore(h: TerrainHeights, cities: any[]) {
     var score = map(getFlux(h), Math.sqrt);
     for (var i = 0; i < h.length; i++) {
-        if (h[i] <= 0 || isnearedge(h.mesh, i)) {
+        if (h[i] <= 0 || isnearedge(h.mesh!, i)) {
+            score[i] = -999999;
             score[i] = -999999;
             continue;
         }
-        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.vxs[i][0]) - h.mesh.extent.width/2);
-        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.vxs[i][1]) - h.mesh.extent.height/2);
+        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.vxs[i][0]) - h.mesh!.extent.width/2);
+        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.vxs[i][1]) - h.mesh!.extent.height/2);
         for (var j = 0; j < cities.length; j++) {
-            score[i] -= 0.02 / (distance(h.mesh, cities[j], i) + 1e-9);
+            score[i] -= 0.02 / (distance(h.mesh!, cities[j], i) + 1e-9);
         }
     }
     return score;
 }
-export function placeCity(render: any) {
+export function placeCity(render: MapRender) {
     render.cities = render.cities || [];
     var score = cityScore(render.h, render.cities);
     var newcity = d3.scan(score, d3.descending);
     render.cities.push(newcity);
 }
 
-export function placeCities(render: any) {
+export function placeCities(render: MapRender) {
     var params = render.params;
     var h = render.h;
     var n = params.ncities;
@@ -545,22 +546,22 @@ export function placeCities(render: any) {
 }
 
 // 等高線の作成
-export function contour(h: any, level: number) {
+export function contour(h: TerrainHeights, level: number) {
     level = level || 0;
     var edges = [];
-    for (var i = 0; i < h.mesh.edges.length; i++) {
-        var e = h.mesh.edges[i];
-        if (e[3] == undefined) continue;
-        if (isnearedge(h.mesh, e[0]) || isnearedge(h.mesh, e[1])) continue;
-        if ((h[e[0]] > level && h[e[1]] <= level) ||
-            (h[e[1]] > level && h[e[0]] <= level)) {
-            edges.push([e[2], e[3]]);
+    for (var i = 0; i < h.mesh!.edges.length; i++) {
+        var e = h.mesh!.edges[i];
+        if (e.right == undefined) continue;
+        if (isnearedge(h.mesh!, e.index1) || isnearedge(h.mesh!, e.index2)) continue;
+        if ((h[e.index1] > level && h[e.index2] <= level) ||
+            (h[e.index2] > level && h[e.index1] <= level)) {
+            edges.push([e.left, e.right]);
         }
     }
     return mergeSegments(edges);
 }
 
-export function getRivers(h: any, limit: number) {
+export function getRivers(h: TerrainHeights, limit: number) {
     var dh = downhill(h);
     var flux = getFlux(h);
     var links = [];
@@ -570,10 +571,10 @@ export function getRivers(h: any, limit: number) {
     }
     limit *= above / h.length;
     for (var i = 0; i < dh.length; i++) {
-        if (isnearedge(h.mesh, i)) continue;
+        if (isnearedge(h.mesh!, i)) continue;
         if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
-            var up = h.mesh.vxs[i];
-            var down = h.mesh.vxs[dh[i]];
+            var up = h.mesh!.vxs[i];
+            var down = h.mesh!.vxs[dh[i]];
             if (h[dh[i]] > 0) {
                 links.push([up, down]);
             } else {
@@ -777,7 +778,7 @@ export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: nu
         });
 }
 
-export function visualizeDownhill(h: any) {
+export function visualizeDownhill(h: TerrainHeights) {
     var links = getRivers(h, 0.01);
     drawPaths('river', links);
 }
@@ -793,7 +794,7 @@ export function drawPaths(svg: any, cls: any, paths?: any) {
         .attr('d', makeD3Path);
 }
 
-export function visualizeSlopes(svg: any, render: any) {
+export function visualizeSlopes(svg: any, render: MapRender) {
     var h = render.h;
     var strokes = [];
     var r = 0.25 / Math.sqrt(h.length);
@@ -841,7 +842,7 @@ export function visualizeSlopes(svg: any, render: any) {
 }
 
 
-export function visualizeCities(svg: any, render: any) {
+export function visualizeCities(svg: any, render: MapRender) {
     var cities = render.cities;
     var h = render.h;
     var n = render.params.nterrs;
@@ -863,13 +864,13 @@ export function visualizeCities(svg: any, render: any) {
         .raise();
 }
 
-export function dropEdge(h: any, p: number) {
+export function dropEdge(h: TerrainHeights, p: number) {
     p = p || 4;
-    var newh = zero(h.mesh);
+    var newh = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
-        var v = h.mesh.vxs[i];
-        var x = 2.4*v[0] / h.mesh.extent.width;
-        var y = 2.4*v[1] / h.mesh.extent.height;
+        var v = h.mesh!.vxs[i];
+        var x = 2.4*v[0] / h.mesh!.extent.width;
+        var y = 2.4*v[1] / h.mesh!.extent.height;
         newh[i] = h[i] - Math.exp(10*(Math.pow(Math.pow(x, p) + Math.pow(y, p), 1/p) - 1));
     }
     return newh;
@@ -893,7 +894,7 @@ export function generateCoast(npts: number, extent: MapExtent): any {
     return h;
 }
 
-export function terrCenter(h: any, terr: any, city: any, landOnly: boolean) {
+export function terrCenter(h: TerrainHeights, terr: any, city: any, landOnly: boolean) {
     var x = 0;
     var y = 0;
     var n = 0;
@@ -907,7 +908,7 @@ export function terrCenter(h: any, terr: any, city: any, landOnly: boolean) {
     return [x/n, y/n];
 }
 
-export function drawLabels(svg: any, render: any) {
+export function drawLabels(svg: any, render: MapRender) {
     var params = render.params;
     var h = render.h;
     var terr = render.terr;
@@ -931,16 +932,16 @@ export function drawLabels(svg: any, render: any) {
             }
         }
 
-        for (var i = 0; i < cities.length; i++) {
-            var c = h.mesh.vxs[cities[i]];
+        for (var i = 0; i < cities!.length; i++) {
+            var c = h.mesh.vxs[cities![i]];
             if (label.x0 < c[0] && label.x1 > c[0] && label.y0 < c[1] && label.y1 > c[1]) {
                 pen += 100;
             }
         }
         for (var i = 0; i < avoids.length; i++) {
             var avoid = avoids[i];
-            for (var j = 0; j < avoid.length; j++) {
-                var avpath = avoid[j];
+            for (var j = 0; j < avoid!.length; j++) {
+                var avpath = avoid![j];
                 for (var k = 0; k < avpath.length; k++) {
                     var pt = avpath[k];
                     if (pt[0] > label.x0 && pt[0] < label.x1 && pt[1] > label.y0 && pt[1] < label.y1) {
@@ -951,9 +952,9 @@ export function drawLabels(svg: any, render: any) {
         }
         return pen;
     }
-    for (var i = 0; i < cities.length; i++) {
-        var x = h.mesh.vxs[cities[i]][0];
-        var y = h.mesh.vxs[cities[i]][1];
+    for (var i = 0; i < cities!.length; i++) {
+        var x = h.mesh.vxs[cities![i]][0];
+        var y = h.mesh.vxs[cities![i]][1];
         var text = language.makeName(lang, 'city');
         var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
         var sx = 0.65 * size/1000 * text.length;
@@ -1018,7 +1019,7 @@ export function drawLabels(svg: any, render: any) {
 
     var reglabels = [];
     for (var i = 0; i < nterrs; i++) {
-        var city = cities[i];
+        var city = cities![i];
         var text = language.makeName(lang, 'region');
         var sy = params.fontsizes.region / 1000;
         var sx = 0.6 * text.length * sy;
@@ -1031,9 +1032,9 @@ export function drawLabels(svg: any, render: any) {
             var v = h.mesh.vxs[j];
             score -= 3000 * Math.sqrt((v[0] - lc[0]) * (v[0] - lc[0]) + (v[1] - lc[1]) * (v[1] - lc[1]));
             score -= 1000 * Math.sqrt((v[0] - oc[0]) * (v[0] - oc[0]) + (v[1] - oc[1]) * (v[1] - oc[1]));
-            if (terr[j] != city) score -= 3000;
-            for (var k = 0; k < cities.length; k++) {
-                var u = h.mesh.vxs[cities[k]];
+            if (terr![j] != city) score -= 3000;
+            for (var k = 0; k < cities!.length; k++) {
+                var u = h.mesh.vxs[cities![k]];
                 if (Math.abs(v[0] - u[0]) < sx &&
                     Math.abs(v[1] - sy/2 - u[1]) < sy) {
                     score -= k < nterrs ? 4000 : 500;
@@ -1087,7 +1088,7 @@ export function drawLabels(svg: any, render: any) {
         .raise();
 
 }
-export function drawMap(svg: any, render: any) {
+export function drawMap(svg: any, render: MapRender) {
     render.rivers = getRivers(render.h, 0.01);
     render.coasts = contour(render.h, 0);
     render.terr = getTerritories(render);
@@ -1101,9 +1102,6 @@ export function drawMap(svg: any, render: any) {
 }
 
 export function doMap(svg: any, params: MapExportParam) {
-    var render: any = {
-        params: params
-    };
     var width = svg.attr('width');
     svg.attr('height', width * params.extent.height / params.extent.width);
     svg.attr('viewBox', -1000 * params.extent.width/2 + ' ' +
@@ -1111,7 +1109,12 @@ export function doMap(svg: any, params: MapExportParam) {
         1000 * params.extent.width + ' ' +
         1000 * params.extent.height);
     svg.selectAll().remove();
-    render.h = params.generator(params.npts, params.extent);
+
+    var render: MapRender = {
+        params: params,
+        h:  params.generator(params.npts, params.extent)
+    };
+
     placeCities(render);
     drawMap(svg, render);
 }
