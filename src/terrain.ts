@@ -68,7 +68,7 @@ export function centroid(pts: any) {
     return [x/pts.length, y/pts.length];
 }
 
-export function improvePoints(pts: [number, number][], n?: number, extent?: MapExtent) {
+export function improvePoints(pts: [number, number][], n?: number, extent?: MapExtent): [number, number][] {
     n = n || 1;
     extent = extent || defaultExtent;
     for (var i = 0; i < n; i++) {
@@ -80,7 +80,7 @@ export function improvePoints(pts: [number, number][], n?: number, extent?: MapE
     return pts;
 }
 
-export function generateGoodPoints(n: number, extent: MapExtent) {
+export function generateGoodPoints(n: number, extent: MapExtent): [number, number][] {
     extent = extent || defaultExtent;
     let pts = generatePoints(n, extent);
     pts = pts.sort(function (a, b) {
@@ -98,12 +98,12 @@ export function voronoi(pts: [number, number][], extent: MapExtent): VoronoiDiag
     return d3.voronoi().extent([[-w, -h], [w, h]])(pts);
 }
 
-export function makeMesh(pts: any, extent?: MapExtent): MapMesh {
+export function makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
     extent = extent || defaultExtent;
     var vor: VoronoiDiagram<[number, number]> = voronoi(pts, extent);
     var vxids: {[key:number]: number} = {};
     var vxs: [number, number][] = [];
-    var adj: [number, number][] = [];
+    var adj: [number, number, number][] = [];
     var edges: Edge[] = [];
     var tris: {[key:number]: VoronoiSite<[number, number]>[]}  = [];
 
@@ -144,6 +144,8 @@ export function makeMesh(pts: any, extent?: MapExtent): MapMesh {
         if (e.right && tris[e0].indexOf(e.right) === -1) tris[e1].push(e.right);
     }
 
+    console.log(tris);
+    console.log(vxs);
     var mesh: MapMesh = {
         pts: pts,
         vor: vor,
@@ -172,11 +174,11 @@ export function generateGoodMesh(n: number, extent?: MapExtent): MapMesh {
     var pts = generateGoodPoints(n, extent);
     return makeMesh(pts, extent);
 }
-export function isedge(mesh: MapMesh, i: number) {
+export function isedge(mesh: MapMesh, i: number): boolean {
     return (mesh.adj[i].length < 3);
 }
 
-export function isnearedge(mesh: MapMesh, i: number) {
+export function isnearedge(mesh: MapMesh, i: number): boolean {
     var x = mesh.vxs[i][0];
     var y = mesh.vxs[i][1];
     var w = mesh.extent.width;
@@ -193,7 +195,7 @@ export function neighbours(mesh: MapMesh, i: number) {
     return nbs;
 }
 
-export function distance(mesh: MapMesh, i: number, j: number) {
+export function distance(mesh: MapMesh, i: number, j: number): number {
     var p = mesh.vxs[i];
     var q = mesh.vxs[j];
     return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));

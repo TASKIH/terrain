@@ -20,15 +20,16 @@ export interface Edge {
 }
 
 export interface MapMesh {
-    pts: number[];
+    pts: [number, number][];
     vor: VoronoiDiagram<[number, number]>;
     vxs: [number, number][];
-    adj: [number, number][],
+    adj: [number, number, number][],
     tris: { [key: number]: VoronoiSite<[number, number]>[] },
     edges: Edge[],
     extent: MapExtent,
     map: (f: any) => any,
 }
+
 
 export interface MapRender {
     params: MapExportParam,

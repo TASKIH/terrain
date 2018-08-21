@@ -130,8 +130,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             adj[e1] = adj[e1] || [];
             adj[e1].push(e0);
             edges.push({
-                point1: e0,
-                point2: e1,
+                index1: e0,
+                index2: e1,
                 left: e.left,
                 right: e.right
             });
@@ -146,6 +146,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             if (e.right && tris[e0].indexOf(e.right) === -1)
                 tris[e1].push(e.right);
         }
+        console.log(tris);
+        console.log(vxs);
         var mesh = {
             pts: pts,
             vor: vor,
@@ -231,7 +233,6 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.cone = cone;
     function map(h, f) {
         var newh = h.map(f);
-        // @ts-ignore
         newh.mesh = h.mesh;
         return newh;
     }
@@ -239,11 +240,13 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function normalize(h) {
         var lo = d3.min(h);
         var hi = d3.max(h);
-        return map(h, function (x) { return (x - (lo || 0)) / (hi || 0 - (lo || 0)); });
+        return map(h, function (x) {
+            return (x - (lo || 0)) / (hi || 0 - (lo || 0));
+        });
     }
     exports.normalize = normalize;
-    function peaky(h) {
-        return map(normalize(h), Math.sqrt);
+    function peaky(heights) {
+        return map(normalize(heights), Math.sqrt);
     }
     exports.peaky = peaky;
     function add() {
@@ -372,7 +375,6 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                     }
                 }
             }
-            newh.mesh = function () { };
             if (!changed)
                 return newh;
         }
@@ -566,13 +568,13 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var edges = [];
         for (var i = 0; i < h.mesh.edges.length; i++) {
             var e = h.mesh.edges[i];
-            if (e[3] == undefined)
+            if (e.right == undefined)
                 continue;
-            if (isnearedge(h.mesh, e[0]) || isnearedge(h.mesh, e[1]))
+            if (isnearedge(h.mesh, e.index1) || isnearedge(h.mesh, e.index2))
                 continue;
-            if ((h[e[0]] > level && h[e[1]] <= level) ||
-                (h[e[1]] > level && h[e[0]] <= level)) {
-                edges.push([e[2], e[3]]);
+            if ((h[e.index1] > level && h[e.index2] <= level) ||
+                (h[e.index2] > level && h[e.index1] <= level)) {
+                edges.push([e.left, e.right]);
             }
         }
         return mergeSegments(edges);

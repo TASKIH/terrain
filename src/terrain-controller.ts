@@ -244,7 +244,7 @@ export function drawTerrainControll() {
             drawPaths(physSVG, "river", []);
         }
         if (physViewSlope) {
-            visualizeSlopes(physSVG, {h:physH});
+            visualizeSlopes(physSVG, {h:physH, params: defaultParams});
         } else {
             // @ts-ignore
             visualizeSlopes(physSVG, {h:zero(physH.mesh)});
