@@ -101,57 +101,67 @@ export function voronoi(pts: [number, number][], extent: MapExtent): VoronoiDiag
 export function makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
     extent = extent || defaultExtent;
     var vor: VoronoiDiagram<[number, number]> = voronoi(pts, extent);
-    var vxids: {[key:number]: number} = {};
-    var vxs: [number, number][] = [];
-    var adj: [number, number, number][] = [];
+    var pointToIdDict: {[key:string]: number} = {};
+    var voronoiPoints: [number, number][] = [];
+
+    // Edgeとして隣接するポイント同士を接続する
+    var adjacentIds: [number, number, number][] = [];
     var edges: Edge[] = [];
-    var tris: {[key:number]: VoronoiSite<[number, number]>[]}  = [];
+    var pointConnections: {[key:number]: VoronoiSite<[number, number]>[]}  = [];
 
     for (var i = 0; i < vor.edges.length; i++) {
-        var e = vor.edges[i];
-        if (e == undefined) continue;
-        // @ts-ignore
-        var e0 = vxids[e[0]];
-        // @ts-ignore
-        var e1 = vxids[e[1]];
-        if (e0 == undefined) {
-            e0 = vxs.length;
-            // @ts-ignore
-            vxids[e[0]] = e0;
-            vxs.push(e[0]);
+        var edge = vor.edges[i];
+        if (edge == undefined) continue;
+
+        var e0Id = pointToIdDict[edge[0].toString()];
+        var e1Id = pointToIdDict[edge[1].toString()];
+
+        if (e0Id == undefined) {
+            e0Id = voronoiPoints.length;
+            pointToIdDict[edge[0].toString()] = e0Id;
+            voronoiPoints.push(edge[0]);
         }
-        if (e1 == undefined) {
-            e1 = vxs.length;
-            // @ts-ignore
-            vxids[e[1]] = e1;
-            vxs.push(e[1]);
+        if (e1Id == undefined) {
+            e1Id = voronoiPoints.length;
+            pointToIdDict[edge[1].toString()] = e1Id;
+            voronoiPoints.push(edge[1]);
         }
-        adj[e0] = adj[e0] || [];
-        adj[e0].push(e1);
-        adj[e1] = adj[e1] || [];
-        adj[e1].push(e0);
+        adjacentIds[e0Id] = adjacentIds[e0Id] || [];
+        adjacentIds[e0Id].push(e1Id);
+
+        adjacentIds[e1Id] = adjacentIds[e1Id] || [];
+        adjacentIds[e1Id].push(e0Id);
+
         edges.push({
-                index1: e0,
-                index2: e1,
-                left: e.left,
-                right: e.right
+                index1: e0Id,
+                index2: e1Id,
+                left: edge.left,
+                right: edge.right
         });
-        tris[e0] = tris[e0] || [];
-        if (tris[e0].indexOf(e.left) === -1) tris[e0].push(e.left);
-        if (e.right && tris[e0].indexOf(e.right) === -1) tris[e0].push(e.right);
-        tris[e1] = tris[e1] || [];
-        if (tris[e1].indexOf(e.left) === -1) tris[e1].push(e.left);
-        if (e.right && tris[e0].indexOf(e.right) === -1) tris[e1].push(e.right);
+
+        pointConnections[e0Id] = pointConnections[e0Id] || [];
+        if (pointConnections[e0Id].indexOf(edge.left) === -1) {
+            pointConnections[e0Id].push(edge.left);
+        }
+        if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
+            pointConnections[e0Id].push(edge.right);
+        }
+
+        pointConnections[e1Id] = pointConnections[e1Id] || [];
+        if (pointConnections[e1Id].indexOf(edge.left) === -1) {
+            pointConnections[e1Id].push(edge.left);
+        }
+        if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
+            pointConnections[e1Id].push(edge.right);
+        }
     }
 
-    console.log(tris);
-    console.log(vxs);
     var mesh: MapMesh = {
         pts: pts,
         vor: vor,
-        vxs: vxs,
-        adj: adj,
-        tris: tris,
+        voronoiPoints: voronoiPoints,
+        adjacentIds: adjacentIds,
+        pointConnections: pointConnections,
         edges: edges,
         extent: extent,
         map: (f: any) => {
@@ -159,7 +169,7 @@ export function makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
     };
 
     mesh.map = function (f: (param : [number, number]) => any) {
-        var mapped = vxs.map(f);
+        var mapped = voronoiPoints.map(f);
         // @ts-ignore
         mapped.mesh = mesh;
         return mapped;
@@ -174,20 +184,21 @@ export function generateGoodMesh(n: number, extent?: MapExtent): MapMesh {
     var pts = generateGoodPoints(n, extent);
     return makeMesh(pts, extent);
 }
-export function isedge(mesh: MapMesh, i: number): boolean {
-    return (mesh.adj[i].length < 3);
+export function isEdge(mesh: MapMesh, i: number): boolean {
+    return (mesh.adjacentIds[i].length < 3);
 }
 
-export function isnearedge(mesh: MapMesh, i: number): boolean {
-    var x = mesh.vxs[i][0];
-    var y = mesh.vxs[i][1];
+// 領域の端に隣接するEdgeかどうか
+export function isNearEdge(mesh: MapMesh, i: number): boolean {
+    var x = mesh.voronoiPoints[i][0];
+    var y = mesh.voronoiPoints[i][1];
     var w = mesh.extent.width;
     var h = mesh.extent.height;
     return x < -0.45 * w || x > 0.45 * w || y < -0.45 * h || y > 0.45 * h;
 }
 
 export function neighbours(mesh: MapMesh, i: number) {
-    var onbs = mesh.adj[i];
+    var onbs = mesh.adjacentIds[i];
     var nbs = [];
     for (var i = 0; i < onbs.length; i++) {
         nbs.push(onbs[i]);
@@ -196,8 +207,8 @@ export function neighbours(mesh: MapMesh, i: number) {
 }
 
 export function distance(mesh: MapMesh, i: number, j: number): number {
-    var p = mesh.vxs[i];
-    var q = mesh.vxs[j];
+    var p = mesh.voronoiPoints[i];
+    var q = mesh.voronoiPoints[j];
     return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
 }
 
@@ -212,7 +223,7 @@ export function quantile(h: TerrainHeights, q: any): number | undefined {
 
 export function zero(mesh: MapMesh): TerrainHeights {
     var z: TerrainHeights = [];
-    for (var i = 0; i < mesh.vxs.length; i++) {
+    for (var i = 0; i < mesh.voronoiPoints.length; i++) {
         z[i] = 0;
     }
     z.mesh = mesh;
@@ -267,8 +278,8 @@ export function mountains(mesh: MapMesh, n: number, r?: number) {
         mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
     }
     var newvals = zero(mesh);
-    for (var i = 0; i < mesh.vxs.length; i++) {
-        var p = mesh.vxs[i];
+    for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+        var p = mesh.voronoiPoints[i];
         for (var j = 0; j < n; j++) {
             var m = mounts[j];
             newvals[i] += Math.pow(Math.exp(-((p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1])) / (2 * r * r)), 2);
@@ -297,7 +308,7 @@ export function downhill(h: TerrainHeights) {
     if (h.downhill) return h.downhill;
     function downfrom(i: number) {
         // @ts-ignore
-        if (isedge(h.mesh, i)) return -2;
+        if (isEdge(h.mesh, i)) return -2;
         var best = -1;
         var besth = h[i];
         // @ts-ignore
@@ -325,7 +336,7 @@ export function findSinks(h: any) {
     for (var i = 0; i < dh.length; i++) {
         var node = i;
         while (true) {
-            if (isedge(h.mesh, node)) {
+            if (isEdge(h.mesh, node)) {
                 sinks[i] = -2;
                 break;
             }
@@ -343,7 +354,7 @@ export function fillSinks(h: TerrainHeights, epsilon?: number): TerrainHeights {
     var infinity = 999999;
     var newh: TerrainHeights = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
-        if (isnearedge(h.mesh!, i)) {
+        if (isNearEdge(h.mesh!, i)) {
             newh[i] = h[i];
         } else {
             newh[i] = infinity;
@@ -498,9 +509,9 @@ export function cleanCoast(h: TerrainHeights, iters: number) {
 export function trislope(h: TerrainHeights, i: number) {
     var nbs = neighbours(h.mesh!, i);
     if (nbs.length != 3) return [0,0];
-    var p0 = h.mesh!.vxs[nbs[0]];
-    var p1 = h.mesh!.vxs[nbs[1]];
-    var p2 = h.mesh!.vxs[nbs[2]];
+    var p0 = h.mesh!.voronoiPoints[nbs[0]];
+    var p1 = h.mesh!.voronoiPoints[nbs[1]];
+    var p2 = h.mesh!.voronoiPoints[nbs[2]];
 
     var x1 = p1[0] - p0[0];
     var x2 = p2[0] - p0[0];
@@ -518,13 +529,13 @@ export function trislope(h: TerrainHeights, i: number) {
 export function cityScore(h: TerrainHeights, cities: any[]) {
     var score = map(getFlux(h), Math.sqrt);
     for (var i = 0; i < h.length; i++) {
-        if (h[i] <= 0 || isnearedge(h.mesh!, i)) {
+        if (h[i] <= 0 || isNearEdge(h.mesh!, i)) {
             score[i] = -999999;
             score[i] = -999999;
             continue;
         }
-        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.vxs[i][0]) - h.mesh!.extent.width/2);
-        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.vxs[i][1]) - h.mesh!.extent.height/2);
+        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.voronoiPoints[i][0]) - h.mesh!.extent.width/2);
+        score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.voronoiPoints[i][1]) - h.mesh!.extent.height/2);
         for (var j = 0; j < cities.length; j++) {
             score[i] -= 0.02 / (distance(h.mesh!, cities[j], i) + 1e-9);
         }
@@ -554,7 +565,7 @@ export function contour(h: TerrainHeights, level: number) {
     for (var i = 0; i < h.mesh!.edges.length; i++) {
         var e = h.mesh!.edges[i];
         if (e.right == undefined) continue;
-        if (isnearedge(h.mesh!, e.index1) || isnearedge(h.mesh!, e.index2)) continue;
+        if (isNearEdge(h.mesh!, e.index1) || isNearEdge(h.mesh!, e.index2)) continue;
         if ((h[e.index1] > level && h[e.index2] <= level) ||
             (h[e.index2] > level && h[e.index1] <= level)) {
             edges.push([e.left, e.right]);
@@ -573,10 +584,10 @@ export function getRivers(h: TerrainHeights, limit: number) {
     }
     limit *= above / h.length;
     for (var i = 0; i < dh.length; i++) {
-        if (isnearedge(h.mesh!, i)) continue;
+        if (isNearEdge(h.mesh!, i)) continue;
         if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
-            var up = h.mesh!.vxs[i];
-            var down = h.mesh!.vxs[dh[i]];
+            var up = h.mesh!.voronoiPoints[i];
+            var down = h.mesh!.voronoiPoints[dh[i]];
             if (h[dh[i]] > 0) {
                 links.push([up, down]);
             } else {
@@ -644,7 +655,7 @@ export function getBorders(render: any) {
     for (var i = 0; i < terr.mesh.edges.length; i++) {
         var e = terr.mesh.edges[i];
         if (e[3] == undefined) continue;
-        if (isnearedge(terr.mesh, e[0]) || isnearedge(terr.mesh, e[1])) continue;
+        if (isNearEdge(terr.mesh, e[0]) || isNearEdge(terr.mesh, e[1])) continue;
         if (h[e[0]] < 0 || h[e[1]] < 0) continue;
         if (terr[e[0]] != terr[e[1]]) {
             edges.push([e[2], e[3]]);
@@ -765,7 +776,7 @@ export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: nu
     if (lo == undefined) valueLo = (d3.min(field) || 0) - 1e-9;
     var mappedvals = field.map(function (x) {return x > valueHi ? 1 : x < valueLo ? 0 : (x - valueLo) / (valueHi - valueLo);});
     // @ts-ignore
-    var tris = svg.selectAll('path.field').data(field.mesh.tris);
+    var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
     tris.enter()
         .append('path')
         .classed('field', true);
@@ -801,7 +812,7 @@ export function visualizeSlopes(svg: any, render: MapRender) {
     var strokes = [];
     var r = 0.25 / Math.sqrt(h.length);
     for (var i = 0; i < h.length; i++) {
-        if (h[i] <= 0 || isnearedge(h.mesh, i)) continue;
+        if (h[i] <= 0 || isNearEdge(h.mesh, i)) continue;
         var nbs = neighbours(h.mesh, i);
         nbs.push(i);
         var s = 0;
@@ -815,8 +826,8 @@ export function visualizeSlopes(svg: any, render: MapRender) {
         s2 /= nbs.length;
         if (Math.abs(s) < runif(0.1, 0.4)) continue;
         var l = r * runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2/100);
-        var x = h.mesh.vxs[i][0];
-        var y = h.mesh.vxs[i][1];
+        var x = h.mesh.voronoiPoints[i][0];
+        var y = h.mesh.voronoiPoints[i][1];
         if (Math.abs(l*s) > 2 * r) {
             var n = Math.floor(Math.abs(l*s/r));
             l /= n;
@@ -856,8 +867,8 @@ export function visualizeCities(svg: any, render: MapRender) {
     circs.exit()
         .remove();
     svg.selectAll('circle.city')
-        .attr('cx', function (d: number) {return 1000*h.mesh.vxs[d][0];})
-        .attr('cy', function (d: number) {return 1000*h.mesh.vxs[d][1];})
+        .attr('cx', function (d: number) {return 1000*h.mesh.voronoiPoints[d][0];})
+        .attr('cy', function (d: number) {return 1000*h.mesh.voronoiPoints[d][1];})
         .attr('r', function (d: number, i: number) {return i >= n ? 4 : 10;})
         .style('fill', 'white')
         .style('stroke-width', 5)
@@ -870,7 +881,7 @@ export function dropEdge(h: TerrainHeights, p: number) {
     p = p || 4;
     var newh = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
-        var v = h.mesh!.vxs[i];
+        var v = h.mesh!.voronoiPoints[i];
         var x = 2.4*v[0] / h.mesh!.extent.width;
         var y = 2.4*v[1] / h.mesh!.extent.height;
         newh[i] = h[i] - Math.exp(10*(Math.pow(Math.pow(x, p) + Math.pow(y, p), 1/p) - 1));
@@ -903,8 +914,8 @@ export function terrCenter(h: TerrainHeights, terr: any, city: any, landOnly: bo
     for (var i = 0; i < terr.length; i++) {
         if (terr[i] != city) continue;
         if (landOnly && h[i] <= 0) continue;
-        x += terr.mesh.vxs[i][0];
-        y += terr.mesh.vxs[i][1];
+        x += terr.mesh.voronoiPoints[i][0];
+        y += terr.mesh.voronoiPoints[i][1];
         n++;
     }
     return [x/n, y/n];
@@ -935,7 +946,7 @@ export function drawLabels(svg: any, render: MapRender) {
         }
 
         for (var i = 0; i < cities!.length; i++) {
-            var c = h.mesh.vxs[cities![i]];
+            var c = h.mesh.voronoiPoints[cities![i]];
             if (label.x0 < c[0] && label.x1 > c[0] && label.y0 < c[1] && label.y1 > c[1]) {
                 pen += 100;
             }
@@ -955,8 +966,8 @@ export function drawLabels(svg: any, render: MapRender) {
         return pen;
     }
     for (var i = 0; i < cities!.length; i++) {
-        var x = h.mesh.vxs[cities![i]][0];
-        var y = h.mesh.vxs[cities![i]][1];
+        var x = h.mesh.voronoiPoints[cities![i]][0];
+        var y = h.mesh.voronoiPoints[cities![i]][1];
         var text = language.makeName(lang, 'city');
         var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
         var sx = 0.65 * size/1000 * text.length;
@@ -1031,12 +1042,12 @@ export function drawLabels(svg: any, render: MapRender) {
         var bestscore = -999999;
         for (var j = 0; j < h.length; j++) {
             var score = 0;
-            var v = h.mesh.vxs[j];
+            var v = h.mesh.voronoiPoints[j];
             score -= 3000 * Math.sqrt((v[0] - lc[0]) * (v[0] - lc[0]) + (v[1] - lc[1]) * (v[1] - lc[1]));
             score -= 1000 * Math.sqrt((v[0] - oc[0]) * (v[0] - oc[0]) + (v[1] - oc[1]) * (v[1] - oc[1]));
             if (terr![j] != city) score -= 3000;
             for (var k = 0; k < cities!.length; k++) {
-                var u = h.mesh.vxs[cities![k]];
+                var u = h.mesh.voronoiPoints[cities![k]];
                 if (Math.abs(v[0] - u[0]) < sx &&
                     Math.abs(v[1] - sy/2 - u[1]) < sy) {
                     score -= k < nterrs ? 4000 : 500;
@@ -1069,8 +1080,8 @@ export function drawLabels(svg: any, render: MapRender) {
         }
         reglabels.push({
             text: text,
-            x: h.mesh.vxs[best][0],
-            y: h.mesh.vxs[best][1],
+            x: h.mesh.voronoiPoints[best][0],
+            y: h.mesh.voronoiPoints[best][1],
             size:sy,
             width:sx
         });

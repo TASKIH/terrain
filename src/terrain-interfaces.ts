@@ -22,9 +22,9 @@ export interface Edge {
 export interface MapMesh {
     pts: [number, number][];
     vor: VoronoiDiagram<[number, number]>;
-    vxs: [number, number][];
-    adj: [number, number, number][],
-    tris: { [key: number]: VoronoiSite<[number, number]>[] },
+    voronoiPoints: [number, number][];
+    adjacentIds: [number, number, number][],
+    pointConnections: { [key: number]: VoronoiSite<[number, number]>[] },
     edges: Edge[],
     extent: MapExtent,
     map: (f: any) => any,

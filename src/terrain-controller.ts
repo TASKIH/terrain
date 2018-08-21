@@ -29,7 +29,7 @@ export function drawTerrainControll() {
 
     function meshDraw() {
         if (meshDual && !meshVxs) {
-            meshVxs = makeMesh(meshPts).vxs;
+            meshVxs = makeMesh(meshPts).voronoiPoints;
         }
         visualizePoints(meshSVG, meshDual ? meshVxs : meshPts);
     }

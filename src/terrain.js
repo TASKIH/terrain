@@ -175,19 +175,19 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.generateGoodMesh = generateGoodMesh;
     function isedge(mesh, i) {
-        return (mesh.adj[i].length < 3);
+        return (mesh.adjacentIds[i].length < 3);
     }
-    exports.isedge = isedge;
+    exports.isEdge = isedge;
     function isnearedge(mesh, i) {
-        var x = mesh.vxs[i][0];
-        var y = mesh.vxs[i][1];
+        var x = mesh.voronoiPoints[i][0];
+        var y = mesh.voronoiPoints[i][1];
         var w = mesh.extent.width;
         var h = mesh.extent.height;
         return x < -0.45 * w || x > 0.45 * w || y < -0.45 * h || y > 0.45 * h;
     }
-    exports.isnearedge = isnearedge;
+    exports.isNearEdge = isnearedge;
     function neighbours(mesh, i) {
-        var onbs = mesh.adj[i];
+        var onbs = mesh.adjacentIds[i];
         var nbs = [];
         for (var i = 0; i < onbs.length; i++) {
             nbs.push(onbs[i]);
@@ -196,8 +196,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.neighbours = neighbours;
     function distance(mesh, i, j) {
-        var p = mesh.vxs[i];
-        var q = mesh.vxs[j];
+        var p = mesh.voronoiPoints[i];
+        var q = mesh.voronoiPoints[j];
         return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
     }
     exports.distance = distance;
@@ -212,7 +212,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.quantile = quantile;
     function zero(mesh) {
         var z = [];
-        for (var i = 0; i < mesh.vxs.length; i++) {
+        for (var i = 0; i < mesh.voronoiPoints.length; i++) {
             z[i] = 0;
         }
         z.mesh = mesh;
@@ -271,8 +271,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
         }
         var newvals = zero(mesh);
-        for (var i = 0; i < mesh.vxs.length; i++) {
-            var p = mesh.vxs[i];
+        for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+            var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
                 newvals[i] += Math.pow(Math.exp(-((p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1])) / (2 * r * r)), 2);
@@ -515,9 +515,9 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var nbs = neighbours(h.mesh, i);
         if (nbs.length != 3)
             return [0, 0];
-        var p0 = h.mesh.vxs[nbs[0]];
-        var p1 = h.mesh.vxs[nbs[1]];
-        var p2 = h.mesh.vxs[nbs[2]];
+        var p0 = h.mesh.voronoiPoints[nbs[0]];
+        var p1 = h.mesh.voronoiPoints[nbs[1]];
+        var p2 = h.mesh.voronoiPoints[nbs[2]];
         var x1 = p1[0] - p0[0];
         var x2 = p2[0] - p0[0];
         var y1 = p1[1] - p0[1];
@@ -537,8 +537,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                 score[i] = -999999;
                 continue;
             }
-            score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.vxs[i][0]) - h.mesh.extent.width / 2);
-            score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.vxs[i][1]) - h.mesh.extent.height / 2);
+            score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i][0]) - h.mesh.extent.width / 2);
+            score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i][1]) - h.mesh.extent.height / 2);
             for (var j = 0; j < cities.length; j++) {
                 score[i] -= 0.02 / (distance(h.mesh, cities[j], i) + 1e-9);
             }
@@ -594,8 +594,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             if (isnearedge(h.mesh, i))
                 continue;
             if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
-                var up = h.mesh.vxs[i];
-                var down = h.mesh.vxs[dh[i]];
+                var up = h.mesh.voronoiPoints[i];
+                var down = h.mesh.voronoiPoints[dh[i]];
                 if (h[dh[i]] > 0) {
                     links.push([up, down]);
                 }
@@ -801,7 +801,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             valueLo = (d3.min(field) || 0) - 1e-9;
         var mappedvals = field.map(function (x) { return x > valueHi ? 1 : x < valueLo ? 0 : (x - valueLo) / (valueHi - valueLo); });
         // @ts-ignore
-        var tris = svg.selectAll('path.field').data(field.mesh.tris);
+        var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
         tris.enter()
             .append('path')
             .classed('field', true);
@@ -851,8 +851,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             if (Math.abs(s) < runif(0.1, 0.4))
                 continue;
             var l = r * runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100);
-            var x = h.mesh.vxs[i][0];
-            var y = h.mesh.vxs[i][1];
+            var x = h.mesh.voronoiPoints[i][0];
+            var y = h.mesh.voronoiPoints[i][1];
             if (Math.abs(l * s) > 2 * r) {
                 var n = Math.floor(Math.abs(l * s / r));
                 l /= n;
@@ -892,8 +892,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         circs.exit()
             .remove();
         svg.selectAll('circle.city')
-            .attr('cx', function (d) { return 1000 * h.mesh.vxs[d][0]; })
-            .attr('cy', function (d) { return 1000 * h.mesh.vxs[d][1]; })
+            .attr('cx', function (d) { return 1000 * h.mesh.voronoiPoints[d][0]; })
+            .attr('cy', function (d) { return 1000 * h.mesh.voronoiPoints[d][1]; })
             .attr('r', function (d, i) { return i >= n ? 4 : 10; })
             .style('fill', 'white')
             .style('stroke-width', 5)
@@ -906,7 +906,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         p = p || 4;
         var newh = zero(h.mesh);
         for (var i = 0; i < h.length; i++) {
-            var v = h.mesh.vxs[i];
+            var v = h.mesh.voronoiPoints[i];
             var x = 2.4 * v[0] / h.mesh.extent.width;
             var y = 2.4 * v[1] / h.mesh.extent.height;
             newh[i] = h[i] - Math.exp(10 * (Math.pow(Math.pow(x, p) + Math.pow(y, p), 1 / p) - 1));
@@ -937,8 +937,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                 continue;
             if (landOnly && h[i] <= 0)
                 continue;
-            x += terr.mesh.vxs[i][0];
-            y += terr.mesh.vxs[i][1];
+            x += terr.mesh.voronoiPoints[i][0];
+            y += terr.mesh.voronoiPoints[i][1];
             n++;
         }
         return [x / n, y / n];
@@ -971,7 +971,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                 }
             }
             for (var i = 0; i < cities.length; i++) {
-                var c = h.mesh.vxs[cities[i]];
+                var c = h.mesh.voronoiPoints[cities[i]];
                 if (label.x0 < c[0] && label.x1 > c[0] && label.y0 < c[1] && label.y1 > c[1]) {
                     pen += 100;
                 }
@@ -991,8 +991,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             return pen;
         }
         for (var i = 0; i < cities.length; i++) {
-            var x = h.mesh.vxs[cities[i]][0];
-            var y = h.mesh.vxs[cities[i]][1];
+            var x = h.mesh.voronoiPoints[cities[i]][0];
+            var y = h.mesh.voronoiPoints[cities[i]][1];
             var text = language.makeName(lang, 'city');
             var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
             var sx = 0.65 * size / 1000 * text.length;
@@ -1066,13 +1066,13 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             var bestscore = -999999;
             for (var j = 0; j < h.length; j++) {
                 var score = 0;
-                var v = h.mesh.vxs[j];
+                var v = h.mesh.voronoiPoints[j];
                 score -= 3000 * Math.sqrt((v[0] - lc[0]) * (v[0] - lc[0]) + (v[1] - lc[1]) * (v[1] - lc[1]));
                 score -= 1000 * Math.sqrt((v[0] - oc[0]) * (v[0] - oc[0]) + (v[1] - oc[1]) * (v[1] - oc[1]));
                 if (terr[j] != city)
                     score -= 3000;
                 for (var k = 0; k < cities.length; k++) {
-                    var u = h.mesh.vxs[cities[k]];
+                    var u = h.mesh.voronoiPoints[cities[k]];
                     if (Math.abs(v[0] - u[0]) < sx &&
                         Math.abs(v[1] - sy / 2 - u[1]) < sy) {
                         score -= k < nterrs ? 4000 : 500;
@@ -1110,8 +1110,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             }
             reglabels.push({
                 text: text,
-                x: h.mesh.vxs[best][0],
-                y: h.mesh.vxs[best][1],
+                x: h.mesh.voronoiPoints[best][0],
+                y: h.mesh.voronoiPoints[best][1],
                 size: sy,
                 width: sx
             });
