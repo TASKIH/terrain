@@ -160,20 +160,21 @@ export function makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
         pts: pts,
         vor: vor,
         voronoiPoints: voronoiPoints,
-        adjacentIds: adjacentIds,
+        adjacentPointIds: adjacentIds,
         pointConnections: pointConnections,
         edges: edges,
         extent: extent,
-        map: (f: any) => {
+        pointMapFunction: (f: any) => {
         }
     };
 
-    mesh.map = function (f: (param : [number, number]) => any) {
+    mesh.pointMapFunction = function (f: (param : [number, number]) => [number, number]) {
         var mapped = voronoiPoints.map(f);
         // @ts-ignore
         mapped.mesh = mesh;
         return mapped;
     };
+
     return mesh;
 }
 
@@ -185,7 +186,7 @@ export function generateGoodMesh(n: number, extent?: MapExtent): MapMesh {
     return makeMesh(pts, extent);
 }
 export function isEdge(mesh: MapMesh, i: number): boolean {
-    return (mesh.adjacentIds[i].length < 3);
+    return (mesh.adjacentPointIds[i].length < 3);
 }
 
 // 領域の端に隣接するEdgeかどうか
@@ -194,11 +195,11 @@ export function isNearEdge(mesh: MapMesh, i: number): boolean {
     var y = mesh.voronoiPoints[i][1];
     var w = mesh.extent.width;
     var h = mesh.extent.height;
-    return x < -0.45 * w || x > 0.45 * w || y < -0.45 * h || y > 0.45 * h;
+    return (x < -0.45 * w) || (x > 0.45 * w) || (y < -0.45 * h) || (y > 0.45 * h);
 }
 
-export function neighbours(mesh: MapMesh, i: number) {
-    var onbs = mesh.adjacentIds[i];
+export function getNeighbourIds(mesh: MapMesh, i: number) {
+    var onbs = mesh.adjacentPointIds[i];
     var nbs = [];
     for (var i = 0; i < onbs.length; i++) {
         nbs.push(onbs[i]);
@@ -230,14 +231,16 @@ export function zero(mesh: MapMesh): TerrainHeights {
     return z;
 }
 
+// directionに向かって
 export function slope(mesh: MapMesh, direction: [number, number]): number[] {
-    return mesh.map(function (param : [number, number]) {
+
+    return mesh.pointMapFunction(function (param : [number, number]) {
         return param[0] * direction[0] + param[1] * direction[1];
     });
 }
 
 export function cone(mesh: MapMesh, slope: number): number[] {
-    return mesh.map(function (param : [number, number]) {
+    return mesh.pointMapFunction(function (param : [number, number]) {
         return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
     });
 }
@@ -292,8 +295,7 @@ export function relax(h: TerrainHeights) {
     // @ts-ignore
     var newh = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
-        // @ts-ignore
-        var nbs = neighbours(h.mesh, i);
+        var nbs = getNeighbourIds(h.mesh!, i);
         if (nbs.length < 3) {
             newh[i] = 0;
             continue;
@@ -303,16 +305,15 @@ export function relax(h: TerrainHeights) {
     return newh;
 }
 
-export function downhill(h: TerrainHeights) {
-    // @ts-ignore
+// どのポイントからどのポイントに対して傾斜させるかを決定する
+export function downhill(h: TerrainHeights): number[] {
     if (h.downhill) return h.downhill;
-    function downfrom(i: number) {
-        // @ts-ignore
-        if (isEdge(h.mesh, i)) return -2;
+
+    function downFrom(i: number): number {
+        if (isEdge(h.mesh!, i)) return -2;
         var best = -1;
         var besth = h[i];
-        // @ts-ignore
-        var nbs = neighbours(h.mesh, i);
+        var nbs = getNeighbourIds(h.mesh!, i);
         for (var j = 0; j < nbs.length; j++) {
             if (h[nbs[j]] < besth) {
                 besth = h[nbs[j]];
@@ -323,68 +324,54 @@ export function downhill(h: TerrainHeights) {
     }
     var downs = [];
     for (var i = 0; i < h.length; i++) {
-        downs[i] = downfrom(i);
+        downs[i] = downFrom(i);
     }
-    // @ts-ignore
     h.downhill = downs;
     return downs;
-}
-
-export function findSinks(h: any) {
-    var dh = downhill(h);
-    var sinks = [];
-    for (var i = 0; i < dh.length; i++) {
-        var node = i;
-        while (true) {
-            if (isEdge(h.mesh, node)) {
-                sinks[i] = -2;
-                break;
-            }
-            if (dh[node] == -1) {
-                sinks[i] = node;
-                break;
-            }
-            node = dh[node];
-        }
-    }
 }
 
 export function fillSinks(h: TerrainHeights, epsilon?: number): TerrainHeights {
     epsilon = epsilon || 1e-5;
     var infinity = 999999;
-    var newh: TerrainHeights = zero(h.mesh!);
+    var newHeights: TerrainHeights = zero(h.mesh!);
+
     for (var i = 0; i < h.length; i++) {
         if (isNearEdge(h.mesh!, i)) {
-            newh[i] = h[i];
+            newHeights[i] = h[i];
         } else {
-            newh[i] = infinity;
+            newHeights[i] = infinity;
         }
     }
     while (true) {
-        var changed = false;
+        var hasChanged = false;
+
         for (var i = 0; i < h.length; i++) {
-            if (newh[i] == h[i]) continue;
-            var nbs = neighbours(h.mesh!, i);
+            if (newHeights[i] == h[i])
+                continue;
+
+            var nbs = getNeighbourIds(h.mesh!, i);
             for (var j = 0; j < nbs.length; j++) {
-                if (h[i] >= newh[nbs[j]] + epsilon) {
-                    newh[i] = h[i];
-                    changed = true;
+                if (h[i] >= newHeights[nbs[j]] + epsilon) {
+                    newHeights[i] = h[i];
+                    hasChanged = true;
                     break;
                 }
-                var oh = newh[nbs[j]] + epsilon;
-                if ((newh[i] > oh) && (oh > h[i])) {
-                    newh[i] = oh;
-                    changed = true;
+                var oh = newHeights[nbs[j]] + epsilon;
+                if ((newHeights[i] > oh) && (oh > h[i])) {
+                    newHeights[i] = oh;
+                    hasChanged = true;
                 }
             }
         }
-        if (!changed) return newh;
+        if (!hasChanged) return newHeights;
     }
 }
 
 export function getFlux(h: TerrainHeights) {
+    // 傾斜を作成
     var dh = downhill(h);
     var idxs = [];
+
     var flux = zero(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         idxs[i] = i;
@@ -432,7 +419,7 @@ export function erosionRate(h: TerrainHeights) {
     return newh;
 }
 
-export function erode(h: TerrainHeights, amount: number) {
+export function erode(h: TerrainHeights, amount: number): TerrainHeights {
     var er = erosionRate(h);
     var newh = zero(h.mesh!);
     var maxr = d3.max(er) || 0;
@@ -467,7 +454,7 @@ export function cleanCoast(h: TerrainHeights, iters: number) {
         var newh = zero(h.mesh!);
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i];
-            var nbs = neighbours(h.mesh!, i);
+            var nbs = getNeighbourIds(h.mesh!, i);
             if (h[i] <= 0 || nbs.length != 3) continue;
             var count = 0;
             var best = -999999;
@@ -486,7 +473,7 @@ export function cleanCoast(h: TerrainHeights, iters: number) {
         newh = zero(h.mesh!);
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i];
-            var nbs = neighbours(h.mesh!, i);
+            var nbs = getNeighbourIds(h.mesh!, i);
             if (h[i] > 0 || nbs.length != 3) continue;
             var count = 0;
             var best = 999999;
@@ -507,7 +494,7 @@ export function cleanCoast(h: TerrainHeights, iters: number) {
 }
 
 export function trislope(h: TerrainHeights, i: number) {
-    var nbs = neighbours(h.mesh!, i);
+    var nbs = getNeighbourIds(h.mesh!, i);
     if (nbs.length != 3) return [0,0];
     var p0 = h.mesh!.voronoiPoints[nbs[0]];
     var p1 = h.mesh!.voronoiPoints[nbs[1]];
@@ -618,7 +605,7 @@ export function getTerritories(render: any) {
     }
     for (var i = 0; i < n; i++) {
         terr[cities[i]] = cities[i];
-        var nbs = neighbours(h.mesh, cities[i]);
+        var nbs = getNeighbourIds(h.mesh, cities[i]);
         for (var j = 0; j < nbs.length; j++) {
             newQueue.queue({
                 score: weight(cities[i], nbs[j]),
@@ -631,7 +618,7 @@ export function getTerritories(render: any) {
         var u = newQueue.dequeue();
         if (terr[u.vx] != undefined) continue;
         terr[u.vx] = u.city;
-        var nbs = neighbours(h.mesh, u.vx);
+        var nbs = getNeighbourIds(h.mesh, u.vx);
         for (var i = 0; i < nbs.length; i++) {
             var v = nbs[i];
             if (terr[v] != undefined) continue;
@@ -813,7 +800,7 @@ export function visualizeSlopes(svg: any, render: MapRender) {
     var r = 0.25 / Math.sqrt(h.length);
     for (var i = 0; i < h.length; i++) {
         if (h[i] <= 0 || isNearEdge(h.mesh, i)) continue;
-        var nbs = neighbours(h.mesh, i);
+        var nbs = getNeighbourIds(h.mesh, i);
         nbs.push(i);
         var s = 0;
         var s2 = 0;
@@ -891,10 +878,17 @@ export function dropEdge(h: TerrainHeights, p: number) {
 
 export function generateCoast(npts: number, extent: MapExtent): any {
     var mesh = generateGoodMesh(npts, extent);
+    const generatedSlopes = slope(mesh, randomVector(4));
+    const generatedCones = cone(mesh, runif(-1, -1));
+    const generatedMountains = mountains(mesh, 50);
+
+    console.log(generatedSlopes);
+    console.log(mesh);
+
     var h = add(
-        slope(mesh, randomVector(4)),
-        cone(mesh, runif(-1, -1)),
-        mountains(mesh, 50)
+        generatedSlopes,
+        generatedCones,
+        generatedMountains
     );
     for (var i = 0; i < 10; i++) {
         h = relax(h);

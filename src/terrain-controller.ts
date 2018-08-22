@@ -362,13 +362,13 @@ export function drawTerrainControll() {
     var finalDiv = d3.select("div#final");
     var finalSVG = addSVG(finalDiv);
     finalDiv.append("button")
-        .text("Copy map from above")
+        .text("Copy pointMapFunction from above")
         .on("click", function () {
             drawMap(finalSVG, cityRender);
         });
 
     finalDiv.append("button")
-        .text("Generate high resolution map")
+        .text("Generate high resolution pointMapFunction")
         .on("click", function () {
             doMap(finalSVG, defaultParams);
         });

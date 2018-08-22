@@ -39,6 +39,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return rnorm;
     })();
     function randomVector(scale) {
+        console.log('here');
         return [scale * rnorm(), scale * rnorm()];
     }
     exports.randomVector = randomVector;
@@ -100,67 +101,66 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function makeMesh(pts, extent) {
         extent = extent || exports.defaultExtent;
         var vor = voronoi(pts, extent);
-        var vxids = {};
-        var vxs = [];
-        var adj = [];
+        var pointToIdDict = {};
+        var voronoiPoints = [];
+        // Edgeとして隣接するポイント同士を接続する
+        var adjacentIds = [];
         var edges = [];
-        var tris = [];
+        var pointConnections = [];
         for (var i = 0; i < vor.edges.length; i++) {
-            var e = vor.edges[i];
-            if (e == undefined)
+            var edge = vor.edges[i];
+            if (edge == undefined)
                 continue;
-            // @ts-ignore
-            var e0 = vxids[e[0]];
-            // @ts-ignore
-            var e1 = vxids[e[1]];
-            if (e0 == undefined) {
-                e0 = vxs.length;
-                // @ts-ignore
-                vxids[e[0]] = e0;
-                vxs.push(e[0]);
+            var e0Id = pointToIdDict[edge[0].toString()];
+            var e1Id = pointToIdDict[edge[1].toString()];
+            if (e0Id == undefined) {
+                e0Id = voronoiPoints.length;
+                pointToIdDict[edge[0].toString()] = e0Id;
+                voronoiPoints.push(edge[0]);
             }
-            if (e1 == undefined) {
-                e1 = vxs.length;
-                // @ts-ignore
-                vxids[e[1]] = e1;
-                vxs.push(e[1]);
+            if (e1Id == undefined) {
+                e1Id = voronoiPoints.length;
+                pointToIdDict[edge[1].toString()] = e1Id;
+                voronoiPoints.push(edge[1]);
             }
-            adj[e0] = adj[e0] || [];
-            adj[e0].push(e1);
-            adj[e1] = adj[e1] || [];
-            adj[e1].push(e0);
+            adjacentIds[e0Id] = adjacentIds[e0Id] || [];
+            adjacentIds[e0Id].push(e1Id);
+            adjacentIds[e1Id] = adjacentIds[e1Id] || [];
+            adjacentIds[e1Id].push(e0Id);
             edges.push({
-                index1: e0,
-                index2: e1,
-                left: e.left,
-                right: e.right
+                index1: e0Id,
+                index2: e1Id,
+                left: edge.left,
+                right: edge.right
             });
-            tris[e0] = tris[e0] || [];
-            if (tris[e0].indexOf(e.left) === -1)
-                tris[e0].push(e.left);
-            if (e.right && tris[e0].indexOf(e.right) === -1)
-                tris[e0].push(e.right);
-            tris[e1] = tris[e1] || [];
-            if (tris[e1].indexOf(e.left) === -1)
-                tris[e1].push(e.left);
-            if (e.right && tris[e0].indexOf(e.right) === -1)
-                tris[e1].push(e.right);
+            pointConnections[e0Id] = pointConnections[e0Id] || [];
+            if (pointConnections[e0Id].indexOf(edge.left) === -1) {
+                pointConnections[e0Id].push(edge.left);
+            }
+            if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
+                pointConnections[e0Id].push(edge.right);
+            }
+            pointConnections[e1Id] = pointConnections[e1Id] || [];
+            if (pointConnections[e1Id].indexOf(edge.left) === -1) {
+                pointConnections[e1Id].push(edge.left);
+            }
+            if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
+                pointConnections[e1Id].push(edge.right);
+            }
         }
-        console.log(tris);
-        console.log(vxs);
         var mesh = {
             pts: pts,
             vor: vor,
-            vxs: vxs,
-            adj: adj,
-            tris: tris,
+            voronoiPoints: voronoiPoints,
+            adjacentPointIds: adjacentIds,
+            pointConnections: pointConnections,
             edges: edges,
             extent: extent,
             map: function (f) {
             }
         };
         mesh.map = function (f) {
-            var mapped = vxs.map(f);
+            var mapped = voronoiPoints.map(f);
             // @ts-ignore
             mapped.mesh = mesh;
             return mapped;
@@ -174,27 +174,28 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return makeMesh(pts, extent);
     }
     exports.generateGoodMesh = generateGoodMesh;
-    function isedge(mesh, i) {
-        return (mesh.adjacentIds[i].length < 3);
+    function isEdge(mesh, i) {
+        return (mesh.adjacentPointIds[i].length < 3);
     }
-    exports.isEdge = isedge;
-    function isnearedge(mesh, i) {
+    exports.isEdge = isEdge;
+    // 領域の端に隣接するEdgeかどうか
+    function isNearEdge(mesh, i) {
         var x = mesh.voronoiPoints[i][0];
         var y = mesh.voronoiPoints[i][1];
         var w = mesh.extent.width;
         var h = mesh.extent.height;
-        return x < -0.45 * w || x > 0.45 * w || y < -0.45 * h || y > 0.45 * h;
+        return (x < -0.45 * w) || (x > 0.45 * w) || (y < -0.45 * h) || (y > 0.45 * h);
     }
-    exports.isNearEdge = isnearedge;
-    function neighbours(mesh, i) {
-        var onbs = mesh.adjacentIds[i];
+    exports.isNearEdge = isNearEdge;
+    function getNeighbourIds(mesh, i) {
+        var onbs = mesh.adjacentPointIds[i];
         var nbs = [];
         for (var i = 0; i < onbs.length; i++) {
             nbs.push(onbs[i]);
         }
         return nbs;
     }
-    exports.neighbours = neighbours;
+    exports.getNeighbourIds = getNeighbourIds;
     function distance(mesh, i, j) {
         var p = mesh.voronoiPoints[i];
         var q = mesh.voronoiPoints[j];
@@ -219,6 +220,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return z;
     }
     exports.zero = zero;
+    // directionに向かって
     function slope(mesh, direction) {
         return mesh.map(function (param) {
             return param[0] * direction[0] + param[1] * direction[1];
@@ -236,7 +238,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         newh.mesh = h.mesh;
         return newh;
     }
-    exports.map = map;
+    exports.pointMapFunction = map;
     function normalize(h) {
         var lo = d3.min(h);
         var hi = d3.max(h);
@@ -285,8 +287,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         // @ts-ignore
         var newh = zero(h.mesh);
         for (var i = 0; i < h.length; i++) {
-            // @ts-ignore
-            var nbs = neighbours(h.mesh, i);
+            var nbs = getNeighbourIds(h.mesh, i);
             if (nbs.length < 3) {
                 newh[i] = 0;
                 continue;
@@ -296,18 +297,16 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return newh;
     }
     exports.relax = relax;
+    // どのポイントからどのポイントに対して傾斜させるかを決定する
     function downhill(h) {
-        // @ts-ignore
         if (h.downhill)
             return h.downhill;
-        function downfrom(i) {
-            // @ts-ignore
-            if (isedge(h.mesh, i))
+        function downFrom(i) {
+            if (isEdge(h.mesh, i))
                 return -2;
             var best = -1;
             var besth = h[i];
-            // @ts-ignore
-            var nbs = neighbours(h.mesh, i);
+            var nbs = getNeighbourIds(h.mesh, i);
             for (var j = 0; j < nbs.length; j++) {
                 if (h[nbs[j]] < besth) {
                     besth = h[nbs[j]];
@@ -318,69 +317,50 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         }
         var downs = [];
         for (var i = 0; i < h.length; i++) {
-            downs[i] = downfrom(i);
+            downs[i] = downFrom(i);
         }
-        // @ts-ignore
         h.downhill = downs;
         return downs;
     }
     exports.downhill = downhill;
-    function findSinks(h) {
-        var dh = downhill(h);
-        var sinks = [];
-        for (var i = 0; i < dh.length; i++) {
-            var node = i;
-            while (true) {
-                if (isedge(h.mesh, node)) {
-                    sinks[i] = -2;
-                    break;
-                }
-                if (dh[node] == -1) {
-                    sinks[i] = node;
-                    break;
-                }
-                node = dh[node];
-            }
-        }
-    }
-    exports.findSinks = findSinks;
     function fillSinks(h, epsilon) {
         epsilon = epsilon || 1e-5;
         var infinity = 999999;
-        var newh = zero(h.mesh);
+        var newHeights = zero(h.mesh);
         for (var i = 0; i < h.length; i++) {
-            if (isnearedge(h.mesh, i)) {
-                newh[i] = h[i];
+            if (isNearEdge(h.mesh, i)) {
+                newHeights[i] = h[i];
             }
             else {
-                newh[i] = infinity;
+                newHeights[i] = infinity;
             }
         }
         while (true) {
-            var changed = false;
+            var hasChanged = false;
             for (var i = 0; i < h.length; i++) {
-                if (newh[i] == h[i])
+                if (newHeights[i] == h[i])
                     continue;
-                var nbs = neighbours(h.mesh, i);
+                var nbs = getNeighbourIds(h.mesh, i);
                 for (var j = 0; j < nbs.length; j++) {
-                    if (h[i] >= newh[nbs[j]] + epsilon) {
-                        newh[i] = h[i];
-                        changed = true;
+                    if (h[i] >= newHeights[nbs[j]] + epsilon) {
+                        newHeights[i] = h[i];
+                        hasChanged = true;
                         break;
                     }
-                    var oh = newh[nbs[j]] + epsilon;
-                    if ((newh[i] > oh) && (oh > h[i])) {
-                        newh[i] = oh;
-                        changed = true;
+                    var oh = newHeights[nbs[j]] + epsilon;
+                    if ((newHeights[i] > oh) && (oh > h[i])) {
+                        newHeights[i] = oh;
+                        hasChanged = true;
                     }
                 }
             }
-            if (!changed)
-                return newh;
+            if (!hasChanged)
+                return newHeights;
         }
     }
     exports.fillSinks = fillSinks;
     function getFlux(h) {
+        // 傾斜を作成
         var dh = downhill(h);
         var idxs = [];
         var flux = zero(h.mesh);
@@ -466,7 +446,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             var newh = zero(h.mesh);
             for (var i = 0; i < h.length; i++) {
                 newh[i] = h[i];
-                var nbs = neighbours(h.mesh, i);
+                var nbs = getNeighbourIds(h.mesh, i);
                 if (h[i] <= 0 || nbs.length != 3)
                     continue;
                 var count = 0;
@@ -488,7 +468,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             newh = zero(h.mesh);
             for (var i = 0; i < h.length; i++) {
                 newh[i] = h[i];
-                var nbs = neighbours(h.mesh, i);
+                var nbs = getNeighbourIds(h.mesh, i);
                 if (h[i] > 0 || nbs.length != 3)
                     continue;
                 var count = 0;
@@ -512,7 +492,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.cleanCoast = cleanCoast;
     function trislope(h, i) {
-        var nbs = neighbours(h.mesh, i);
+        var nbs = getNeighbourIds(h.mesh, i);
         if (nbs.length != 3)
             return [0, 0];
         var p0 = h.mesh.voronoiPoints[nbs[0]];
@@ -532,7 +512,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function cityScore(h, cities) {
         var score = map(getFlux(h), Math.sqrt);
         for (var i = 0; i < h.length; i++) {
-            if (h[i] <= 0 || isnearedge(h.mesh, i)) {
+            if (h[i] <= 0 || isNearEdge(h.mesh, i)) {
                 score[i] = -999999;
                 score[i] = -999999;
                 continue;
@@ -570,7 +550,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             var e = h.mesh.edges[i];
             if (e.right == undefined)
                 continue;
-            if (isnearedge(h.mesh, e.index1) || isnearedge(h.mesh, e.index2))
+            if (isNearEdge(h.mesh, e.index1) || isNearEdge(h.mesh, e.index2))
                 continue;
             if ((h[e.index1] > level && h[e.index2] <= level) ||
                 (h[e.index2] > level && h[e.index1] <= level)) {
@@ -591,7 +571,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         }
         limit *= above / h.length;
         for (var i = 0; i < dh.length; i++) {
-            if (isnearedge(h.mesh, i))
+            if (isNearEdge(h.mesh, i))
                 continue;
             if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
                 var up = h.mesh.voronoiPoints[i];
@@ -631,7 +611,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         }
         for (var i = 0; i < n; i++) {
             terr[cities[i]] = cities[i];
-            var nbs = neighbours(h.mesh, cities[i]);
+            var nbs = getNeighbourIds(h.mesh, cities[i]);
             for (var j = 0; j < nbs.length; j++) {
                 newQueue.queue({
                     score: weight(cities[i], nbs[j]),
@@ -645,7 +625,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             if (terr[u.vx] != undefined)
                 continue;
             terr[u.vx] = u.city;
-            var nbs = neighbours(h.mesh, u.vx);
+            var nbs = getNeighbourIds(h.mesh, u.vx);
             for (var i = 0; i < nbs.length; i++) {
                 var v = nbs[i];
                 if (terr[v] != undefined)
@@ -671,7 +651,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             var e = terr.mesh.edges[i];
             if (e[3] == undefined)
                 continue;
-            if (isnearedge(terr.mesh, e[0]) || isnearedge(terr.mesh, e[1]))
+            if (isNearEdge(terr.mesh, e[0]) || isNearEdge(terr.mesh, e[1]))
                 continue;
             if (h[e[0]] < 0 || h[e[1]] < 0)
                 continue;
@@ -835,9 +815,9 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var strokes = [];
         var r = 0.25 / Math.sqrt(h.length);
         for (var i = 0; i < h.length; i++) {
-            if (h[i] <= 0 || isnearedge(h.mesh, i))
+            if (h[i] <= 0 || isNearEdge(h.mesh, i))
                 continue;
-            var nbs = neighbours(h.mesh, i);
+            var nbs = getNeighbourIds(h.mesh, i);
             nbs.push(i);
             var s = 0;
             var s2 = 0;
@@ -916,7 +896,12 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.dropEdge = dropEdge;
     function generateCoast(npts, extent) {
         var mesh = generateGoodMesh(npts, extent);
-        var h = add(slope(mesh, randomVector(4)), cone(mesh, runif(-1, -1)), mountains(mesh, 50));
+        var generatedSlopes = slope(mesh, randomVector(4));
+        var generatedCones = cone(mesh, runif(-1, -1));
+        var generatedMountains = mountains(mesh, 50);
+        console.log(generatedSlopes);
+        console.log(mesh);
+        var h = add(generatedSlopes, generatedCones, generatedMountains);
         for (var i = 0; i < 10; i++) {
             h = relax(h);
         }

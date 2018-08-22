@@ -23,11 +23,11 @@ export interface MapMesh {
     pts: [number, number][];
     vor: VoronoiDiagram<[number, number]>;
     voronoiPoints: [number, number][];
-    adjacentIds: [number, number, number][],
+    adjacentPointIds: [number, number, number][],
     pointConnections: { [key: number]: VoronoiSite<[number, number]>[] },
     edges: Edge[],
     extent: MapExtent,
-    map: (f: any) => any,
+    pointMapFunction: (f: any) => any,
 }
 
 
@@ -43,6 +43,7 @@ export interface MapRender {
 
 export interface TerrainHeights extends Array<number> {
     mesh?: MapMesh;
+    downhill?: number[]
 }
 
 export interface MapExportParam {
