@@ -1,7 +1,7 @@
 import * as d3 from 'd3';
 import './terrain';
 import {
-    add, cityScore, cleanCoast,
+    mergeHeights, cityScore, cleanCoast,
     cone,
     contour, defaultExtent, defaultParams, doErosion, doMap, drawMap,
     drawPaths, erosionRate, fillSinks, generateCoast,
@@ -10,7 +10,7 @@ import {
     improvePoints,
     makeMesh, mountains, normalize, peaky, placeCity,
     randomVector, relax, runif, setSeaLevel, slope, visualizeCities, visualizePoints, visualizeSlopes, visualizeVoronoi,
-    zero
+    resetTerrainHeights
 } from './terrain';
 
 export function drawTerrainControll() {
@@ -66,7 +66,7 @@ export function drawTerrainControll() {
     var primDiv = d3.select("div#prim");
     var primSVG = addSVG(primDiv);
 
-    var primH = zero(generateGoodMesh(4096));
+    var primH = resetTerrainHeights(generateGoodMesh(4096));
 
     function primDraw() {
         visualizeVoronoi(primSVG, primH, -1, 1);
@@ -79,7 +79,7 @@ export function drawTerrainControll() {
         .text("Reset to flat")
         .on("click", function () {
             // @ts-ignore
-            primH = zero(primH.mesh);
+            primH = resetTerrainHeights(primH.mesh);
             primDraw();
         });
 
@@ -87,7 +87,7 @@ export function drawTerrainControll() {
         .text("Add random slope")
         .on("click", function () {
             // @ts-ignore
-            primH = add(primH, slope(primH.mesh, randomVector(4)));
+            primH = mergeHeights(primH, slope(primH.mesh, randomVector(4)));
             primDraw();
         });
 
@@ -95,7 +95,7 @@ export function drawTerrainControll() {
         .text("Add cone")
         .on("click", function () {
             // @ts-ignore
-            primH = add(primH, cone(primH.mesh, -0.5));
+            primH = mergeHeights(primH, cone(primH.mesh, -0.5));
             primDraw();
         });
 
@@ -103,7 +103,7 @@ export function drawTerrainControll() {
         .text("Add inverted cone")
         .on("click", function () {
             // @ts-ignore
-            primH = add(primH, cone(primH.mesh, 0.5));
+            primH = mergeHeights(primH, cone(primH.mesh, 0.5));
             primDraw();
         });
 
@@ -111,7 +111,7 @@ export function drawTerrainControll() {
         .text("Add five blobs")
         .on("click", function () {
             // @ts-ignore
-            primH = add(primH, mountains(primH.mesh, 5));
+            primH = mergeHeights(primH, mountains(primH.mesh, 5));
             primDraw();
         });
 
@@ -148,7 +148,7 @@ export function drawTerrainControll() {
 
     function generateUneroded() {
         var mesh = generateGoodMesh(4096);
-        var h = add(slope(mesh, randomVector(4)),
+        var h = mergeHeights(slope(mesh, randomVector(4)),
             cone(mesh, runif(-1, 1)),
             mountains(mesh, 50));
         h = peaky(h);
@@ -247,7 +247,7 @@ export function drawTerrainControll() {
             visualizeSlopes(physSVG, {h:physH, params: defaultParams});
         } else {
             // @ts-ignore
-            visualizeSlopes(physSVG, {h:zero(physH.mesh)});
+            visualizeSlopes(physSVG, {h:resetTerrainHeights(physH.mesh)});
         }
     }
     physDiv.append("button")

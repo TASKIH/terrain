@@ -201,7 +201,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var q = mesh.voronoiPoints[j];
         return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
     }
-    exports.distance = distance;
+    exports.getDistance = distance;
     function quantile(h, q) {
         var sortedh = [];
         for (var i = 0; i < h.length; i++) {
@@ -210,7 +210,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         sortedh.sort(d3.ascending);
         return d3.quantile(sortedh, q);
     }
-    exports.quantile = quantile;
+    exports.getQuantile = quantile;
     function zero(mesh) {
         var z = [];
         for (var i = 0; i < mesh.voronoiPoints.length; i++) {
@@ -219,7 +219,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         z.mesh = mesh;
         return z;
     }
-    exports.zero = zero;
+    exports.resetTerrainHeights = zero;
     // directionに向かって
     function slope(mesh, direction) {
         return mesh.map(function (param) {
@@ -265,7 +265,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         }
         return newvals;
     }
-    exports.add = add;
+    exports.mergeHeights = add;
     function mountains(mesh, n, r) {
         r = r || 0.05;
         var mounts = [];

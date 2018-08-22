@@ -207,13 +207,13 @@ export function getNeighbourIds(mesh: MapMesh, i: number) {
     return nbs;
 }
 
-export function distance(mesh: MapMesh, i: number, j: number): number {
+export function getDistance(mesh: MapMesh, i: number, j: number): number {
     var p = mesh.voronoiPoints[i];
     var q = mesh.voronoiPoints[j];
     return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
 }
 
-export function quantile(h: TerrainHeights, q: any): number | undefined {
+export function getQuantile(h: TerrainHeights, q: any): number | undefined {
     var sortedh = [];
     for (var i = 0; i < h.length; i++) {
         sortedh[i] = h[i];
@@ -222,7 +222,7 @@ export function quantile(h: TerrainHeights, q: any): number | undefined {
     return d3.quantile(sortedh, q);
 }
 
-export function zero(mesh: MapMesh): TerrainHeights {
+export function resetTerrainHeights(mesh: MapMesh): TerrainHeights {
     var z: TerrainHeights = [];
     for (var i = 0; i < mesh.voronoiPoints.length; i++) {
         z[i] = 0;
@@ -231,15 +231,14 @@ export function zero(mesh: MapMesh): TerrainHeights {
     return z;
 }
 
-// directionに向かって
-export function slope(mesh: MapMesh, direction: [number, number]): number[] {
+export function slope(mesh: MapMesh, direction: [number, number]): TerrainHeights {
 
     return mesh.pointMapFunction(function (param : [number, number]) {
         return param[0] * direction[0] + param[1] * direction[1];
     });
 }
 
-export function cone(mesh: MapMesh, slope: number): number[] {
+export function cone(mesh: MapMesh, slope: number): TerrainHeights {
     return mesh.pointMapFunction(function (param : [number, number]) {
         return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
     });
@@ -263,15 +262,15 @@ export function peaky(heights: TerrainHeights) {
     return map(normalize(heights), Math.sqrt);
 }
 
-export function add(...args: TerrainHeights[]) {
+export function mergeHeights(...args: TerrainHeights[]): TerrainHeights {
     var n = args[0].length;
-    var newvals = zero(args[0].mesh!);
+    var newVals = resetTerrainHeights(args[0].mesh!);
     for (var i = 0; i < n; i++) {
         for (var j = 0; j < arguments.length; j++) {
-            newvals[i] += arguments[j][i];
+            newVals[i] += arguments[j][i];
         }
     }
-    return newvals;
+    return newVals;
 }
 
 export function mountains(mesh: MapMesh, n: number, r?: number) {
@@ -280,7 +279,7 @@ export function mountains(mesh: MapMesh, n: number, r?: number) {
     for (var i = 0; i < n; i++) {
         mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
     }
-    var newvals = zero(mesh);
+    var newvals = resetTerrainHeights(mesh);
     for (var i = 0; i < mesh.voronoiPoints.length; i++) {
         var p = mesh.voronoiPoints[i];
         for (var j = 0; j < n; j++) {
@@ -293,7 +292,7 @@ export function mountains(mesh: MapMesh, n: number, r?: number) {
 
 export function relax(h: TerrainHeights) {
     // @ts-ignore
-    var newh = zero(h.mesh!);
+    var newh = resetTerrainHeights(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         var nbs = getNeighbourIds(h.mesh!, i);
         if (nbs.length < 3) {
@@ -333,7 +332,7 @@ export function downhill(h: TerrainHeights): number[] {
 export function fillSinks(h: TerrainHeights, epsilon?: number): TerrainHeights {
     epsilon = epsilon || 1e-5;
     var infinity = 999999;
-    var newHeights: TerrainHeights = zero(h.mesh!);
+    var newHeights: TerrainHeights = resetTerrainHeights(h.mesh!);
 
     for (var i = 0; i < h.length; i++) {
         if (isNearEdge(h.mesh!, i)) {
@@ -372,7 +371,7 @@ export function getFlux(h: TerrainHeights) {
     var dh = downhill(h);
     var idxs = [];
 
-    var flux = zero(h.mesh!);
+    var flux = resetTerrainHeights(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         idxs[i] = i;
         flux[i] = 1/h.length;
@@ -391,7 +390,7 @@ export function getFlux(h: TerrainHeights) {
 
 export function getSlope(h: TerrainHeights) {
     var dh = downhill(h);
-    var slope = zero(h.mesh!);
+    var slope = resetTerrainHeights(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         var s = trislope(h, i);
         slope[i] = Math.sqrt(s[0] * s[0] + s[1] * s[1]);
@@ -399,7 +398,7 @@ export function getSlope(h: TerrainHeights) {
         if (dh[i] < 0) {
             slope[i] = 0;
         } else {
-            slope[i] = (h[i] - h[dh[i]]) / distance(h.mesh!, i, dh[i]);
+            slope[i] = (h[i] - h[dh[i]]) / getDistance(h.mesh!, i, dh[i]);
         }
     }
     return slope;
@@ -408,7 +407,7 @@ export function getSlope(h: TerrainHeights) {
 export function erosionRate(h: TerrainHeights) {
     var flux = getFlux(h);
     var slope = getSlope(h);
-    var newh = zero(h.mesh!);
+    var newh = resetTerrainHeights(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         var river = Math.sqrt(flux[i]) * slope[i];
         var creep = slope[i] * slope[i];
@@ -421,7 +420,7 @@ export function erosionRate(h: TerrainHeights) {
 
 export function erode(h: TerrainHeights, amount: number): TerrainHeights {
     var er = erosionRate(h);
-    var newh = zero(h.mesh!);
+    var newh = resetTerrainHeights(h.mesh!);
     var maxr = d3.max(er) || 0;
     for (var i = 0; i < h.length; i++) {
         newh[i] = h[i] - amount * (er[i] / maxr);
@@ -440,8 +439,8 @@ export function doErosion(h: TerrainHeights, amount: number, n?: number) {
 }
 
 export function setSeaLevel(h: TerrainHeights, q: any) {
-    var newh = zero(h.mesh!);
-    var delta = quantile(h, q) || 0;
+    var newh = resetTerrainHeights(h.mesh!);
+    var delta = getQuantile(h, q) || 0;
     for (var i = 0; i < h.length; i++) {
         newh[i] = h[i] - delta;
     }
@@ -451,7 +450,7 @@ export function setSeaLevel(h: TerrainHeights, q: any) {
 export function cleanCoast(h: TerrainHeights, iters: number) {
     for (var iter = 0; iter < iters; iter++) {
         var changed = 0;
-        var newh = zero(h.mesh!);
+        var newh = resetTerrainHeights(h.mesh!);
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i];
             var nbs = getNeighbourIds(h.mesh!, i);
@@ -470,7 +469,7 @@ export function cleanCoast(h: TerrainHeights, iters: number) {
             changed++;
         }
         h = newh;
-        newh = zero(h.mesh!);
+        newh = resetTerrainHeights(h.mesh!);
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i];
             var nbs = getNeighbourIds(h.mesh!, i);
@@ -524,7 +523,7 @@ export function cityScore(h: TerrainHeights, cities: any[]) {
         score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.voronoiPoints[i][0]) - h.mesh!.extent.width/2);
         score[i] += 0.01 / (1e-9 + Math.abs(h.mesh!.voronoiPoints[i][1]) - h.mesh!.extent.height/2);
         for (var j = 0; j < cities.length; j++) {
-            score[i] -= 0.02 / (distance(h.mesh!, cities[j], i) + 1e-9);
+            score[i] -= 0.02 / (getDistance(h.mesh!, cities[j], i) + 1e-9);
         }
     }
     return score;
@@ -594,7 +593,7 @@ export function getTerritories(render: any) {
     var terr = [];
     var newQueue = new PriorityQueue.ArrayStrategy({comparator: function (a: any, b: any) {return a.score - b.score;}});
     function weight(u: number, v: number) {
-        var horiz = distance(h.mesh, u, v);
+        var horiz = getDistance(h.mesh, u, v);
         var vert = h[v] - h[u];
         if (vert > 0) vert /= 10;
         var diff = 1 + 0.25 * Math.pow(vert/horiz, 2);
@@ -866,7 +865,7 @@ export function visualizeCities(svg: any, render: MapRender) {
 
 export function dropEdge(h: TerrainHeights, p: number) {
     p = p || 4;
-    var newh = zero(h.mesh!);
+    var newh = resetTerrainHeights(h.mesh!);
     for (var i = 0; i < h.length; i++) {
         var v = h.mesh!.voronoiPoints[i];
         var x = 2.4*v[0] / h.mesh!.extent.width;
@@ -885,7 +884,7 @@ export function generateCoast(npts: number, extent: MapExtent): any {
     console.log(generatedSlopes);
     console.log(mesh);
 
-    var h = add(
+    var h = mergeHeights(
         generatedSlopes,
         generatedCones,
         generatedMountains
