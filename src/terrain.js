@@ -39,7 +39,6 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return rnorm;
     })();
     function randomVector(scale) {
-        console.log('here');
         return [scale * rnorm(), scale * rnorm()];
     }
     exports.randomVector = randomVector;
@@ -156,10 +155,10 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             pointConnections: pointConnections,
             edges: edges,
             extent: extent,
-            map: function (f) {
+            pointMapFunction: function (f) {
             }
         };
-        mesh.map = function (f) {
+        mesh.pointMapFunction = function (f) {
             var mapped = voronoiPoints.map(f);
             // @ts-ignore
             mapped.mesh = mesh;
@@ -196,13 +195,13 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return nbs;
     }
     exports.getNeighbourIds = getNeighbourIds;
-    function distance(mesh, i, j) {
+    function getDistance(mesh, i, j) {
         var p = mesh.voronoiPoints[i];
         var q = mesh.voronoiPoints[j];
         return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
     }
-    exports.getDistance = distance;
-    function quantile(h, q) {
+    exports.getDistance = getDistance;
+    function getQuantile(h, q) {
         var sortedh = [];
         for (var i = 0; i < h.length; i++) {
             sortedh[i] = h[i];
@@ -210,8 +209,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         sortedh.sort(d3.ascending);
         return d3.quantile(sortedh, q);
     }
-    exports.getQuantile = quantile;
-    function zero(mesh) {
+    exports.getQuantile = getQuantile;
+    function resetTerrainHeights(mesh) {
         var z = [];
         for (var i = 0; i < mesh.voronoiPoints.length; i++) {
             z[i] = 0;
@@ -219,16 +218,15 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         z.mesh = mesh;
         return z;
     }
-    exports.resetTerrainHeights = zero;
-    // directionに向かって
+    exports.resetTerrainHeights = resetTerrainHeights;
     function slope(mesh, direction) {
-        return mesh.map(function (param) {
+        return mesh.pointMapFunction(function (param) {
             return param[0] * direction[0] + param[1] * direction[1];
         });
     }
     exports.slope = slope;
     function cone(mesh, slope) {
-        return mesh.map(function (param) {
+        return mesh.pointMapFunction(function (param) {
             return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
         });
     }
@@ -238,7 +236,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         newh.mesh = h.mesh;
         return newh;
     }
-    exports.pointMapFunction = map;
+    exports.map = map;
     function normalize(h) {
         var lo = d3.min(h);
         var hi = d3.max(h);
@@ -251,28 +249,28 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return map(normalize(heights), Math.sqrt);
     }
     exports.peaky = peaky;
-    function add() {
+    function mergeHeights() {
         var args = [];
         for (var _i = 0; _i < arguments.length; _i++) {
             args[_i] = arguments[_i];
         }
         var n = args[0].length;
-        var newvals = zero(args[0].mesh);
+        var newVals = resetTerrainHeights(args[0].mesh);
         for (var i = 0; i < n; i++) {
             for (var j = 0; j < arguments.length; j++) {
-                newvals[i] += arguments[j][i];
+                newVals[i] += arguments[j][i];
             }
         }
-        return newvals;
+        return newVals;
     }
-    exports.mergeHeights = add;
+    exports.mergeHeights = mergeHeights;
     function mountains(mesh, n, r) {
         r = r || 0.05;
         var mounts = [];
         for (var i = 0; i < n; i++) {
             mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
         }
-        var newvals = zero(mesh);
+        var newvals = resetTerrainHeights(mesh);
         for (var i = 0; i < mesh.voronoiPoints.length; i++) {
             var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
@@ -285,7 +283,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.mountains = mountains;
     function relax(h) {
         // @ts-ignore
-        var newh = zero(h.mesh);
+        var newh = resetTerrainHeights(h.mesh);
         for (var i = 0; i < h.length; i++) {
             var nbs = getNeighbourIds(h.mesh, i);
             if (nbs.length < 3) {
@@ -326,7 +324,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function fillSinks(h, epsilon) {
         epsilon = epsilon || 1e-5;
         var infinity = 999999;
-        var newHeights = zero(h.mesh);
+        var newHeights = resetTerrainHeights(h.mesh);
         for (var i = 0; i < h.length; i++) {
             if (isNearEdge(h.mesh, i)) {
                 newHeights[i] = h[i];
@@ -363,7 +361,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         // 傾斜を作成
         var dh = downhill(h);
         var idxs = [];
-        var flux = zero(h.mesh);
+        var flux = resetTerrainHeights(h.mesh);
         for (var i = 0; i < h.length; i++) {
             idxs[i] = i;
             flux[i] = 1 / h.length;
@@ -382,7 +380,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.getFlux = getFlux;
     function getSlope(h) {
         var dh = downhill(h);
-        var slope = zero(h.mesh);
+        var slope = resetTerrainHeights(h.mesh);
         for (var i = 0; i < h.length; i++) {
             var s = trislope(h, i);
             slope[i] = Math.sqrt(s[0] * s[0] + s[1] * s[1]);
@@ -391,7 +389,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                 slope[i] = 0;
             }
             else {
-                slope[i] = (h[i] - h[dh[i]]) / distance(h.mesh, i, dh[i]);
+                slope[i] = (h[i] - h[dh[i]]) / getDistance(h.mesh, i, dh[i]);
             }
         }
         return slope;
@@ -400,7 +398,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function erosionRate(h) {
         var flux = getFlux(h);
         var slope = getSlope(h);
-        var newh = zero(h.mesh);
+        var newh = resetTerrainHeights(h.mesh);
         for (var i = 0; i < h.length; i++) {
             var river = Math.sqrt(flux[i]) * slope[i];
             var creep = slope[i] * slope[i];
@@ -413,7 +411,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.erosionRate = erosionRate;
     function erode(h, amount) {
         var er = erosionRate(h);
-        var newh = zero(h.mesh);
+        var newh = resetTerrainHeights(h.mesh);
         var maxr = d3.max(er) || 0;
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i] - amount * (er[i] / maxr);
@@ -432,8 +430,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.doErosion = doErosion;
     function setSeaLevel(h, q) {
-        var newh = zero(h.mesh);
-        var delta = quantile(h, q) || 0;
+        var newh = resetTerrainHeights(h.mesh);
+        var delta = getQuantile(h, q) || 0;
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i] - delta;
         }
@@ -443,7 +441,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function cleanCoast(h, iters) {
         for (var iter = 0; iter < iters; iter++) {
             var changed = 0;
-            var newh = zero(h.mesh);
+            var newh = resetTerrainHeights(h.mesh);
             for (var i = 0; i < h.length; i++) {
                 newh[i] = h[i];
                 var nbs = getNeighbourIds(h.mesh, i);
@@ -465,7 +463,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                 changed++;
             }
             h = newh;
-            newh = zero(h.mesh);
+            newh = resetTerrainHeights(h.mesh);
             for (var i = 0; i < h.length; i++) {
                 newh[i] = h[i];
                 var nbs = getNeighbourIds(h.mesh, i);
@@ -520,7 +518,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i][0]) - h.mesh.extent.width / 2);
             score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i][1]) - h.mesh.extent.height / 2);
             for (var j = 0; j < cities.length; j++) {
-                score[i] -= 0.02 / (distance(h.mesh, cities[j], i) + 1e-9);
+                score[i] -= 0.02 / (getDistance(h.mesh, cities[j], i) + 1e-9);
             }
         }
         return score;
@@ -547,14 +545,14 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         level = level || 0;
         var edges = [];
         for (var i = 0; i < h.mesh.edges.length; i++) {
-            var e = h.mesh.edges[i];
-            if (e.right == undefined)
+            var edge = h.mesh.edges[i];
+            if (edge.right == undefined)
                 continue;
-            if (isNearEdge(h.mesh, e.index1) || isNearEdge(h.mesh, e.index2))
+            if (isNearEdge(h.mesh, edge.index1) || isNearEdge(h.mesh, edge.index2))
                 continue;
-            if ((h[e.index1] > level && h[e.index2] <= level) ||
-                (h[e.index2] > level && h[e.index1] <= level)) {
-                edges.push([e.left, e.right]);
+            if ((h[edge.index1] > level && h[edge.index2] <= level) ||
+                (h[edge.index2] > level && h[edge.index1] <= level)) {
+                edges.push([edge.left, edge.right]);
             }
         }
         return mergeSegments(edges);
@@ -597,7 +595,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var terr = [];
         var newQueue = new PriorityQueue.ArrayStrategy({ comparator: function (a, b) { return a.score - b.score; } });
         function weight(u, v) {
-            var horiz = distance(h.mesh, u, v);
+            var horiz = getDistance(h.mesh, u, v);
             var vert = h[v] - h[u];
             if (vert > 0)
                 vert /= 10;
@@ -884,7 +882,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.visualizeCities = visualizeCities;
     function dropEdge(h, p) {
         p = p || 4;
-        var newh = zero(h.mesh);
+        var newh = resetTerrainHeights(h.mesh);
         for (var i = 0; i < h.length; i++) {
             var v = h.mesh.voronoiPoints[i];
             var x = 2.4 * v[0] / h.mesh.extent.width;
@@ -901,7 +899,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         var generatedMountains = mountains(mesh, 50);
         console.log(generatedSlopes);
         console.log(mesh);
-        var h = add(generatedSlopes, generatedCones, generatedMountains);
+        var h = mergeHeights(generatedSlopes, generatedCones, generatedMountains);
         for (var i = 0; i < 10; i++) {
             h = relax(h);
         }

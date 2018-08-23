@@ -83,11 +83,17 @@ export function drawTerrainControll() {
             primDraw();
         });
 
+    // SVG上の座標が-0.5～0.5の間で設定されている。
+    // これに対してランダムなポイントをかけ合わせて（x * ランダムな数値 + y * ランダムな数値）にすると
+    // 結果としてなだらかな傾きが作成されることになる。
+    // 例えばランダムな値が[1, 1]だとすると、xとyが大きければ大きいほど高度が上がる。
+    // [-1, 1]はxが大きいと高度が下がり、yが大きいと高度が上がる
+    // slopeはポイントごとの「高さ」を作成する。
     primDiv.append("button")
         .text("Add random slope")
         .on("click", function () {
-            // @ts-ignore
-            primH = mergeHeights(primH, slope(primH.mesh, randomVector(4)));
+            primH = mergeHeights(primH, slope(primH.mesh!, randomVector(4)));
+            console.log(primH.mesh!);
             primDraw();
         });
 

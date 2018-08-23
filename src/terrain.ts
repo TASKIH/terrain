@@ -232,7 +232,6 @@ export function resetTerrainHeights(mesh: MapMesh): TerrainHeights {
 }
 
 export function slope(mesh: MapMesh, direction: [number, number]): TerrainHeights {
-
     return mesh.pointMapFunction(function (param : [number, number]) {
         return param[0] * direction[0] + param[1] * direction[1];
     });
@@ -549,12 +548,15 @@ export function contour(h: TerrainHeights, level: number) {
     level = level || 0;
     var edges = [];
     for (var i = 0; i < h.mesh!.edges.length; i++) {
-        var e = h.mesh!.edges[i];
-        if (e.right == undefined) continue;
-        if (isNearEdge(h.mesh!, e.index1) || isNearEdge(h.mesh!, e.index2)) continue;
-        if ((h[e.index1] > level && h[e.index2] <= level) ||
-            (h[e.index2] > level && h[e.index1] <= level)) {
-            edges.push([e.left, e.right]);
+        var edge = h.mesh!.edges[i];
+        if (edge.right == undefined) continue;
+
+        if (isNearEdge(h.mesh!, edge.index1) || isNearEdge(h.mesh!, edge.index2))
+            continue;
+
+        if ((h[edge.index1] > level && h[edge.index2] <= level) ||
+            (h[edge.index2] > level && h[edge.index1] <= level)) {
+            edges.push([edge.left, edge.right]);
         }
     }
     return mergeSegments(edges);
