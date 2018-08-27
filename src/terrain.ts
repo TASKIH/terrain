@@ -757,6 +757,91 @@ export function makeD3Path(path: any) {
 }
 
 export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: number) {
+    if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
+    if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
+    var mappedvals = field.map(function (x) {
+        if (x > hi!) {
+            return 1;
+        }
+        else if (x < lo!) {
+            return 0;
+        }
+        else {
+            return (x - lo!) / (hi! - lo!);
+        }
+    });
+    // @ts-ignore
+    var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
+    tris.enter()
+        .append('path')
+        .classed('field', true);
+
+    tris.exit()
+        .remove();
+
+    console.log(mappedvals);
+    svg.selectAll('path.field')
+        .attr('d', makeD3Path)
+        .style('fill', function (d: any, i: number) {
+            return d3.interpolateViridis(mappedvals[i]);
+        });
+    console.log(hi!);
+    console.log(lo!);
+}
+
+export function visualizeDownhill(h: TerrainHeights) {
+    var links = getRivers(h, 0.01);
+    drawPaths('river', links);
+}
+
+export function drawPaths(svg: any, cls: any, paths?: any) {
+    var paths = svg.selectAll('path.' + cls).data(paths);
+    paths.enter()
+        .append('path')
+        .classed(cls, true);
+    paths.exit()
+        .remove();
+    svg.selectAll('path.' + cls)
+        .attr('d', makeD3Path);
+}
+
+export function getColor(height: number): string {
+    if (height < -0.4) {
+        return "#000099"
+    }
+    else if (height < -0.4) {
+        return "#1a1aff"
+    }
+    else if (height < -0.3) {
+        return "#4d4dff"
+    }
+    else if (height < -0.2) {
+        return "#8080ff"
+    }
+    else if (height < -0.1) {
+        return "#b3b3ff"
+    }
+    else if (height < 0) {
+        return "#e6e6ff"
+    }
+    else if (height < 0.1) {
+        return "#f6f6ee"
+    }
+    else if (height < 0.2) {
+        return "#ddddbb"
+    }
+    else if (height < 0.3) {
+        return "#cccc99"
+    }
+    else if (height < 0.4) {
+        return "#bbbb77"
+    }
+    else {
+        return "#666633"
+    }
+}
+
+export function visualizeHeight(svg: any, field: TerrainHeights, lo?:number, hi?:number) {
     let valueHi: number;
     let valueLo: number;
 
@@ -775,24 +860,8 @@ export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: nu
     svg.selectAll('path.field')
         .attr('d', makeD3Path)
         .style('fill', function (d: any, i: number) {
-            return d3.interpolateViridis(mappedvals[i]);
+            return getColor(field[i]);
         });
-}
-
-export function visualizeDownhill(h: TerrainHeights) {
-    var links = getRivers(h, 0.01);
-    drawPaths('river', links);
-}
-
-export function drawPaths(svg: any, cls: any, paths?: any) {
-    var paths = svg.selectAll('path.' + cls).data(paths);
-    paths.enter()
-        .append('path')
-        .classed(cls, true);
-    paths.exit()
-        .remove();
-    svg.selectAll('path.' + cls)
-        .attr('d', makeD3Path);
 }
 
 export function visualizeSlopes(svg: any, render: MapRender) {

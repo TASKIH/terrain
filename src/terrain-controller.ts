@@ -1,5 +1,4 @@
 import * as d3 from 'd3';
-import './terrain';
 import {
     mergeHeights, cityScore, cleanCoast,
     cone,
@@ -10,6 +9,7 @@ import {
     improvePoints,
     makeMesh, mountains, normalize, peaky, placeCity,
     randomVector, relax, runif, setSeaLevel, slope, visualizeCities, visualizePoints, visualizeSlopes, visualizeVoronoi,
+    visualizeHeight,
     resetTerrainHeights
 } from './terrain';
 
@@ -93,10 +93,15 @@ export function drawTerrainControll() {
         .text("Add random slope")
         .on("click", function () {
             primH = mergeHeights(primH, slope(primH.mesh!, randomVector(4)));
+            visualizeVoronoi(primSVG, primH);
+            // visualizeHeight(primSVG, primH, -1, 1);
+            // primH = mergeHeights(primH, slope(primH.mesh!, [1, -1]));
             console.log(primH.mesh!);
             primDraw();
         });
 
+    // XやYの絶対値が大きければ大きいほど凹む
+    // SVGの中央が出っ張るように高さを調整する意図
     primDiv.append("button")
         .text("Add cone")
         .on("click", function () {
@@ -105,6 +110,7 @@ export function drawTerrainControll() {
             primDraw();
         });
 
+    // これは逆に
     primDiv.append("button")
         .text("Add inverted cone")
         .on("click", function () {

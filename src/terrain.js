@@ -771,13 +771,21 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.makeD3Path = makeD3Path;
     function visualizeVoronoi(svg, field, lo, hi) {
-        var valueHi;
-        var valueLo;
         if (hi == undefined)
-            valueHi = (d3.max(field) || 0) + 1e-9;
+            hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined)
-            valueLo = (d3.min(field) || 0) - 1e-9;
-        var mappedvals = field.map(function (x) { return x > valueHi ? 1 : x < valueLo ? 0 : (x - valueLo) / (valueHi - valueLo); });
+            lo = (d3.min(field) || 0) - 1e-9;
+        var mappedvals = field.map(function (x) {
+            if (x > hi) {
+                return 1;
+            }
+            else if (x < lo) {
+                return 0;
+            }
+            else {
+                return (x - lo) / (hi - lo);
+            }
+        });
         // @ts-ignore
         var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
         tris.enter()
@@ -785,11 +793,14 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             .classed('field', true);
         tris.exit()
             .remove();
+        console.log(mappedvals);
         svg.selectAll('path.field')
             .attr('d', makeD3Path)
             .style('fill', function (d, i) {
             return d3.interpolateViridis(mappedvals[i]);
         });
+        console.log(hi);
+        console.log(lo);
     }
     exports.visualizeVoronoi = visualizeVoronoi;
     function visualizeDownhill(h) {
@@ -808,6 +819,64 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             .attr('d', makeD3Path);
     }
     exports.drawPaths = drawPaths;
+    function getColor(height) {
+        if (height < -0.4) {
+            return "#000099";
+        }
+        else if (height < -0.4) {
+            return "#1a1aff";
+        }
+        else if (height < -0.3) {
+            return "#4d4dff";
+        }
+        else if (height < -0.2) {
+            return "#8080ff";
+        }
+        else if (height < -0.1) {
+            return "#b3b3ff";
+        }
+        else if (height < 0) {
+            return "#e6e6ff";
+        }
+        else if (height < 0.1) {
+            return "#f6f6ee";
+        }
+        else if (height < 0.2) {
+            return "#ddddbb";
+        }
+        else if (height < 0.3) {
+            return "#cccc99";
+        }
+        else if (height < 0.4) {
+            return "#bbbb77";
+        }
+        else {
+            return "#666633";
+        }
+    }
+    exports.getColor = getColor;
+    function visualizeHeight(svg, field, lo, hi) {
+        var valueHi;
+        var valueLo;
+        if (hi == undefined)
+            valueHi = (d3.max(field) || 0) + 1e-9;
+        if (lo == undefined)
+            valueLo = (d3.min(field) || 0) - 1e-9;
+        var mappedvals = field.map(function (x) { return x > valueHi ? 1 : x < valueLo ? 0 : (x - valueLo) / (valueHi - valueLo); });
+        // @ts-ignore
+        var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
+        tris.enter()
+            .append('path')
+            .classed('field', true);
+        tris.exit()
+            .remove();
+        svg.selectAll('path.field')
+            .attr('d', makeD3Path)
+            .style('fill', function (d, i) {
+            return getColor(field[i]);
+        });
+    }
+    exports.visualizeHeight = visualizeHeight;
     function visualizeSlopes(svg, render) {
         var h = render.h;
         var strokes = [];

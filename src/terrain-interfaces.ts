@@ -20,6 +20,7 @@ export interface Edge {
 }
 
 export interface MapMesh {
+    // メッシュ上に描画される点。-0.5～+0.5の範囲で設定される
     pts: [number, number][];
     vor: VoronoiDiagram<[number, number]>;
     voronoiPoints: [number, number][];
