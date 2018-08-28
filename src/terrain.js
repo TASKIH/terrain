@@ -225,6 +225,12 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         });
     }
     exports.slope = slope;
+    function gaussianLikeSlope(mesh) {
+        return mesh.pointMapFunction(function (param) {
+            return Math.sqrt(-2.0 * Math.log(param[0] + ((Math.random() - 0.5) / 3))) * Math.cos(2.0 * Math.PI * param[1] + ((Math.random() - 0.5) / 3));
+        });
+    }
+    exports.gaussianLikeSlope = gaussianLikeSlope;
     function cone(mesh, slope) {
         return mesh.pointMapFunction(function (param) {
             return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
@@ -793,14 +799,11 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             .classed('field', true);
         tris.exit()
             .remove();
-        console.log(mappedvals);
         svg.selectAll('path.field')
             .attr('d', makeD3Path)
             .style('fill', function (d, i) {
             return d3.interpolateViridis(mappedvals[i]);
         });
-        console.log(hi);
-        console.log(lo);
     }
     exports.visualizeVoronoi = visualizeVoronoi;
     function visualizeDownhill(h) {

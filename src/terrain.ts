@@ -236,6 +236,11 @@ export function slope(mesh: MapMesh, direction: [number, number]): TerrainHeight
         return param[0] * direction[0] + param[1] * direction[1];
     });
 }
+export function gaussianLikeSlope(mesh: MapMesh): TerrainHeights {
+    return mesh.pointMapFunction(function (param : [number, number]) {
+        return Math.sqrt( -2.0 * Math.log( param[0] + ((Math.random() - 0.5) / 3)) ) * Math.cos( 2.0 * Math.PI * param[1] + ((Math.random() - 0.5) / 3) );
+    });
+}
 
 export function cone(mesh: MapMesh, slope: number): TerrainHeights {
     return mesh.pointMapFunction(function (param : [number, number]) {
@@ -779,14 +784,11 @@ export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: nu
     tris.exit()
         .remove();
 
-    console.log(mappedvals);
     svg.selectAll('path.field')
         .attr('d', makeD3Path)
         .style('fill', function (d: any, i: number) {
             return d3.interpolateViridis(mappedvals[i]);
         });
-    console.log(hi!);
-    console.log(lo!);
 }
 
 export function visualizeDownhill(h: TerrainHeights) {

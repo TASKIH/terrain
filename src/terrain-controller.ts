@@ -10,7 +10,7 @@ import {
     makeMesh, mountains, normalize, peaky, placeCity,
     randomVector, relax, runif, setSeaLevel, slope, visualizeCities, visualizePoints, visualizeSlopes, visualizeVoronoi,
     visualizeHeight,
-    resetTerrainHeights
+    resetTerrainHeights, gaussianLikeSlope
 } from './terrain';
 
 export function drawTerrainControll() {
@@ -92,7 +92,8 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Add random slope")
         .on("click", function () {
-            primH = mergeHeights(primH, slope(primH.mesh!, randomVector(4)));
+            // primH = mergeHeights(primH, slope(primH.mesh!, randomVector(4)));
+            primH = mergeHeights(primH, gaussianLikeSlope(primH.mesh!));
             visualizeVoronoi(primSVG, primH);
             // visualizeHeight(primSVG, primH, -1, 1);
             // primH = mergeHeights(primH, slope(primH.mesh!, [1, -1]));
