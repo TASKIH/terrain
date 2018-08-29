@@ -13,6 +13,9 @@ import {
     resetTerrainHeights, gaussianLikeSlope, continent, rescaleBySeaLevel
 } from './terrain';
 import {
+    MapRender
+} from './terrain-interfaces';
+import {
     mean
 } from './util';
 
@@ -72,8 +75,8 @@ export function drawTerrainControll() {
     var primH = resetTerrainHeights(generateGoodMesh(4096));
 
     function primDraw() {
-        visualizeVoronoi(primSVG, primH, -1, 1);
-        drawPaths(primSVG, 'coast', contour(primH, 0));
+        // visualizeVoronoi(primSVG, primH, -1, 1);
+        // drawPaths(primSVG, 'coast', contour(primH, 0));
     }
 
     primDraw();
@@ -135,9 +138,50 @@ export function drawTerrainControll() {
         .text("Add one continent ")
         .on("click", function () {
             // @ts-ignore
-            primH = mergeHeights(primH, continent(primH.mesh, 1));
+            primH = mergeHeights(primH, continent(primH.mesh, 0.4, 3, 0.2));
             primDraw();
         });
+
+    primDiv.append("button")
+        .text("大陸の生成")
+        .on("click", function () {
+            
+            primH = resetTerrainHeights(generateGoodMesh(13048));
+
+            console.log(primH);
+            // @ts-ignore
+            primH = mergeHeights(primH, continent(primH.mesh!, 0.2, 5, 1.4));
+            primH = mergeHeights(primH, continent(primH.mesh!, 0.4, 20, 0.05));
+            primH = mergeHeights(primH, continent(primH.mesh!, -0.05, 10, 1.4));
+            primH = mergeHeights(primH, continent(primH.mesh!, -0.1, 20, 0.05));
+            console.log(primH);
+            let average = mean(primH);
+            console.log(primH);
+            average = mean(primH) - 0.1;
+            primH = rescaleBySeaLevel(primH, average);
+            
+
+            for(let i = 0; i < 5; i++)
+                primH = relax(primH);
+            
+            primH = doErosion(primH, runif(0, 0.1), 5);
+            primH = cleanCoast(primH, 5);
+            console.log(primH);
+            var myRenderer: MapRender = {
+                params: defaultParams,
+                h:  primH
+            };
+            primH.seaLevelHeight = 0; 
+            myRenderer.rivers = getRivers(myRenderer.h, 0.01);
+            myRenderer.coasts = contour(myRenderer.h, 0);
+
+            drawPaths(primSVG, 'river', myRenderer.rivers);
+            drawPaths(primSVG, 'coast', myRenderer.coasts);
+            visualizeSlopes(primSVG, myRenderer);
+
+            // primDraw();
+        });
+
 
     primDiv.append("button")
         .text("rescale by median heights")

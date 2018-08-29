@@ -294,28 +294,33 @@ export function mountains(mesh: MapMesh, n: number, radius?: number) {
         for (var j = 0; j < n; j++) {
             var m = mounts[j];
             const doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+           
             newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
         }
     }
+    console.log(newvals);
     return newvals;
 }
 
-export function continent(mesh: MapMesh, radius?: number) {
+export function continent(mesh: MapMesh, peakHeight: number, count: number, radius?: number) {
     radius = radius || 0.05;
-    const n = 1;
+    const n = count;
     var mounts = [];
     for (var i = 0; i < n; i++) {
         mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
     }
+    console.log(mounts);
     var newvals = resetTerrainHeights(mesh);
     for (var i = 0; i < mesh.voronoiPoints.length; i++) {
         var p = mesh.voronoiPoints[i];
         for (var j = 0; j < n; j++) {
             var m = mounts[j];
             const doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
-            newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
+            newvals[i] += Math.pow(
+                Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2) * peakHeight;
         }
     }
+    console.log(newvals);
     return newvals;
 }
 // 傾斜をなだらかにする

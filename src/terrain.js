@@ -289,25 +289,28 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
                 newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
             }
         }
+        console.log(newvals);
         return newvals;
     }
     exports.mountains = mountains;
-    function continent(mesh, radius) {
+    function continent(mesh, peakHeight, count, radius) {
         radius = radius || 0.05;
-        var n = 1;
+        var n = count;
         var mounts = [];
         for (var i = 0; i < n; i++) {
             mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
         }
+        console.log(mounts);
         var newvals = resetTerrainHeights(mesh);
         for (var i = 0; i < mesh.voronoiPoints.length; i++) {
             var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
                 var doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
-                newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
+                newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2) * peakHeight;
             }
         }
+        console.log(newvals);
         return newvals;
     }
     exports.continent = continent;
