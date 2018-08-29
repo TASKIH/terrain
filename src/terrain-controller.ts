@@ -10,8 +10,11 @@ import {
     makeMesh, mountains, normalize, peaky, placeCity,
     randomVector, relax, runif, setSeaLevel, slope, visualizeCities, visualizePoints, visualizeSlopes, visualizeVoronoi,
     visualizeHeight,
-    resetTerrainHeights, gaussianLikeSlope, continent
+    resetTerrainHeights, gaussianLikeSlope, continent, rescaleBySeaLevel
 } from './terrain';
+import {
+    mean
+} from './util';
 
 export function drawTerrainControll() {
     function addSVG(div: any) {
@@ -135,6 +138,17 @@ export function drawTerrainControll() {
             primH = mergeHeights(primH, continent(primH.mesh, 1));
             primDraw();
         });
+
+    primDiv.append("button")
+        .text("rescale by median heights")
+        .on("click", function () {
+            console.log(primH);
+            const average = mean(primH);
+            primH = rescaleBySeaLevel(primH, average);
+            primH = setSeaLevel(primH, 0.5);
+            primDraw();
+        });
+
 
     primDiv.append("button")
         .text("Normalize heightmap")

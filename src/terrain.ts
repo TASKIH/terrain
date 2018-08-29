@@ -313,6 +313,7 @@ export function continent(mesh: MapMesh, radius?: number) {
     }
     return newvals;
 }
+// 傾斜をなだらかにする
 export function relax(h: TerrainHeights) {
     // @ts-ignore
     var newh = resetTerrainHeights(h.mesh!);
@@ -468,6 +469,23 @@ export function setSeaLevel(h: TerrainHeights, q: any) {
         newh[i] = h[i] - delta;
     }
     return newh;
+}
+
+// 海抜ゼロメートル地点とみなす高さを設定して、既存のすべての高さを調整しなおす
+export function rescaleBySeaLevel(h: TerrainHeights, seaLevelHeight: number): TerrainHeights {
+    const delta = seaLevelHeight - 0.5;
+
+    for (var i = 0; i < h.length; i++) {
+        h[i] = h[i] - delta;
+        if (h[i] > 1) {
+            h[i] = 1
+        }
+        if (h[i] < 0) {
+            h[i] = 0
+        }
+    }
+
+    return h;
 }
 
 export function cleanCoast(h: TerrainHeights, iters: number) {

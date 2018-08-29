@@ -307,6 +307,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return newvals;
     }
     exports.continent = continent;
+    // 傾斜をなだらかにする
     function relax(h) {
         // @ts-ignore
         var newh = resetTerrainHeights(h.mesh);
@@ -464,6 +465,21 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return newh;
     }
     exports.setSeaLevel = setSeaLevel;
+    // 海抜ゼロメートル地点とみなす高さを設定して、既存のすべての高さを調整しなおす
+    function rescaleBySeaLevel(h, seaLevelHeight) {
+        var delta = seaLevelHeight - 0.5;
+        for (var i = 0; i < h.length; i++) {
+            h[i] = h[i] - delta;
+            if (h[i] > 1) {
+                h[i] = 1;
+            }
+            if (h[i] < 0) {
+                h[i] = 0;
+            }
+        }
+        return h;
+    }
+    exports.rescaleBySeaLevel = rescaleBySeaLevel;
     function cleanCoast(h, iters) {
         for (var iter = 0; iter < iters; iter++) {
             var changed = 0;
