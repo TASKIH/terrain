@@ -277,8 +277,8 @@ export function mergeHeights(...args: TerrainHeights[]): TerrainHeights {
     return newVals;
 }
 
-export function mountains(mesh: MapMesh, n: number, r?: number) {
-    r = r || 0.05;
+export function mountains(mesh: MapMesh, n: number, radius?: number) {
+    radius = radius || 0.05;
     var mounts = [];
     for (var i = 0; i < n; i++) {
         mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
@@ -288,12 +288,31 @@ export function mountains(mesh: MapMesh, n: number, r?: number) {
         var p = mesh.voronoiPoints[i];
         for (var j = 0; j < n; j++) {
             var m = mounts[j];
-            newvals[i] += Math.pow(Math.exp(-((p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1])) / (2 * r * r)), 2);
+            const doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+            newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
         }
     }
     return newvals;
 }
 
+export function continent(mesh: MapMesh, radius?: number) {
+    radius = radius || 0.05;
+    const n = 1;
+    var mounts = [];
+    for (var i = 0; i < n; i++) {
+        mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
+    }
+    var newvals = resetTerrainHeights(mesh);
+    for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+        var p = mesh.voronoiPoints[i];
+        for (var j = 0; j < n; j++) {
+            var m = mounts[j];
+            const doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+            newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
+        }
+    }
+    return newvals;
+}
 export function relax(h: TerrainHeights) {
     // @ts-ignore
     var newh = resetTerrainHeights(h.mesh!);

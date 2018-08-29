@@ -270,8 +270,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         return newVals;
     }
     exports.mergeHeights = mergeHeights;
-    function mountains(mesh, n, r) {
-        r = r || 0.05;
+    function mountains(mesh, n, radius) {
+        radius = radius || 0.05;
         var mounts = [];
         for (var i = 0; i < n; i++) {
             mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
@@ -281,12 +281,32 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
-                newvals[i] += Math.pow(Math.exp(-((p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1])) / (2 * r * r)), 2);
+                var doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+                newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
             }
         }
         return newvals;
     }
     exports.mountains = mountains;
+    function continent(mesh, radius) {
+        radius = radius || 0.05;
+        var n = 1;
+        var mounts = [];
+        for (var i = 0; i < n; i++) {
+            mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
+        }
+        var newvals = resetTerrainHeights(mesh);
+        for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+            var p = mesh.voronoiPoints[i];
+            for (var j = 0; j < n; j++) {
+                var m = mounts[j];
+                var doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+                newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
+            }
+        }
+        return newvals;
+    }
+    exports.continent = continent;
     function relax(h) {
         // @ts-ignore
         var newh = resetTerrainHeights(h.mesh);

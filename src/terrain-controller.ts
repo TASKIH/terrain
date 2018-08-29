@@ -10,7 +10,7 @@ import {
     makeMesh, mountains, normalize, peaky, placeCity,
     randomVector, relax, runif, setSeaLevel, slope, visualizeCities, visualizePoints, visualizeSlopes, visualizeVoronoi,
     visualizeHeight,
-    resetTerrainHeights, gaussianLikeSlope
+    resetTerrainHeights, gaussianLikeSlope, continent
 } from './terrain';
 
 export function drawTerrainControll() {
@@ -125,6 +125,14 @@ export function drawTerrainControll() {
         .on("click", function () {
             // @ts-ignore
             primH = mergeHeights(primH, mountains(primH.mesh, 5));
+            primDraw();
+        });
+
+    primDiv.append("button")
+        .text("Add one continent ")
+        .on("click", function () {
+            // @ts-ignore
+            primH = mergeHeights(primH, continent(primH.mesh, 1));
             primDraw();
         });
 
