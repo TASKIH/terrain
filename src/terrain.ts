@@ -228,6 +228,8 @@ export function resetTerrainHeights(mesh: MapMesh): TerrainHeights {
         z[i] = 0;
     }
     z.mesh = mesh;
+    z.heightRange = [-1, 1];
+    z.seaLevelHeight = 0;
     return z;
 }
 
@@ -251,6 +253,9 @@ export function cone(mesh: MapMesh, slope: number): TerrainHeights {
 export function map(h: TerrainHeights, f: any): TerrainHeights {
     var newh: TerrainHeights = h.map(f);
     newh.mesh = h.mesh;
+    newh.heightRange = h.heightRange;
+    newh.seaLevelHeight = h.seaLevelHeight;
+
     return newh;
 }
 
@@ -464,6 +469,8 @@ export function doErosion(h: TerrainHeights, amount: number, n?: number) {
 
 export function setSeaLevel(h: TerrainHeights, q: any) {
     var newh = resetTerrainHeights(h.mesh!);
+    newh.seaLevelHeight = q;
+
     var delta = getQuantile(h, q) || 0;
     for (var i = 0; i < h.length; i++) {
         newh[i] = h[i] - delta;
@@ -472,16 +479,16 @@ export function setSeaLevel(h: TerrainHeights, q: any) {
 }
 
 // 海抜ゼロメートル地点とみなす高さを設定して、既存のすべての高さを調整しなおす
-export function rescaleBySeaLevel(h: TerrainHeights, seaLevelHeight: number): TerrainHeights {
-    const delta = seaLevelHeight - 0.5;
+export function rescaleBySeaLevel(h: TerrainHeights, newSeaLevel: number): TerrainHeights {
+    const delta = newSeaLevel - 0;
 
     for (var i = 0; i < h.length; i++) {
         h[i] = h[i] - delta;
-        if (h[i] > 1) {
-            h[i] = 1
+        if (h[i] > h.heightRange![1]) {
+            h[i] = h.heightRange![1];
         }
-        if (h[i] < 0) {
-            h[i] = 0
+        if (h[i] < h.heightRange![0]) {
+            h[i] = h.heightRange![0];
         }
     }
 
@@ -587,7 +594,7 @@ export function placeCities(render: MapRender) {
 
 // 等高線の作成
 export function contour(h: TerrainHeights, level: number) {
-    level = level || 0;
+    level = h.seaLevelHeight || 0;
     var edges = [];
     for (var i = 0; i < h.mesh!.edges.length; i++) {
         var edge = h.mesh!.edges[i];
@@ -801,17 +808,7 @@ export function makeD3Path(path: any) {
 export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: number) {
     if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
     if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
-    var mappedvals = field.map(function (x) {
-        if (x > hi!) {
-            return 1;
-        }
-        else if (x < lo!) {
-            return 0;
-        }
-        else {
-            return (x - lo!) / (hi! - lo!);
-        }
-    });
+
     // @ts-ignore
     var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
     tris.enter()
@@ -824,7 +821,7 @@ export function visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: nu
     svg.selectAll('path.field')
         .attr('d', makeD3Path)
         .style('fill', function (d: any, i: number) {
-            return d3.interpolateViridis(mappedvals[i]);
+            return getColor(field[i]);
         });
 }
 

@@ -145,7 +145,6 @@ export function drawTerrainControll() {
             console.log(primH);
             const average = mean(primH);
             primH = rescaleBySeaLevel(primH, average);
-            primH = setSeaLevel(primH, 0.5);
             primDraw();
         });
 
@@ -188,7 +187,7 @@ export function drawTerrainControll() {
             mountains(mesh, 50));
         h = peaky(h);
         h = fillSinks(h);
-        h = setSeaLevel(h, 0.5);
+        h = setSeaLevel(h, 0);
         return h;
     }
 
@@ -228,7 +227,7 @@ export function drawTerrainControll() {
     erodeDiv.append("button")
         .text("Set sea level to median")
         .on("click", function () {
-            erodeH = setSeaLevel(erodeH, 0.5);
+            erodeH = setSeaLevel(erodeH, 0.0);
             erodeDraw();
         });
 

@@ -216,6 +216,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             z[i] = 0;
         }
         z.mesh = mesh;
+        z.heightRange = [-1, 1];
+        z.seaLevelHeight = 0;
         return z;
     }
     exports.resetTerrainHeights = resetTerrainHeights;
@@ -240,6 +242,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     function map(h, f) {
         var newh = h.map(f);
         newh.mesh = h.mesh;
+        newh.heightRange = h.heightRange;
+        newh.seaLevelHeight = h.seaLevelHeight;
         return newh;
     }
     exports.map = map;
@@ -458,6 +462,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.doErosion = doErosion;
     function setSeaLevel(h, q) {
         var newh = resetTerrainHeights(h.mesh);
+        newh.seaLevelHeight = q;
         var delta = getQuantile(h, q) || 0;
         for (var i = 0; i < h.length; i++) {
             newh[i] = h[i] - delta;
@@ -466,15 +471,15 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     }
     exports.setSeaLevel = setSeaLevel;
     // 海抜ゼロメートル地点とみなす高さを設定して、既存のすべての高さを調整しなおす
-    function rescaleBySeaLevel(h, seaLevelHeight) {
-        var delta = seaLevelHeight - 0.5;
+    function rescaleBySeaLevel(h, newSeaLevel) {
+        var delta = newSeaLevel - 0;
         for (var i = 0; i < h.length; i++) {
             h[i] = h[i] - delta;
-            if (h[i] > 1) {
-                h[i] = 1;
+            if (h[i] > h.heightRange[1]) {
+                h[i] = h.heightRange[1];
             }
-            if (h[i] < 0) {
-                h[i] = 0;
+            if (h[i] < h.heightRange[0]) {
+                h[i] = h.heightRange[0];
             }
         }
         return h;
@@ -584,7 +589,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
     exports.placeCities = placeCities;
     // 等高線の作成
     function contour(h, level) {
-        level = level || 0;
+        level = h.seaLevelHeight || 0;
         var edges = [];
         for (var i = 0; i < h.mesh.edges.length; i++) {
             var edge = h.mesh.edges[i];
@@ -817,17 +822,6 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined)
             lo = (d3.min(field) || 0) - 1e-9;
-        var mappedvals = field.map(function (x) {
-            if (x > hi) {
-                return 1;
-            }
-            else if (x < lo) {
-                return 0;
-            }
-            else {
-                return (x - lo) / (hi - lo);
-            }
-        });
         // @ts-ignore
         var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
         tris.enter()
@@ -838,7 +832,7 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
         svg.selectAll('path.field')
             .attr('d', makeD3Path)
             .style('fill', function (d, i) {
-            return d3.interpolateViridis(mappedvals[i]);
+            return getColor(field[i]);
         });
     }
     exports.visualizeVoronoi = visualizeVoronoi;

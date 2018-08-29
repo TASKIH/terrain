@@ -44,7 +44,10 @@ export interface MapRender {
 
 export interface TerrainHeights extends Array<number> {
     mesh?: MapMesh;
-    downhill?: number[]
+    downhill?: number[];
+
+    heightRange?: [number, number];
+    seaLevelHeight?: number;
 }
 
 export interface MapExportParam {
