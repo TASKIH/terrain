@@ -69,6 +69,33 @@ export function drawTerrainControll() {
             meshDraw();
         });
 
+    var expDiv = d3.select("div#exp");
+    var expSVG = addSVG(expDiv);
+    var expH = resetTerrainHeights(generateGoodMesh(4096));
+
+    function expDraw() {
+        visualizeVoronoi(expSVG, expH, -1, 1);
+        drawPaths(expSVG, 'coast', contour(expH, 0));
+    }
+
+    expDiv.append("button")
+        .text("Reset to flat")
+        .on("click", function () {
+            // @ts-ignore
+            expH = resetTerrainHeights(expH.mesh);
+            expDraw();
+        });
+
+    expDiv.append("button")
+        .text("Continentを作成")
+        .on("click", function () {
+            const height = +(document.getElementById("continent-height") as HTMLInputElement).value;
+            const radius = +(document.getElementById("continent-radius") as HTMLInputElement).value;
+            expH = mergeHeights(expH, continent(expH.mesh!, height, 1, radius));
+            expDraw();
+        });
+
+
     var primDiv = d3.select("div#prim");
     var primSVG = addSVG(primDiv);
 

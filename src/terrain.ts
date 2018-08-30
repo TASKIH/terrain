@@ -309,15 +309,15 @@ export function continent(mesh: MapMesh, peakHeight: number, count: number, radi
     for (var i = 0; i < n; i++) {
         mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
     }
+
     console.log(mounts);
     var newvals = resetTerrainHeights(mesh);
     for (var i = 0; i < mesh.voronoiPoints.length; i++) {
         var p = mesh.voronoiPoints[i];
         for (var j = 0; j < n; j++) {
             var m = mounts[j];
-            const doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
-            newvals[i] += Math.pow(
-                Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2) * peakHeight;
+            const distanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+            newvals[i] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2) ) * peakHeight;
         }
     }
     console.log(newvals);

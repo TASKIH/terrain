@@ -306,8 +306,8 @@ define(["require", "exports", "d3", "./language", "js-priority-queue", "js-prior
             var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
-                var doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
-                newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2) * peakHeight;
+                var distanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+                newvals[i] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
             }
         }
         console.log(newvals);
