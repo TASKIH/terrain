@@ -1,4 +1,4 @@
-import { MapExtent, MapMesh, Edge } from "./terrain-interfaces";
+import { MapExtent, MapMesh, Edge, TerrainPoint, TerrainPointContainer } from "./terrain-interfaces";
 import * as d3 from 'd3';
 import { TerrainCalcUtil } from "./util";
 import { defaultExtent } from "./terrain-generator";
@@ -52,12 +52,22 @@ export class MeshGenerator {
         return d3.voronoi().extent([[-w, -h], [w, h]])(pts);
     }
 
+    static newTerrainPointContainer(
+        point: TerrainPoint): TerrainPointContainer {
+            return {
+                point: point,
+                connectingPoints: [],
+                relatedVoronoiSites: []
+            }
+    }
+
     static makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
         extent = extent || defaultExtent;
         var vor: VoronoiDiagram<[number, number]> = MeshGenerator.generateVoronoiDiagram(pts, extent);
         var pointToIdDict: {[key:string]: number} = {};
-        var voronoiPoints: [number, number][] = [];
+        var voronoiPoints: TerrainPoint[] = [];
 
+        var pointDict: {[key: number]: TerrainPointContainer} = {};
         // Edgeとして隣接するポイント同士を接続する
         var adjacentIds: [number, number, number][] = [];
         var edges: Edge[] = [];
@@ -73,18 +83,38 @@ export class MeshGenerator {
             if (e0Id == undefined) {
                 e0Id = voronoiPoints.length;
                 pointToIdDict[edge[0].toString()] = e0Id;
-                voronoiPoints.push(edge[0]);
+                const newPoint = {
+                    id: e0Id,
+                    x: edge[0][0],
+                    y: edge[0][1],
+                    height: 0
+                };
+
+                pointDict[e0Id] = MeshGenerator.newTerrainPointContainer(newPoint);
+                voronoiPoints.push(newPoint);
             }
             if (e1Id == undefined) {
                 e1Id = voronoiPoints.length;
                 pointToIdDict[edge[1].toString()] = e1Id;
-                voronoiPoints.push(edge[1]);
+                const newPoint = {
+                    id: e1Id,
+                    x: edge[1][0],
+                    y: edge[1][1],
+                    height: 0
+                }
+
+                pointDict[e0Id] = MeshGenerator.newTerrainPointContainer(newPoint);
+                voronoiPoints.push(newPoint);
+
             }
             adjacentIds[e0Id] = adjacentIds[e0Id] || [];
             adjacentIds[e0Id].push(e1Id);
+            pointDict[e0Id].connectingPoints.push(pointDict[e1Id].point);
 
             adjacentIds[e1Id] = adjacentIds[e1Id] || [];
             adjacentIds[e1Id].push(e0Id);
+
+            pointDict[e1Id].connectingPoints.push(pointDict[e0Id].point);
 
             edges.push({
                     index1: e0Id,
@@ -96,17 +126,21 @@ export class MeshGenerator {
             pointConnections[e0Id] = pointConnections[e0Id] || [];
             if (pointConnections[e0Id].indexOf(edge.left) === -1) {
                 pointConnections[e0Id].push(edge.left);
+                pointDict[e0Id].relatedVoronoiSites.push(edge.left);
             }
             if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
                 pointConnections[e0Id].push(edge.right);
+                pointDict[e0Id].relatedVoronoiSites.push(edge.right);
             }
 
             pointConnections[e1Id] = pointConnections[e1Id] || [];
             if (pointConnections[e1Id].indexOf(edge.left) === -1) {
                 pointConnections[e1Id].push(edge.left);
+                pointDict[e1Id].relatedVoronoiSites.push(edge.left);
             }
             if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
                 pointConnections[e1Id].push(edge.right);
+                pointDict[e1Id].relatedVoronoiSites.push(edge.right);
             }
         }
 
@@ -114,13 +148,14 @@ export class MeshGenerator {
             voronoiPoints: voronoiPoints,
             adjacentPointIds: adjacentIds,
             pointConnections: pointConnections,
+            pointDict: pointDict,
             edges: edges,
             extent: extent,
             pointMapFunction: (f: any) => {
             }
         };
 
-        mesh.pointMapFunction = function (f: (param : [number, number]) => [number, number]) {
+        mesh.pointMapFunction = function (f: (param : TerrainPoint) => [number, number]) {
             var mapped = voronoiPoints.map(f);
             // @ts-ignore
             mapped.mesh = mesh;

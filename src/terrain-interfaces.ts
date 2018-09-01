@@ -20,17 +20,26 @@ export interface Edge {
 }
 
 export interface TerrainPoint {
+    id: number;
     x: number;
     y: number;
 
     height: number;
+}
 
+export interface TerrainPointContainer {
+    point: TerrainPoint;
+    connectingPoints: TerrainPoint[];
+    relatedVoronoiSites: VoronoiSite<[number, number]>[];
 }
 
 export interface MapMesh {
     voronoiPoints: TerrainPoint[];
     adjacentPointIds: [number, number, number][],
     pointConnections: { [key: number]: VoronoiSite<[number, number]>[] },
+
+    pointDict: {[key: number]: TerrainPointContainer},
+
     edges: Edge[],
     extent: MapExtent,
     pointMapFunction: (f: any) => any,

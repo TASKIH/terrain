@@ -61,8 +61,8 @@ export class TerrainCalcUtil {
         for (var i = 0; i < terr.length; i++) {
             if (terr[i] != city) continue;
             if (landOnly && h[i] <= 0) continue;
-            x += terr.mesh.voronoiPoints[i][0];
-            y += terr.mesh.voronoiPoints[i][1];
+            x += terr.mesh.voronoiPoints[i].x;
+            y += terr.mesh.voronoiPoints[i].y;
             n++;
         }
         return [x/n, y/n];
@@ -75,8 +75,8 @@ export class TerrainCalcUtil {
 
     // 領域の端に隣接するEdgeかどうか
     static isNearEdge(mesh: MapMesh, i: number): boolean {
-        var x = mesh.voronoiPoints[i][0];
-        var y = mesh.voronoiPoints[i][1];
+        var x = mesh.voronoiPoints[i].x;
+        var y = mesh.voronoiPoints[i].y;
         var w = mesh.extent.width;
         var h = mesh.extent.height;
         return (x < -0.45 * w) || (x > 0.45 * w) || (y < -0.45 * h) || (y > 0.45 * h);
@@ -94,7 +94,7 @@ export class TerrainCalcUtil {
     static getDistance(mesh: MapMesh, i: number, j: number): number {
         var p = mesh.voronoiPoints[i];
         var q = mesh.voronoiPoints[j];
-        return Math.sqrt((p[0] - q[0]) * (p[0] - q[0]) + (p[1] - q[1]) * (p[1] - q[1]));
+        return Math.sqrt((p.x - q.x) * (p.x - q.x) + (p.y - q.y) * (p.y - q.y));
     }
 
     static getQuantile(h: TerrainHeights, q: any): number | undefined {

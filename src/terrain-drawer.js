@@ -60,8 +60,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 return pen;
             }
             for (var i = 0; i < cities.length; i++) {
-                var x = h.mesh.voronoiPoints[cities[i]][0];
-                var y = h.mesh.voronoiPoints[cities[i]][1];
+                var x = h.mesh.voronoiPoints[cities[i]].x;
+                var y = h.mesh.voronoiPoints[cities[i]].y;
                 var text = language.makeName(lang, 'city');
                 var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
                 var sx = 0.65 * size / 1000 * text.length;
@@ -136,41 +136,41 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 for (var j = 0; j < h.length; j++) {
                     var score = 0;
                     var v = h.mesh.voronoiPoints[j];
-                    score -= 3000 * Math.sqrt((v[0] - lc[0]) * (v[0] - lc[0]) + (v[1] - lc[1]) * (v[1] - lc[1]));
-                    score -= 1000 * Math.sqrt((v[0] - oc[0]) * (v[0] - oc[0]) + (v[1] - oc[1]) * (v[1] - oc[1]));
+                    score -= 3000 * Math.sqrt((v.x - lc[0]) * (v.x - lc[0]) + (v.y - lc[1]) * (v.y - lc[1]));
+                    score -= 1000 * Math.sqrt((v.x - oc[0]) * (v.x - oc[0]) + (v.y - oc[1]) * (v.y - oc[1]));
                     if (terr[j] != city)
                         score -= 3000;
                     for (var k = 0; k < cities.length; k++) {
                         var u = h.mesh.voronoiPoints[cities[k]];
-                        if (Math.abs(v[0] - u[0]) < sx &&
-                            Math.abs(v[1] - sy / 2 - u[1]) < sy) {
+                        if (Math.abs(v.x - u.x) < sx &&
+                            Math.abs(v.y - sy / 2 - u.y) < sy) {
                             score -= k < nterrs ? 4000 : 500;
                         }
-                        if (v[0] - sx / 2 < citylabels[k].x1 &&
-                            v[0] + sx / 2 > citylabels[k].x0 &&
-                            v[1] - sy < citylabels[k].y1 &&
-                            v[1] > citylabels[k].y0) {
+                        if (v.x - sx / 2 < citylabels[k].x1 &&
+                            v.x + sx / 2 > citylabels[k].x0 &&
+                            v.y - sy < citylabels[k].y1 &&
+                            v.y > citylabels[k].y0) {
                             score -= 5000;
                         }
                     }
                     for (var k = 0; k < reglabels.length; k++) {
                         var label = reglabels[k];
-                        if (v[0] - sx / 2 < label.x + label.width / 2 &&
-                            v[0] + sx / 2 > label.x - label.width / 2 &&
-                            v[1] - sy < label.y &&
-                            v[1] > label.y - label.size) {
+                        if (v.x - sx / 2 < label.x + label.width / 2 &&
+                            v.x + sx / 2 > label.x - label.width / 2 &&
+                            v.y - sy < label.y &&
+                            v.y > label.y - label.size) {
                             score -= 20000;
                         }
                     }
                     if (h[j] <= 0)
                         score -= 500;
-                    if (v[0] + sx / 2 > 0.5 * h.mesh.extent.width)
+                    if (v.x + sx / 2 > 0.5 * h.mesh.extent.width)
                         score -= 50000;
-                    if (v[0] - sx / 2 < -0.5 * h.mesh.extent.width)
+                    if (v.x - sx / 2 < -0.5 * h.mesh.extent.width)
                         score -= 50000;
-                    if (v[1] > 0.5 * h.mesh.extent.height)
+                    if (v.y > 0.5 * h.mesh.extent.height)
                         score -= 50000;
-                    if (v[1] - sy < -0.5 * h.mesh.extent.height)
+                    if (v.y - sy < -0.5 * h.mesh.extent.height)
                         score -= 50000;
                     if (score > bestscore) {
                         bestscore = score;
@@ -179,8 +179,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 }
                 reglabels.push({
                     text: text,
-                    x: h.mesh.voronoiPoints[best][0],
-                    y: h.mesh.voronoiPoints[best][1],
+                    x: h.mesh.voronoiPoints[best].x,
+                    y: h.mesh.voronoiPoints[best].y,
                     size: sy,
                     width: sx
                 });
@@ -249,8 +249,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .append('circle');
             circle.exit().remove();
             d3.selectAll('circle')
-                .attr('cx', function (d) { return 1000 * d[0]; })
-                .attr('cy', function (d) { return 1000 * d[1]; })
+                .attr('cx', function (d) { return 1000 * d.x; })
+                .attr('cy', function (d) { return 1000 * d.y; })
                 .attr('r', 100 / Math.sqrt(pts.length));
         };
         TerrainDrawer.makeD3Path = function (path) {
@@ -349,8 +349,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 if (Math.abs(s) < util_1.TerrainCalcUtil.runif(0.1, 0.4))
                     continue;
                 var l = r * util_1.TerrainCalcUtil.runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100);
-                var x = h.mesh.voronoiPoints[i][0];
-                var y = h.mesh.voronoiPoints[i][1];
+                var x = h.mesh.voronoiPoints[i].x;
+                var y = h.mesh.voronoiPoints[i].y;
                 if (Math.abs(l * s) > 2 * r) {
                     var n = Math.floor(Math.abs(l * s / r));
                     l /= n;
@@ -389,8 +389,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             circs.exit()
                 .remove();
             svg.selectAll('circle.city')
-                .attr('cx', function (d) { return 1000 * h.mesh.voronoiPoints[d][0]; })
-                .attr('cy', function (d) { return 1000 * h.mesh.voronoiPoints[d][1]; })
+                .attr('cx', function (d) { return 1000 * h.mesh.voronoiPoints[d].x; })
+                .attr('cy', function (d) { return 1000 * h.mesh.voronoiPoints[d].y; })
                 .attr('r', function (d, i) { return i >= n ? 4 : 10; })
                 .style('fill', 'white')
                 .style('stroke-width', 5)

@@ -83,7 +83,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
-                    var doubleDistanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+                    var doubleDistanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
                     newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
                 }
             }
@@ -103,7 +103,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
-                    var distanceFromOrigin = (p[0] - m[0]) * (p[0] - m[0]) + (p[1] - m[1]) * (p[1] - m[1]);
+                    var distanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
                     newvals[i] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
                 }
             }
@@ -331,10 +331,10 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             var p0 = h.mesh.voronoiPoints[nbs[0]];
             var p1 = h.mesh.voronoiPoints[nbs[1]];
             var p2 = h.mesh.voronoiPoints[nbs[2]];
-            var x1 = p1[0] - p0[0];
-            var x2 = p2[0] - p0[0];
-            var y1 = p1[1] - p0[1];
-            var y2 = p2[1] - p0[1];
+            var x1 = p1.x - p0.x;
+            var x2 = p2.x - p0.x;
+            var y1 = p1.y - p0.y;
+            var y2 = p2.y - p0.y;
             var det = x1 * y2 - x2 * y1;
             var h1 = h[nbs[1]] - h[nbs[0]];
             var h2 = h[nbs[2]] - h[nbs[0]];
@@ -356,8 +356,8 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             var newh = TerrainGenerator.resetTerrainHeights(h.mesh);
             for (var i = 0; i < h.length; i++) {
                 var v = h.mesh.voronoiPoints[i];
-                var x = 2.4 * v[0] / h.mesh.extent.width;
-                var y = 2.4 * v[1] / h.mesh.extent.height;
+                var x = 2.4 * v.x / h.mesh.extent.width;
+                var y = 2.4 * v.y / h.mesh.extent.height;
                 newh[i] = h[i] - Math.exp(10 * (Math.pow(Math.pow(x, p) + Math.pow(y, p), 1 / p) - 1));
             }
             return newh;

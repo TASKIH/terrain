@@ -21,8 +21,8 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                     score[i] = -999999;
                     continue;
                 }
-                score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i][0]) - h.mesh.extent.width / 2);
-                score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i][1]) - h.mesh.extent.height / 2);
+                score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i].x) - h.mesh.extent.width / 2);
+                score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i].y) - h.mesh.extent.height / 2);
                 for (var j = 0; j < cities.length; j++) {
                     score[i] -= 0.02 / (util_1.TerrainCalcUtil.getDistance(h.mesh, cities[j], i) + 1e-9);
                 }
@@ -63,7 +63,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                         links.push([up, down]);
                     }
                     else {
-                        links.push([up, [(up[0] + down[0]) / 2, (up[1] + down[1]) / 2]]);
+                        links.push([up, [(up.x + down.x) / 2, (up.y + down.y) / 2]]);
                     }
                 }
             }
