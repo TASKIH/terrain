@@ -35,9 +35,6 @@ export interface TerrainPointContainer {
 
 export interface MapMesh {
     voronoiPoints: TerrainPoint[];
-    adjacentPointIds: [number, number, number][],
-    pointConnections: { [key: number]: VoronoiSite<[number, number]>[] },
-
     pointDict: {[key: number]: TerrainPointContainer},
 
     edges: Edge[],

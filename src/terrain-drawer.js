@@ -266,8 +266,12 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 hi = (d3.max(field) || 0) + 1e-9;
             if (lo == undefined)
                 lo = (d3.min(field) || 0) - 1e-9;
-            // @ts-ignore
-            var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
+            var voronoiSites = [];
+            for (var key in field.mesh.pointDict) {
+                var pointCnt = field.mesh.pointDict[key];
+                voronoiSites[key] = pointCnt.relatedVoronoiSites;
+            }
+            var tris = svg.selectAll('path.field').data(voronoiSites);
             tris.enter()
                 .append('path')
                 .classed('field', true);

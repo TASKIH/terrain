@@ -4,6 +4,7 @@ import * as language from './language';
 import * as d3 from 'd3';
 import { TerrainFeatureGenerator } from "./terrain-feature-generator";
 import { TerrainGenerator } from "./terrain-generator";
+import { VoronoiSite } from "d3";
 
 export class TerrainDrawer {
     static drawLabels(svg: any, render: MapRender) {
@@ -258,12 +259,18 @@ export class TerrainDrawer {
         return p.toString();
     }
     
-    static visualizeVoronoi(svg: any, field: number[], lo?: number, hi?: number) {
+    static visualizeVoronoi(svg: any, field: TerrainHeights, lo?: number, hi?: number) {
         if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
     
-        // @ts-ignore
-        var tris = svg.selectAll('path.field').data(field.mesh.pointConnections);
+        const voronoiSites: {[key:number]: VoronoiSite<[number, number]>[]} = [];
+        for (var key in field.mesh!.pointDict) {
+            const pointCnt = field.mesh!.pointDict[key];
+
+            voronoiSites[key] = pointCnt.relatedVoronoiSites
+        }
+
+        var tris = svg.selectAll('path.field').data(voronoiSites);
         tris.enter()
             .append('path')
             .classed('field', true);

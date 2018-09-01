@@ -70,7 +70,7 @@ export class TerrainCalcUtil {
     
 
     static isEdge(mesh: MapMesh, i: number): boolean {
-        return (mesh.adjacentPointIds[i].length < 3);
+        return (mesh.pointDict[i].connectingPoints.length < 3);
     }
 
     // 領域の端に隣接するEdgeかどうか
@@ -82,13 +82,10 @@ export class TerrainCalcUtil {
         return (x < -0.45 * w) || (x > 0.45 * w) || (y < -0.45 * h) || (y > 0.45 * h);
     }
 
-    static getNeighbourIds(mesh: MapMesh, i: number) {
-        var onbs = mesh.adjacentPointIds[i];
-        var nbs = [];
-        for (var i = 0; i < onbs.length; i++) {
-            nbs.push(onbs[i]);
-        }
-        return nbs;
+    static getNeighbourIds(mesh: MapMesh, i: number): number[] {
+        return mesh.pointDict[i].connectingPoints.map(e => {
+            return e.id;
+        });
     }
 
     static getDistance(mesh: MapMesh, i: number, j: number): number {

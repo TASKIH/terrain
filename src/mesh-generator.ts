@@ -66,12 +66,9 @@ export class MeshGenerator {
         var vor: VoronoiDiagram<[number, number]> = MeshGenerator.generateVoronoiDiagram(pts, extent);
         var pointToIdDict: {[key:string]: number} = {};
         var voronoiPoints: TerrainPoint[] = [];
-
         var pointDict: {[key: number]: TerrainPointContainer} = {};
-        // Edgeとして隣接するポイント同士を接続する
-        var adjacentIds: [number, number, number][] = [];
+
         var edges: Edge[] = [];
-        var pointConnections: {[key:number]: VoronoiSite<[number, number]>[]}  = [];
 
         for (var i = 0; i < vor.edges.length; i++) {
             var edge = vor.edges[i];
@@ -103,16 +100,11 @@ export class MeshGenerator {
                     height: 0
                 }
 
-                pointDict[e0Id] = MeshGenerator.newTerrainPointContainer(newPoint);
+                pointDict[e1Id] = MeshGenerator.newTerrainPointContainer(newPoint);
                 voronoiPoints.push(newPoint);
 
             }
-            adjacentIds[e0Id] = adjacentIds[e0Id] || [];
-            adjacentIds[e0Id].push(e1Id);
             pointDict[e0Id].connectingPoints.push(pointDict[e1Id].point);
-
-            adjacentIds[e1Id] = adjacentIds[e1Id] || [];
-            adjacentIds[e1Id].push(e0Id);
 
             pointDict[e1Id].connectingPoints.push(pointDict[e0Id].point);
 
@@ -123,31 +115,23 @@ export class MeshGenerator {
                     right: edge.right
             });
 
-            pointConnections[e0Id] = pointConnections[e0Id] || [];
-            if (pointConnections[e0Id].indexOf(edge.left) === -1) {
-                pointConnections[e0Id].push(edge.left);
+            if (pointDict[e0Id].relatedVoronoiSites.indexOf(edge.left) === -1) {
                 pointDict[e0Id].relatedVoronoiSites.push(edge.left);
             }
-            if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
-                pointConnections[e0Id].push(edge.right);
+            if (edge.right && pointDict[e0Id].relatedVoronoiSites.indexOf(edge.right) === -1) {
                 pointDict[e0Id].relatedVoronoiSites.push(edge.right);
             }
 
-            pointConnections[e1Id] = pointConnections[e1Id] || [];
-            if (pointConnections[e1Id].indexOf(edge.left) === -1) {
-                pointConnections[e1Id].push(edge.left);
+            if (pointDict[e1Id].relatedVoronoiSites.indexOf(edge.left) === -1) {
                 pointDict[e1Id].relatedVoronoiSites.push(edge.left);
             }
-            if (edge.right && pointConnections[e0Id].indexOf(edge.right) === -1) {
-                pointConnections[e1Id].push(edge.right);
+            if (edge.right && pointDict[e1Id].relatedVoronoiSites.indexOf(edge.right) === -1) {
                 pointDict[e1Id].relatedVoronoiSites.push(edge.right);
             }
         }
 
         var mesh: MapMesh = {
             voronoiPoints: voronoiPoints,
-            adjacentPointIds: adjacentIds,
-            pointConnections: pointConnections,
             pointDict: pointDict,
             edges: edges,
             extent: extent,
