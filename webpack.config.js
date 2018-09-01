@@ -4,7 +4,7 @@ module.exports = {
     // 指定できる値としては、ファイル名の文字列や、それを並べた配列やオブジェクト
     // 下記はオブジェクトとして指定した例
     entry: {
-        bundle: './src/terrain.ts'
+        bundle: './src/terrain-controller.ts'
     },
     output: {
         // モジュールバンドルを行った結果を出力する場所やファイル名の指定

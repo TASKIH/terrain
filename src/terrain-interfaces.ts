@@ -19,11 +19,16 @@ export interface Edge {
     right: VoronoiSite<[number, number]> | null;
 }
 
+export interface TerrainPoint {
+    x: number;
+    y: number;
+
+    height: number;
+
+}
+
 export interface MapMesh {
-    // メッシュ上に描画される点。-0.5～+0.5の範囲で設定される
-    pts: [number, number][];
-    vor: VoronoiDiagram<[number, number]>;
-    voronoiPoints: [number, number][];
+    voronoiPoints: TerrainPoint[];
     adjacentPointIds: [number, number, number][],
     pointConnections: { [key: number]: VoronoiSite<[number, number]>[] },
     edges: Edge[],
