@@ -71,6 +71,7 @@ export class TerrainGenerator {
     }
 
     static mergeHeights(mesh: MapMesh, ...args: TerrainHeights[]): TerrainHeights {
+        console.log(args);
         var n = args[0].length;
         var newVals = TerrainGenerator.generateZeroHeights(mesh);
         for (var i = 0; i < n; i++) {
@@ -95,7 +96,7 @@ export class TerrainGenerator {
                 const doubleDistanceFromOrigin = 
                     (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
                
-                newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
+                newvals[p.id] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
             }
         }
         return newvals;
@@ -112,14 +113,13 @@ export class TerrainGenerator {
         for (var i = 0; i < n; i++) {
             mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
         }
-        console.log(mounts);
         var newvals = TerrainGenerator.generateZeroHeights(mesh);
         for (var i = 0; i < mesh.voronoiPoints.length; i++) {
             var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
                 const distanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
-                newvals[i] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2) ) * peakHeight;
+                newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2) ) * peakHeight;
             }
         }
         return newvals;
@@ -155,6 +155,116 @@ export class TerrainGenerator {
         });
 
         return newHeights;
+    }
+
+    static resetWaterFlow(mesh: MapMesh): {[key: number]: number} {
+        const waters:{[key: number]: number} = {};
+
+        mesh.voronoiPoints.forEach(e => {
+            waters[e.id] = 0
+        });
+        return waters;
+    }
+
+    static mergeWaterFlow(mesh: MapMesh, ...args: {[key: number]: number}[]) {
+        const returnWater = TerrainGenerator.resetWaterFlow(mesh);
+
+        args.forEach(arg => {
+            for (const key in arg) {
+                returnWater[key] += arg[key];
+            }
+        });
+
+        return returnWater;
+    }
+
+    static calcWaterFlow(mesh: MapMesh, 
+                            h: TerrainHeights, 
+                            rainfall: number, 
+                            flowableAmount: number): {[key: number]: number} {
+        let waters: {[key: number]: number} = {};
+
+        // 高い順に並び変える
+        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            return h[b.id] - h[a.id];
+        });
+
+        // 初期降水を設定
+        heightOrderedVoronois.forEach(e => {
+            waters[e.id] = rainfall;
+        });
+
+        // 排水フェーズ
+        const drain = (e: TerrainPoint) => {
+            // 低い順に並び変える
+            let connectingPoints = mesh.pointDict[e.id].connectingPoints.sort((a, b) => {
+                return h[a.id] - h[b.id];
+            });
+            let restWater = waters[e.id];
+
+            const myHeight = h[e.id];
+            connectingPoints.forEach(cp => {
+                const nextHeight = h[cp.id];
+
+                // 隣の方が高い場合は何もしない
+                if (nextHeight >= myHeight) {
+                    return;
+                }
+
+                // 最大flowableAmountの水を低い土地に流せる
+                const flow = Math.min(flowableAmount, restWater);
+                restWater -= flow;
+                waters[e.id]  -= flow;
+                waters[cp.id] += flow;
+            });
+        };
+
+        heightOrderedVoronois.forEach(e => {
+            drain(e);
+        })
+        return waters;
+    }
+    /**
+     * 水による浸食を行う
+     * @param mesh: MapのMesh
+     * @param h: 地盤の高さ
+     * @param waters: 水の量
+     */
+    static erodeByWater(mesh: MapMesh, h: TerrainHeights, waters: {[key: number]: number}): TerrainHeights {
+        var newh = TerrainGenerator.generateZeroHeights(mesh);
+
+        // 高い順に並び変える
+        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            return h[b.id] - h[a.id];
+        });
+
+        heightOrderedVoronois.forEach(e => { 
+            let restWater = waters[e.id];
+            const pointHeight = h[e.id];
+
+            // 水が余っていて標高が0よりも高いところは隣の岩盤の弱いところを押し流す。
+            if (restWater > 0 && pointHeight > 0) {
+                // 自分よりも土地の高いところを切り崩す。
+                const robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(tgt => {
+                    return h[tgt.id] > pointHeight;
+                }).sort((a, b) => {
+                    return mesh.pointDict[a.id].robustness - mesh.pointDict[b.id].robustness;
+                });
+                if (robustnessOrder.length == 0) {
+                    return;
+                }
+
+                const minRobustness = robustnessOrder[0];
+                const targetHeight = h[minRobustness.id];
+                const heightDelta = targetHeight - pointHeight;
+
+                newh[minRobustness.id] = heightDelta * -1;
+                waters[e.id] = 0;
+                // 低くなったので水を押しつける。
+                waters[minRobustness.id] += restWater;
+            }
+        });
+        return TerrainGenerator.mergeHeights(mesh, newh, h);
     }
 
     // 傾斜をなだらかにする

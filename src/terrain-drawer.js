@@ -266,10 +266,15 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
         };
         TerrainDrawer.makeD3Path = function (path) {
             var p = d3.path();
-            p.moveTo(1000 * path[0][0], 1000 * path[0][1]);
-            for (var i = 1; i < path.length; i++) {
-                p.lineTo(1000 * path[i][0], 1000 * path[i][1]);
-            }
+            var idx = 0;
+            path.relatedVoronoiSites.forEach(function (e, i) {
+                if (i === 0) {
+                    p.moveTo(1000 * e[0], 1000 * e[1]);
+                }
+                else {
+                    p.lineTo(1000 * e[0], 1000 * e[1]);
+                }
+            });
             return p.toString();
         };
         TerrainDrawer.visualizeVoronoi = function (svg, mesh, field, lo, hi) {
@@ -277,12 +282,12 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 hi = (d3.max(field) || 0) + 1e-9;
             if (lo == undefined)
                 lo = (d3.min(field) || 0) - 1e-9;
-            var voronoiSites = [];
+            var pointContainers = [];
             for (var key in mesh.pointDict) {
                 var pointCnt = mesh.pointDict[key];
-                voronoiSites[key] = pointCnt.relatedVoronoiSites;
+                pointContainers.push(pointCnt);
             }
-            var tris = svg.selectAll('path.field').data(voronoiSites);
+            var tris = svg.selectAll('path.field').data(pointContainers);
             tris.enter()
                 .append('path')
                 .classed('field', true);
@@ -291,7 +296,25 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             svg.selectAll('path.field')
                 .attr('d', TerrainDrawer.makeD3Path)
                 .style('fill', function (d, i) {
-                return TerrainDrawer.getColor(field[i]);
+                return TerrainDrawer.getColor(field[d.point.id]);
+            });
+        };
+        TerrainDrawer.visualizeWater = function (svg, mesh, waters) {
+            var pointContainers = [];
+            for (var key in mesh.pointDict) {
+                var pointCnt = mesh.pointDict[key];
+                pointContainers.push(pointCnt);
+            }
+            var tris = svg.selectAll('path.field').data(pointContainers);
+            tris.enter()
+                .append('path')
+                .classed('field', true);
+            tris.exit()
+                .remove();
+            svg.selectAll('path.field')
+                .attr('d', TerrainDrawer.makeD3Path)
+                .style('fill', function (d, i) {
+                return TerrainDrawer.getWaterColor(waters[d.point.id]);
             });
         };
         TerrainDrawer.visualizeDownhill = function (mesh, h) {
@@ -338,6 +361,29 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             }
             else if (height < 0.4) {
                 return "#bbbb77";
+            }
+            else {
+                return "#666633";
+            }
+        };
+        TerrainDrawer.getWaterColor = function (water) {
+            if (water > 0.8) {
+                return "#000099";
+            }
+            else if (water > 0.7) {
+                return "#1a1aff";
+            }
+            else if (water > 0.6) {
+                return "#4d4dff";
+            }
+            else if (water > 0.5) {
+                return "#8080ff";
+            }
+            else if (water > 0.4) {
+                return "#b3b3ff";
+            }
+            else if (water > 0.3) {
+                return "#e6e6ff";
             }
             else {
                 return "#666633";

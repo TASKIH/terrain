@@ -70,6 +70,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             for (var _i = 1; _i < arguments.length; _i++) {
                 args[_i - 1] = arguments[_i];
             }
+            console.log(args);
             var n = args[0].length;
             var newVals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < n; i++) {
@@ -91,7 +92,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
                     var doubleDistanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
-                    newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
+                    newvals[p.id] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
                 }
             }
             return newvals;
@@ -106,14 +107,13 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             for (var i = 0; i < n; i++) {
                 mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
             }
-            console.log(mounts);
             var newvals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < mesh.voronoiPoints.length; i++) {
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
                     var distanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
-                    newvals[i] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
+                    newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
                 }
             }
             return newvals;
@@ -145,6 +145,99 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 });
             });
             return newHeights;
+        };
+        TerrainGenerator.resetWaterFlow = function (mesh) {
+            var waters = {};
+            mesh.voronoiPoints.forEach(function (e) {
+                waters[e.id] = 0;
+            });
+            return waters;
+        };
+        TerrainGenerator.mergeWaterFlow = function (mesh) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
+            var returnWater = TerrainGenerator.resetWaterFlow(mesh);
+            args.forEach(function (arg) {
+                for (var key in arg) {
+                    returnWater[key] += arg[key];
+                }
+            });
+            return returnWater;
+        };
+        TerrainGenerator.calcWaterFlow = function (mesh, h, rainfall, flowableAmount) {
+            var waters = {};
+            // 高い順に並び変える
+            var heightOrderedVoronois = mesh.voronoiPoints.sort(function (a, b) {
+                return h[b.id] - h[a.id];
+            });
+            // 初期降水を設定
+            heightOrderedVoronois.forEach(function (e) {
+                waters[e.id] = rainfall;
+            });
+            // 排水フェーズ
+            var drain = function (e) {
+                // 低い順に並び変える
+                var connectingPoints = mesh.pointDict[e.id].connectingPoints.sort(function (a, b) {
+                    return h[a.id] - h[b.id];
+                });
+                var restWater = waters[e.id];
+                var myHeight = h[e.id];
+                connectingPoints.forEach(function (cp) {
+                    var nextHeight = h[cp.id];
+                    // 隣の方が高い場合は何もしない
+                    if (nextHeight >= myHeight) {
+                        return;
+                    }
+                    // 最大flowableAmountの水を低い土地に流せる
+                    var flow = Math.min(flowableAmount, restWater);
+                    restWater -= flow;
+                    waters[e.id] -= flow;
+                    waters[cp.id] += flow;
+                });
+            };
+            heightOrderedVoronois.forEach(function (e) {
+                drain(e);
+            });
+            return waters;
+        };
+        /**
+         * 水による浸食を行う
+         * @param mesh: MapのMesh
+         * @param h: 地盤の高さ
+         * @param waters: 水の量
+         */
+        TerrainGenerator.erodeByWater = function (mesh, h, waters) {
+            var newh = TerrainGenerator.generateZeroHeights(mesh);
+            // 高い順に並び変える
+            var heightOrderedVoronois = mesh.voronoiPoints.sort(function (a, b) {
+                return h[b.id] - h[a.id];
+            });
+            heightOrderedVoronois.forEach(function (e) {
+                var restWater = waters[e.id];
+                var pointHeight = h[e.id];
+                // 水が余っていて標高が0よりも高いところは隣の岩盤の弱いところを押し流す。
+                if (restWater > 0 && pointHeight > 0) {
+                    // 自分よりも土地の高いところを切り崩す。
+                    var robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(function (tgt) {
+                        return h[tgt.id] > pointHeight;
+                    }).sort(function (a, b) {
+                        return mesh.pointDict[a.id].robustness - mesh.pointDict[b.id].robustness;
+                    });
+                    if (robustnessOrder.length == 0) {
+                        return;
+                    }
+                    var minRobustness = robustnessOrder[0];
+                    var targetHeight = h[minRobustness.id];
+                    var heightDelta = targetHeight - pointHeight;
+                    newh[minRobustness.id] = heightDelta * -1;
+                    waters[e.id] = 0;
+                    // 低くなったので水を押しつける。
+                    waters[minRobustness.id] += restWater;
+                }
+            });
+            return TerrainGenerator.mergeHeights(mesh, newh, h);
         };
         // 傾斜をなだらかにする
         TerrainGenerator.relax = function (mesh, h) {

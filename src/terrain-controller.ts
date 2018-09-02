@@ -62,9 +62,15 @@ export function drawTerrainControll() {
     var expSVG = addSVG(expDiv);
     var expMesh = MeshGenerator.generateGoodMesh(4096);
     var expH = TerrainGenerator.generateZeroHeights(expMesh);
+    var waters = TerrainGenerator.resetWaterFlow(expMesh);
 
     function expDraw() {
         TerrainDrawer.visualizeVoronoi(expSVG, expMesh, expH, -1, 1);
+        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
+    }
+
+    function expDrawWater() {
+        TerrainDrawer.visualizeWater(expSVG, expMesh, waters);
         TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
     }
 
@@ -129,6 +135,36 @@ export function drawTerrainControll() {
         .text("海岸線の整理")
         .on("click", function () {
             expH = TerrainGenerator.cleanCoast(expMesh, expH, 5);
+            expDraw();
+        });
+
+        expDiv.append("button")
+        .text("水の流れの計算")
+        .on("click", function () {
+            waters = TerrainGenerator.calcWaterFlow(expMesh, expH, 0.2, 0.5);
+            expDrawWater();
+        });
+
+        expDiv.append("button")
+        .text("水による浸食")
+        .on("click", function () {
+            for (let i = 0; i < 5; i++) {
+
+            }
+            waters = TerrainGenerator.calcWaterFlow(expMesh, expH, 0.2, 0.5);
+            expH = TerrainGenerator.erodeByWater(expMesh, expH, waters);
+            expDraw();
+        });
+
+        expDiv.append("button")
+        .text("水の流れを見る")
+        .on("click", function () {
+            expDrawWater();
+        });
+
+        expDiv.append("button")
+        .text("地形の高さを見る")
+        .on("click", function () {
             expDraw();
         });
 

@@ -1,4 +1,4 @@
-import { MapRender, MapExportParam, TerrainHeights, TerrainPoint, MapMesh } from "./terrain-interfaces";
+import { MapRender, MapExportParam, TerrainHeights, TerrainPoint, MapMesh, TerrainPointContainer } from "./terrain-interfaces";
 import { TerrainCalcUtil } from "./util";
 import * as language from './language';
 import * as d3 from 'd3';
@@ -261,27 +261,33 @@ export class TerrainDrawer {
     }
     
     
-    static makeD3Path(path: any) {
+    static makeD3Path(path: TerrainPointContainer) {
         var p = d3.path();
-        p.moveTo(1000*path[0][0], 1000*path[0][1]);
-        for (var i = 1; i < path.length; i++) {
-            p.lineTo(1000*path[i][0], 1000*path[i][1]);
-        }
+
+        let idx = 0;
+        path.relatedVoronoiSites.forEach((e, i) => {
+            if (i === 0){
+                p.moveTo(1000*e[0], 1000*e[1]);
+            }
+            else {
+                p.lineTo(1000*e[0], 1000*e[1]);
+            }
+        });
         return p.toString();
     }
-    
+
     static visualizeVoronoi(svg: any, mesh: MapMesh, field: TerrainHeights, lo?: number, hi?: number) {
         if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
-    
-        const voronoiSites: {[key:number]: VoronoiSite<[number, number]>[]} = [];
+
+        const pointContainers: TerrainPointContainer[] = [];
+
         for (var key in  mesh.pointDict) {
             const pointCnt = mesh.pointDict[key];
-
-            voronoiSites[key] = pointCnt.relatedVoronoiSites
+            pointContainers.push(pointCnt);
         }
 
-        var tris = svg.selectAll('path.field').data(voronoiSites);
+        var tris = svg.selectAll('path.field').data(pointContainers);
         tris.enter()
             .append('path')
             .classed('field', true);
@@ -291,11 +297,35 @@ export class TerrainDrawer {
     
         svg.selectAll('path.field')
             .attr('d', TerrainDrawer.makeD3Path)
-            .style('fill', function (d: any, i: number) {
-                return TerrainDrawer.getColor(field[i]);
+            .style('fill', function (d: TerrainPointContainer, i: number) {
+                return TerrainDrawer.getColor(field[d.point.id]);
             });
     }
     
+    static visualizeWater(svg: any, mesh: MapMesh, waters: {[key: number]: number} ) {
+        const pointContainers: TerrainPointContainer[] = [];
+
+        for (var key in  mesh.pointDict) {
+            const pointCnt = mesh.pointDict[key];
+            pointContainers.push(pointCnt);
+        }
+
+        var tris = svg.selectAll('path.field').data(pointContainers);
+        tris.enter()
+            .append('path')
+            .classed('field', true);
+    
+        tris.exit()
+            .remove();
+    
+        svg.selectAll('path.field')
+            .attr('d', TerrainDrawer.makeD3Path)
+            .style('fill', function (d: TerrainPointContainer, i: number) {
+                return TerrainDrawer.getWaterColor(waters[d.point.id]);
+            });
+    }
+    
+
     static visualizeDownhill(mesh: MapMesh, h: TerrainHeights) {
         var links = TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
         TerrainDrawer.drawPaths('river', links);
@@ -348,6 +378,29 @@ export class TerrainDrawer {
         }
     }
     
+    static getWaterColor(water: number): string {
+        if (water > 0.8) {
+            return "#000099"
+        }
+        else if (water > 0.7) {
+            return "#1a1aff"
+        }
+        else if (water > 0.6) {
+            return "#4d4dff"
+        }
+        else if (water > 0.5) {
+            return "#8080ff"
+        }
+        else if (water > 0.4) {
+            return "#b3b3ff"
+        }
+        else if (water > 0.3) {
+            return "#e6e6ff"
+        }
+        else {
+            return "#666633"
+        }
+    }
     static visualizeSlopes(svg: any, render: MapRender) {
         var h = render.h;
         var strokes = [];
