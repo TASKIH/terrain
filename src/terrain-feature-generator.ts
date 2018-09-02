@@ -7,6 +7,23 @@ import * as PriorityQueue from 'js-priority-queue';
 
 export class TerrainFeatureGenerator {
     
+    /**
+     * 各ポイントに堅牢性を適当に設定する
+     * @param mesh 
+     */
+    static setRandomRoberstness(mesh: MapMesh) {
+        for(const key in mesh.pointDict){
+            let pt = mesh.pointDict[key];
+            pt.robustness = TerrainCalcUtil.normRand(0.5, 0.25);
+            if (pt.robustness < 0) {
+                pt.robustness = 0;
+            }
+            else if (pt.robustness > 1) {
+                pt.robustness = 1;
+            }
+        }
+    }
+
     static cityScore(mesh: MapMesh, h: TerrainHeights, cities: any[]) {
         var score = TerrainGenerator.map(TerrainGenerator.getFlux(mesh, h), Math.sqrt);
         for (var i = 0; i < h.length; i++) {
@@ -42,7 +59,7 @@ export class TerrainFeatureGenerator {
     
 
     static getRivers(mesh: MapMesh, h: TerrainHeights, limit: number) {
-        var dh = TerrainGenerator.downhill(mesh, h);
+        var dh = TerrainGenerator.generateDownFromDict(mesh, h);
         var flux = TerrainGenerator.getFlux(mesh, h);
         var links = [];
         var above = 0;
@@ -50,12 +67,12 @@ export class TerrainFeatureGenerator {
             if (h[i] > 0) above++;
         }
         limit *= above / h.length;
-        for (var i = 0; i < dh.length; i++) {
+        for (var i = 0; i < h.length; i++) {
             if (TerrainCalcUtil.isNearEdge(mesh, i)) continue;
-            if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
+            if (flux[i] > limit && h[i] > 0 && dh[i]) {
                 var up = mesh.voronoiPoints[i];
-                var down = mesh.voronoiPoints[dh[i]];
-                if (h[dh[i]] > 0) {
+                var down = mesh.voronoiPoints[dh[i]!.id];
+                if (h[dh[i]!.id] > 0) {
                     links.push([up, down]);
                 } else {
                     links.push([up, [(up.x + down.x)/2, (up.y + down.y)/2]]);

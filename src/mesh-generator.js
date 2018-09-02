@@ -56,6 +56,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 connectingPoints: [],
                 relatedVoronoiSites: [],
                 height: 0,
+                robustness: 0
             };
         };
         MeshGenerator.makeMesh = function (pts, extent) {

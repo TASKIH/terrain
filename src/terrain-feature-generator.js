@@ -13,6 +13,22 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
     var TerrainFeatureGenerator = /** @class */ (function () {
         function TerrainFeatureGenerator() {
         }
+        /**
+         * 各ポイントに堅牢性を適当に設定する
+         * @param mesh
+         */
+        TerrainFeatureGenerator.setRandomRoberstness = function (mesh) {
+            for (var key in mesh.pointDict) {
+                var pt = mesh.pointDict[key];
+                pt.robustness = util_1.TerrainCalcUtil.normRand(0.5, 0.25);
+                if (pt.robustness < 0) {
+                    pt.robustness = 0;
+                }
+                else if (pt.robustness > 1) {
+                    pt.robustness = 1;
+                }
+            }
+        };
         TerrainFeatureGenerator.cityScore = function (mesh, h, cities) {
             var score = terrain_generator_1.TerrainGenerator.map(terrain_generator_1.TerrainGenerator.getFlux(mesh, h), Math.sqrt);
             for (var i = 0; i < h.length; i++) {
@@ -44,7 +60,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
             }
         };
         TerrainFeatureGenerator.getRivers = function (mesh, h, limit) {
-            var dh = terrain_generator_1.TerrainGenerator.downhill(mesh, h);
+            var dh = terrain_generator_1.TerrainGenerator.generateDownFromDict(mesh, h);
             var flux = terrain_generator_1.TerrainGenerator.getFlux(mesh, h);
             var links = [];
             var above = 0;
@@ -53,13 +69,13 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                     above++;
             }
             limit *= above / h.length;
-            for (var i = 0; i < dh.length; i++) {
+            for (var i = 0; i < h.length; i++) {
                 if (util_1.TerrainCalcUtil.isNearEdge(mesh, i))
                     continue;
-                if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
+                if (flux[i] > limit && h[i] > 0 && dh[i]) {
                     var up = mesh.voronoiPoints[i];
-                    var down = mesh.voronoiPoints[dh[i]];
-                    if (h[dh[i]] > 0) {
+                    var down = mesh.voronoiPoints[dh[i].id];
+                    if (h[dh[i].id] > 0) {
                         links.push([up, down]);
                     }
                     else {

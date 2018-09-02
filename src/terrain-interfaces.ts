@@ -10,6 +10,7 @@ export interface FontSize {
 export interface MapExtent {
     width: number;
     height: number;
+    margin: number;
 }
 
 export interface Edge {
@@ -31,23 +32,26 @@ export interface TerrainPointContainer {
     point: TerrainPoint;
     connectingPoints: TerrainPoint[];
     relatedVoronoiSites: VoronoiSite<[number, number]>[];
+    // 地盤の強固さ
+    robustness: number;
+    // 地盤の高さ
     height: number;
 }
 
 export interface MapMesh {
     voronoiPoints: TerrainPoint[];
-    pointDict: {[key: number]: TerrainPointContainer},
+    pointDict: {[key: number]: TerrainPointContainer};
 
-    edges: Edge[],
-    extent: MapExtent,
-    pointMapFunction: (f: any) => any,
+    edges: Edge[];
+    extent: MapExtent;
+    pointMapFunction: (f: any) => any;
 }
 
 
 export interface MapRender {
     params: MapExportParam,
     mesh?: MapMesh;
-    h: any,
+    h: TerrainHeights,
     cities?: any[],
     terr?: any[],
     rivers?: any[],
@@ -56,7 +60,7 @@ export interface MapRender {
 }
 
 export interface TerrainHeights extends Array<number> {
-    downhill?: number[];
+    downFromDict?: {[key: number]: TerrainPoint | null};
 
     heightRange?: [number, number];
     seaLevelHeight?: number;

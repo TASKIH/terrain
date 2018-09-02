@@ -207,7 +207,7 @@ export class TerrainDrawer {
             var edge = mesh.edges[i];
             if (edge.right == undefined) continue;
     
-            if (TerrainCalcUtil.isNearEdge(mesh, edge.index1) || TerrainCalcUtil.isNearEdge(mesh, edge.index2))
+            if (TerrainCalcUtil.isNextEdge(mesh, edge.index1) || TerrainCalcUtil.isNextEdge(mesh, edge.index2))
                 continue;
     
             if ((h[edge.index1] > level && h[edge.index2] <= level) ||
@@ -353,7 +353,7 @@ export class TerrainDrawer {
         var strokes = [];
         var r = 0.25 / Math.sqrt(h.length);
         for (var i = 0; i < h.length; i++) {
-            if (h[i] <= 0 || TerrainCalcUtil.isNearEdge(render.mesh!, i)) continue;
+            if (h[i] <= 0 || TerrainCalcUtil.isNextEdge(render.mesh!, i)) continue;
             var nbs = TerrainCalcUtil.getNeighbourIds(render.mesh!, i);
             nbs.push(i);
             var s = 0;

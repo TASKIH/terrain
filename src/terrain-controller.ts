@@ -76,15 +76,61 @@ export function drawTerrainControll() {
         });
 
     expDiv.append("button")
+        .text("マージン部を海にする")
+        .on("click", function () {
+            const height = +(document.getElementById("continent-height") as HTMLInputElement).value;
+            const radius = +(document.getElementById("continent-radius") as HTMLInputElement).value;
+            TerrainGenerator.makeMarginSea(expMesh, expH);
+            expDraw();
+        });
+
+
+    expDiv.append("button")
         .text("Continentを作成")
         .on("click", function () {
             const height = +(document.getElementById("continent-height") as HTMLInputElement).value;
             const radius = +(document.getElementById("continent-radius") as HTMLInputElement).value;
-            expH = TerrainGenerator.mergeHeights(expMesh, expH, TerrainGenerator.continent(expMesh, height, 1, radius));
-            console.log(expH);
+            expH = TerrainGenerator.mergeHeights(expMesh, expH, TerrainGenerator.continent(expMesh, height, 1, radius, expMesh.extent.margin));
             expDraw();
         });
 
+        expDiv.append("button")
+        .text("堅牢性を変更")
+        .on("click", function () {
+            TerrainFeatureGenerator.setRandomRoberstness(expMesh);
+            expDraw();
+        });
+
+        expDiv.append("button")
+        .text("海を作成")
+        .on("click", function () {
+            let average = TerrainCalcUtil.mean(expH) - 0.1;
+            expH = TerrainGenerator.rescaleBySeaLevel(expH, average);
+            expDraw();
+        });
+
+
+        expDiv.append("button")
+        .text("単純な浸食を実行")
+        .on("click", function () {
+            expH = TerrainGenerator.erodeSimply(expMesh, expH, 0.2);
+            expDraw();
+        });
+
+
+        expDiv.append("button")
+        .text("よりよい浸食を実行")
+        .on("click", function () {
+            expH = TerrainGenerator.doErosion(expMesh, expH, TerrainCalcUtil.runif(0, 0.1), 5);
+            expDraw();
+        });
+
+        expDiv.append("button")
+        .text("海岸線の整理")
+        .on("click", function () {
+            expH = TerrainGenerator.cleanCoast(expMesh, expH, 5);
+            expDraw();
+        });
 
     var primDiv = d3.select("div#prim");
     var primSVG = addSVG(primDiv);

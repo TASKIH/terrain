@@ -217,7 +217,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 var edge = mesh.edges[i];
                 if (edge.right == undefined)
                     continue;
-                if (util_1.TerrainCalcUtil.isNearEdge(mesh, edge.index1) || util_1.TerrainCalcUtil.isNearEdge(mesh, edge.index2))
+                if (util_1.TerrainCalcUtil.isNextEdge(mesh, edge.index1) || util_1.TerrainCalcUtil.isNextEdge(mesh, edge.index2))
                     continue;
                 if ((h[edge.index1] > level && h[edge.index2] <= level) ||
                     (h[edge.index2] > level && h[edge.index1] <= level)) {
@@ -348,7 +348,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             var strokes = [];
             var r = 0.25 / Math.sqrt(h.length);
             for (var i = 0; i < h.length; i++) {
-                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(render.mesh, i))
+                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNextEdge(render.mesh, i))
                     continue;
                 var nbs = util_1.TerrainCalcUtil.getNeighbourIds(render.mesh, i);
                 nbs.push(i);

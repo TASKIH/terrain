@@ -17,7 +17,27 @@ export class TerrainCalcUtil {
         return lo + Math.random() * (hi - lo);
     }
 
-    static rnorm(): number {
+    /**
+     * 正規分布乱数関数 参考:http://d.hatena.ne.jp/iroiro123/20111210/1323515616
+     * @param number m 平均μ
+     * @param number s 分散σ^2
+     * @return number ランダムに生成された値
+     */
+    static normRand(m: number, s: number) {
+        var a = 1 - Math.random();
+        var b = 1 - Math.random();
+        var c = Math.sqrt(-2 * Math.log(a));
+        if(0.5 - Math.random() > 0) {
+            return c * Math.sin(Math.PI * 2 * b) * s + m;
+        }else{
+            return c * Math.cos(Math.PI * 2 * b) * s + m;
+        }
+    };
+
+    static rnorm(lo?: number, hi?: number): number {
+        lo = lo || -1;
+        hi = hi || 1;
+        
         let z2: number | null = null;
         function rnorm(): number {
             if (z2 != null) {
@@ -73,8 +93,18 @@ export class TerrainCalcUtil {
         return (mesh.pointDict[i].connectingPoints.length < 3);
     }
 
-    // 領域の端に隣接するEdgeかどうか
+    // マップの近隣にある領域かどうか
     static isNearEdge(mesh: MapMesh, i: number): boolean {
+        var x = mesh.voronoiPoints[i].x;
+        var y = mesh.voronoiPoints[i].y;
+        var w = mesh.extent.width;
+        var h = mesh.extent.height;
+        var margin = mesh.extent.margin;
+        return (x < margin - 0.5) || (x > w - 0.5 - margin) || (y < margin - 0.5) || (y > h - 0.5 - margin);
+    }
+
+    // マップの端に隣接する領域かどうか
+    static isNextEdge(mesh: MapMesh, i: number): boolean {
         var x = mesh.voronoiPoints[i].x;
         var y = mesh.voronoiPoints[i].y;
         var w = mesh.extent.width;

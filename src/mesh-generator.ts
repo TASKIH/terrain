@@ -59,6 +59,7 @@ export class MeshGenerator {
                 connectingPoints: [],
                 relatedVoronoiSites: [],
                 height: 0,
+                robustness: 0
             }
     }
 
