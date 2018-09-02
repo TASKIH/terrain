@@ -31,6 +31,7 @@ export interface TerrainPointContainer {
     point: TerrainPoint;
     connectingPoints: TerrainPoint[];
     relatedVoronoiSites: VoronoiSite<[number, number]>[];
+    height: number;
 }
 
 export interface MapMesh {
@@ -45,6 +46,7 @@ export interface MapMesh {
 
 export interface MapRender {
     params: MapExportParam,
+    mesh?: MapMesh;
     h: any,
     cities?: any[],
     terr?: any[],
@@ -54,7 +56,6 @@ export interface MapRender {
 }
 
 export interface TerrainHeights extends Array<number> {
-    mesh?: MapMesh;
     downhill?: number[];
 
     heightRange?: [number, number];
@@ -63,7 +64,7 @@ export interface TerrainHeights extends Array<number> {
 
 export interface MapExportParam {
     extent: MapExtent;
-    generator: (npts: number, extent: MapExtent) => any;
+    generator: (mesh: MapMesh, extent: MapExtent) => any;
     npts: number;
     ncities: number;
     nterrs: number;

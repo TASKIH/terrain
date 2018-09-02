@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-generator", "./terrain-generator"], function (require, exports, util_1, language, d3, terrain_feature_generator_1, terrain_generator_1) {
+define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-generator", "./terrain-generator", "./mesh-generator"], function (require, exports, util_1, language, d3, terrain_feature_generator_1, terrain_generator_1, mesh_generator_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     language = __importStar(language);
@@ -24,13 +24,13 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             var citylabels = [];
             function penalty(label) {
                 var pen = 0;
-                if (label.x0 < -0.45 * h.mesh.extent.width)
+                if (label.x0 < -0.45 * render.mesh.extent.width)
                     pen += 100;
-                if (label.x1 > 0.45 * h.mesh.extent.width)
+                if (label.x1 > 0.45 * render.mesh.extent.width)
                     pen += 100;
-                if (label.y0 < -0.45 * h.mesh.extent.height)
+                if (label.y0 < -0.45 * render.mesh.extent.height)
                     pen += 100;
-                if (label.y1 > 0.45 * h.mesh.extent.height)
+                if (label.y1 > 0.45 * render.mesh.extent.height)
                     pen += 100;
                 for (var i = 0; i < citylabels.length; i++) {
                     var olabel = citylabels[i];
@@ -40,8 +40,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                     }
                 }
                 for (var i = 0; i < cities.length; i++) {
-                    var c = h.mesh.voronoiPoints[cities[i]];
-                    if (label.x0 < c[0] && label.x1 > c[0] && label.y0 < c[1] && label.y1 > c[1]) {
+                    var c = render.mesh.voronoiPoints[cities[i]];
+                    if (label.x0 < c.x && label.x1 > c.x && label.y0 < c.y && label.y1 > c.y) {
                         pen += 100;
                     }
                 }
@@ -60,14 +60,16 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 return pen;
             }
             for (var i = 0; i < cities.length; i++) {
-                var x = h.mesh.voronoiPoints[cities[i]].x;
-                var y = h.mesh.voronoiPoints[cities[i]].y;
+                var x = render.mesh.voronoiPoints[cities[i]].x;
+                var y = render.mesh.voronoiPoints[cities[i]].y;
                 var text = language.makeName(lang, 'city');
                 var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
                 var sx = 0.65 * size / 1000 * text.length;
                 var sy = size / 1000;
                 var posslabels = [
                     {
+                        text: '',
+                        size: 12,
                         x: x + 0.8 * sy,
                         y: y + 0.3 * sy,
                         align: 'start',
@@ -77,6 +79,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                         y1: y + 0.6 * sy
                     },
                     {
+                        text: '',
+                        size: 12,
                         x: x - 0.8 * sy,
                         y: y + 0.3 * sy,
                         align: 'end',
@@ -86,6 +90,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                         y1: y + 0.7 * sy
                     },
                     {
+                        text: '',
+                        size: 12,
                         x: x,
                         y: y - 0.8 * sy,
                         align: 'middle',
@@ -95,6 +101,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                         y1: y - 0.7 * sy
                     },
                     {
+                        text: '',
+                        size: 12,
                         x: x,
                         y: y + 1.2 * sy,
                         align: 'middle',
@@ -104,8 +112,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                         y1: y + 1.3 * sy
                     }
                 ];
-                // @ts-ignore
-                var label = posslabels[d3.scan(posslabels, function (a, b) { return penalty(a) - penalty(b); })];
+                var label = posslabels[d3.scan(posslabels, function (a, b) { return penalty(a) - penalty(b); }) || 0];
                 label.text = text;
                 label.size = size;
                 citylabels.push(label);
@@ -135,13 +142,13 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 var bestscore = -999999;
                 for (var j = 0; j < h.length; j++) {
                     var score = 0;
-                    var v = h.mesh.voronoiPoints[j];
+                    var v = render.mesh.voronoiPoints[j];
                     score -= 3000 * Math.sqrt((v.x - lc[0]) * (v.x - lc[0]) + (v.y - lc[1]) * (v.y - lc[1]));
                     score -= 1000 * Math.sqrt((v.x - oc[0]) * (v.x - oc[0]) + (v.y - oc[1]) * (v.y - oc[1]));
                     if (terr[j] != city)
                         score -= 3000;
                     for (var k = 0; k < cities.length; k++) {
-                        var u = h.mesh.voronoiPoints[cities[k]];
+                        var u = render.mesh.voronoiPoints[cities[k]];
                         if (Math.abs(v.x - u.x) < sx &&
                             Math.abs(v.y - sy / 2 - u.y) < sy) {
                             score -= k < nterrs ? 4000 : 500;
@@ -154,8 +161,11 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                         }
                     }
                     for (var k = 0; k < reglabels.length; k++) {
+                        // @ts-ignore
                         var label = reglabels[k];
+                        // @ts-ignore
                         if (v.x - sx / 2 < label.x + label.width / 2 &&
+                            // @ts-ignore
                             v.x + sx / 2 > label.x - label.width / 2 &&
                             v.y - sy < label.y &&
                             v.y > label.y - label.size) {
@@ -164,13 +174,13 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                     }
                     if (h[j] <= 0)
                         score -= 500;
-                    if (v.x + sx / 2 > 0.5 * h.mesh.extent.width)
+                    if (v.x + sx / 2 > 0.5 * render.mesh.extent.width)
                         score -= 50000;
-                    if (v.x - sx / 2 < -0.5 * h.mesh.extent.width)
+                    if (v.x - sx / 2 < -0.5 * render.mesh.extent.width)
                         score -= 50000;
-                    if (v.y > 0.5 * h.mesh.extent.height)
+                    if (v.y > 0.5 * render.mesh.extent.height)
                         score -= 50000;
-                    if (v.y - sy < -0.5 * h.mesh.extent.height)
+                    if (v.y - sy < -0.5 * render.mesh.extent.height)
                         score -= 50000;
                     if (score > bestscore) {
                         bestscore = score;
@@ -179,8 +189,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 }
                 reglabels.push({
                     text: text,
-                    x: h.mesh.voronoiPoints[best].x,
-                    y: h.mesh.voronoiPoints[best].y,
+                    x: render.mesh.voronoiPoints[best].x,
+                    y: render.mesh.voronoiPoints[best].y,
                     size: sy,
                     width: sx
                 });
@@ -200,14 +210,14 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .raise();
         };
         // 等高線の作成
-        TerrainDrawer.contour = function (h, level) {
+        TerrainDrawer.contour = function (mesh, h, level) {
             level = h.seaLevelHeight || 0;
             var edges = [];
-            for (var i = 0; i < h.mesh.edges.length; i++) {
-                var edge = h.mesh.edges[i];
+            for (var i = 0; i < mesh.edges.length; i++) {
+                var edge = mesh.edges[i];
                 if (edge.right == undefined)
                     continue;
-                if (util_1.TerrainCalcUtil.isNearEdge(h.mesh, edge.index1) || util_1.TerrainCalcUtil.isNearEdge(h.mesh, edge.index2))
+                if (util_1.TerrainCalcUtil.isNearEdge(mesh, edge.index1) || util_1.TerrainCalcUtil.isNearEdge(mesh, edge.index2))
                     continue;
                 if ((h[edge.index1] > level && h[edge.index2] <= level) ||
                     (h[edge.index2] > level && h[edge.index1] <= level)) {
@@ -217,8 +227,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             return util_1.TerrainCalcUtil.mergeSegments(edges);
         };
         TerrainDrawer.drawMap = function (svg, render) {
-            render.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(render.h, 0.01);
-            render.coasts = TerrainDrawer.contour(render.h, 0);
+            render.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(render.mesh, render.h, 0.01);
+            render.coasts = TerrainDrawer.contour(render.mesh, render.h, 0);
             render.terr = terrain_feature_generator_1.TerrainFeatureGenerator.getTerritories(render);
             render.borders = terrain_feature_generator_1.TerrainFeatureGenerator.getBorders(render);
             TerrainDrawer.drawPaths(svg, 'river', render.rivers);
@@ -236,9 +246,10 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 1000 * params.extent.width + ' ' +
                 1000 * params.extent.height);
             svg.selectAll().remove();
+            var mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(params.npts, params.extent);
             var render = {
                 params: params,
-                h: params.generator(params.npts, params.extent)
+                h: params.generator(mesh, params.extent)
             };
             terrain_feature_generator_1.TerrainFeatureGenerator.placeCities(render);
             TerrainDrawer.drawMap(svg, render);
@@ -261,14 +272,14 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             }
             return p.toString();
         };
-        TerrainDrawer.visualizeVoronoi = function (svg, field, lo, hi) {
+        TerrainDrawer.visualizeVoronoi = function (svg, mesh, field, lo, hi) {
             if (hi == undefined)
                 hi = (d3.max(field) || 0) + 1e-9;
             if (lo == undefined)
                 lo = (d3.min(field) || 0) - 1e-9;
             var voronoiSites = [];
-            for (var key in field.mesh.pointDict) {
-                var pointCnt = field.mesh.pointDict[key];
+            for (var key in mesh.pointDict) {
+                var pointCnt = mesh.pointDict[key];
                 voronoiSites[key] = pointCnt.relatedVoronoiSites;
             }
             var tris = svg.selectAll('path.field').data(voronoiSites);
@@ -283,8 +294,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 return TerrainDrawer.getColor(field[i]);
             });
         };
-        TerrainDrawer.visualizeDownhill = function (h) {
-            var links = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(h, 0.01);
+        TerrainDrawer.visualizeDownhill = function (mesh, h) {
+            var links = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
             TerrainDrawer.drawPaths('river', links);
         };
         TerrainDrawer.drawPaths = function (svg, cls, paths) {
@@ -337,14 +348,14 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             var strokes = [];
             var r = 0.25 / Math.sqrt(h.length);
             for (var i = 0; i < h.length; i++) {
-                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(h.mesh, i))
+                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(render.mesh, i))
                     continue;
-                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(render.mesh, i);
                 nbs.push(i);
                 var s = 0;
                 var s2 = 0;
                 for (var j = 0; j < nbs.length; j++) {
-                    var slopes = terrain_generator_1.TerrainGenerator.trislope(h, nbs[j]);
+                    var slopes = terrain_generator_1.TerrainGenerator.trislope(render.mesh, h, nbs[j]);
                     s += slopes[0] / 10;
                     s2 += slopes[1];
                 }
@@ -353,8 +364,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 if (Math.abs(s) < util_1.TerrainCalcUtil.runif(0.1, 0.4))
                     continue;
                 var l = r * util_1.TerrainCalcUtil.runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100);
-                var x = h.mesh.voronoiPoints[i].x;
-                var y = h.mesh.voronoiPoints[i].y;
+                var x = render.mesh.voronoiPoints[i].x;
+                var y = render.mesh.voronoiPoints[i].y;
                 if (Math.abs(l * s) > 2 * r) {
                     var n = Math.floor(Math.abs(l * s / r));
                     l /= n;
@@ -393,8 +404,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             circs.exit()
                 .remove();
             svg.selectAll('circle.city')
-                .attr('cx', function (d) { return 1000 * h.mesh.voronoiPoints[d].x; })
-                .attr('cy', function (d) { return 1000 * h.mesh.voronoiPoints[d].y; })
+                .attr('cx', function (d) { return 1000 * render.mesh.voronoiPoints[d].x; })
+                .attr('cy', function (d) { return 1000 * render.mesh.voronoiPoints[d].y; })
                 .attr('r', function (d, i) { return i >= n ? 4 : 10; })
                 .style('fill', 'white')
                 .style('stroke-width', 5)

@@ -13,25 +13,25 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
     var TerrainFeatureGenerator = /** @class */ (function () {
         function TerrainFeatureGenerator() {
         }
-        TerrainFeatureGenerator.cityScore = function (h, cities) {
-            var score = terrain_generator_1.TerrainGenerator.map(terrain_generator_1.TerrainGenerator.getFlux(h), Math.sqrt);
+        TerrainFeatureGenerator.cityScore = function (mesh, h, cities) {
+            var score = terrain_generator_1.TerrainGenerator.map(terrain_generator_1.TerrainGenerator.getFlux(mesh, h), Math.sqrt);
             for (var i = 0; i < h.length; i++) {
-                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(h.mesh, i)) {
+                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(mesh, i)) {
                     score[i] = -999999;
                     score[i] = -999999;
                     continue;
                 }
-                score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i].x) - h.mesh.extent.width / 2);
-                score[i] += 0.01 / (1e-9 + Math.abs(h.mesh.voronoiPoints[i].y) - h.mesh.extent.height / 2);
+                score[i] += 0.01 / (1e-9 + Math.abs(mesh.voronoiPoints[i].x) - mesh.extent.width / 2);
+                score[i] += 0.01 / (1e-9 + Math.abs(mesh.voronoiPoints[i].y) - mesh.extent.height / 2);
                 for (var j = 0; j < cities.length; j++) {
-                    score[i] -= 0.02 / (util_1.TerrainCalcUtil.getDistance(h.mesh, cities[j], i) + 1e-9);
+                    score[i] -= 0.02 / (util_1.TerrainCalcUtil.getDistance(mesh, cities[j], i) + 1e-9);
                 }
             }
             return score;
         };
         TerrainFeatureGenerator.placeCity = function (render) {
             render.cities = render.cities || [];
-            var score = TerrainFeatureGenerator.cityScore(render.h, render.cities);
+            var score = TerrainFeatureGenerator.cityScore(render.mesh, render.h, render.cities);
             var newcity = d3.scan(score, d3.descending);
             render.cities.push(newcity);
         };
@@ -43,9 +43,9 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                 TerrainFeatureGenerator.placeCity(render);
             }
         };
-        TerrainFeatureGenerator.getRivers = function (h, limit) {
-            var dh = terrain_generator_1.TerrainGenerator.downhill(h);
-            var flux = terrain_generator_1.TerrainGenerator.getFlux(h);
+        TerrainFeatureGenerator.getRivers = function (mesh, h, limit) {
+            var dh = terrain_generator_1.TerrainGenerator.downhill(mesh, h);
+            var flux = terrain_generator_1.TerrainGenerator.getFlux(mesh, h);
             var links = [];
             var above = 0;
             for (var i = 0; i < h.length; i++) {
@@ -54,11 +54,11 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
             }
             limit *= above / h.length;
             for (var i = 0; i < dh.length; i++) {
-                if (util_1.TerrainCalcUtil.isNearEdge(h.mesh, i))
+                if (util_1.TerrainCalcUtil.isNearEdge(mesh, i))
                     continue;
                 if (flux[i] > limit && h[i] > 0 && dh[i] >= 0) {
-                    var up = h.mesh.voronoiPoints[i];
-                    var down = h.mesh.voronoiPoints[dh[i]];
+                    var up = mesh.voronoiPoints[i];
+                    var down = mesh.voronoiPoints[dh[i]];
                     if (h[dh[i]] > 0) {
                         links.push([up, down]);
                     }
@@ -75,11 +75,11 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
             var n = render.params.nterrs;
             if (n > render.cities.length)
                 n = render.cities.length;
-            var flux = terrain_generator_1.TerrainGenerator.getFlux(h);
+            var flux = terrain_generator_1.TerrainGenerator.getFlux(render.mesh, h);
             var terr = [];
             var newQueue = new PriorityQueue.ArrayStrategy({ comparator: function (a, b) { return a.score - b.score; } });
             function weight(u, v) {
-                var horiz = util_1.TerrainCalcUtil.getDistance(h.mesh, u, v);
+                var horiz = util_1.TerrainCalcUtil.getDistance(render.mesh, u, v);
                 var vert = h[v] - h[u];
                 if (vert > 0)
                     vert /= 10;
@@ -93,7 +93,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
             }
             for (var i = 0; i < n; i++) {
                 terr[cities[i]] = cities[i];
-                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, cities[i]);
+                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(render.mesh, cities[i]);
                 for (var j = 0; j < nbs.length; j++) {
                     newQueue.queue({
                         score: weight(cities[i], nbs[j]),
@@ -107,7 +107,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                 if (terr[u.vx] != undefined)
                     continue;
                 terr[u.vx] = u.city;
-                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, u.vx);
+                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(render.mesh, u.vx);
                 for (var i = 0; i < nbs.length; i++) {
                     var v = nbs[i];
                     if (terr[v] != undefined)
@@ -120,8 +120,6 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                     });
                 }
             }
-            // @ts-ignore
-            terr.mesh = h.mesh;
             return terr;
         };
         TerrainFeatureGenerator.getBorders = function (render) {

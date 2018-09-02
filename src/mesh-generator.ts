@@ -57,7 +57,8 @@ export class MeshGenerator {
             return {
                 point: point,
                 connectingPoints: [],
-                relatedVoronoiSites: []
+                relatedVoronoiSites: [],
+                height: 0,
             }
     }
 
@@ -141,8 +142,6 @@ export class MeshGenerator {
 
         mesh.pointMapFunction = function (f: (param : TerrainPoint) => [number, number]) {
             var mapped = voronoiPoints.map(f);
-            // @ts-ignore
-            mapped.mesh = mesh;
             return mapped;
         };
 

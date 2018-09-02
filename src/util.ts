@@ -11,14 +11,14 @@ export class TerrainCalcUtil {
         }
         return total / numbers.length;
     }
-    
+
     // 乱数を生成する
     static runif(lo: number, hi: number): number {
         return lo + Math.random() * (hi - lo);
     }
-    
+
     static rnorm(): number {
-        let z2:number | null = null;
+        let z2: number | null = null;
         function rnorm(): number {
             if (z2 != null) {
                 var tmp = z2;
@@ -39,11 +39,11 @@ export class TerrainCalcUtil {
         }
         return rnorm();
     }
-    
+
     static randomVector(scale: number): [number, number] {
         return [scale * TerrainCalcUtil.rnorm(), scale * TerrainCalcUtil.rnorm()];
     }
-    
+
     static centroid(pts: [number, number][]): [number, number] {
         var x = 0;
         var y = 0;
@@ -51,9 +51,9 @@ export class TerrainCalcUtil {
             x += pts[i][0];
             y += pts[i][1];
         }
-        return [x/pts.length, y/pts.length];
+        return [x / pts.length, y / pts.length];
     }
-    
+
     static terrCenter(h: TerrainHeights, terr: any, city: any, landOnly: boolean) {
         var x = 0;
         var y = 0;
@@ -65,9 +65,9 @@ export class TerrainCalcUtil {
             y += terr.mesh.voronoiPoints[i].y;
             n++;
         }
-        return [x/n, y/n];
+        return [x / n, y / n];
     }
-    
+
 
     static isEdge(mesh: MapMesh, i: number): boolean {
         return (mesh.pointDict[i].connectingPoints.length < 3);
@@ -102,22 +102,16 @@ export class TerrainCalcUtil {
         sortedh.sort(d3.ascending);
         return d3.quantile(sortedh, q);
     }
-    
+
     static mergeSegments(segs: any[]) {
-        var adj:any = {};
+        var adj: any = {};
         for (var i = 0; i < segs.length; i++) {
             var seg = segs[i];
-            // @ts-ignore
             var a0 = adj[seg[0]] || [];
-            // @ts-ignore
             var a1 = adj[seg[1]] || [];
-            // @ts-ignore
             a0.push(seg[1]);
-            // @ts-ignore
             a1.push(seg[0]);
-            // @ts-ignore
             adj[seg[0]] = a0;
-            // @ts-ignore
             adj[seg[1]] = a1;
         }
         var done = [];
@@ -128,8 +122,6 @@ export class TerrainCalcUtil {
                 for (var i = 0; i < segs.length; i++) {
                     if (done[i]) continue;
                     done[i] = true;
-                    // @ts-ignore
-                    // @ts-ignore
                     path = [segs[i][0], segs[i][1]];
                     break;
                 }
@@ -138,28 +130,20 @@ export class TerrainCalcUtil {
             var changed = false;
             for (var i = 0; i < segs.length; i++) {
                 if (done[i]) continue;
-                // @ts-ignore
                 if (adj[path[0]].length == 2 && segs[i][0] == path[0]) {
-                    // @ts-ignore
                     path.unshift(segs[i][1]);
-                } else { // @ts-ignore
-                    // @ts-ignore
+                } else {
                     if (adj[path[0]].length == 2 && segs[i][1] == path[0]) {
-                                    // @ts-ignore
-                                    path.unshift(segs[i][0]);
-                                } else { // @ts-ignore
-                        // @ts-ignore
+                        path.unshift(segs[i][0]);
+                    } else {
                         if (adj[path[path.length - 1]].length == 2 && segs[i][0] == path[path.length - 1]) {
-                                                        // @ts-ignore
-                                                        path.push(segs[i][1]);
-                                                    } else { // @ts-ignore
-                            // @ts-ignore
+                            path.push(segs[i][1]);
+                        } else {
                             if (adj[path[path.length - 1]].length == 2 && segs[i][1] == path[path.length - 1]) {
-                                                                                // @ts-ignore
-                                                    path.push(segs[i][0]);
-                                                                            } else {
-                                                                                continue;
-                                                                            }
+                                path.push(segs[i][0]);
+                            } else {
+                                continue;
+                            }
                         }
                     }
                 }

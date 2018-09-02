@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-queue"], function (require, exports, d3, mesh_generator_1, util_1) {
+define(["require", "exports", "d3", "./util", "js-priority-queue"], function (require, exports, d3, util_1) {
     'use strict';
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
@@ -16,12 +16,11 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
     var TerrainGenerator = /** @class */ (function () {
         function TerrainGenerator() {
         }
-        TerrainGenerator.resetTerrainHeights = function (mesh) {
+        TerrainGenerator.generateZeroHeights = function (mesh) {
             var z = [];
             for (var i = 0; i < mesh.voronoiPoints.length; i++) {
                 z[i] = 0;
             }
-            z.mesh = mesh;
             z.heightRange = [-1, 1];
             z.seaLevelHeight = 0;
             return z;
@@ -43,7 +42,6 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
         };
         TerrainGenerator.map = function (h, f) {
             var newh = h.map(f);
-            newh.mesh = h.mesh;
             newh.heightRange = h.heightRange;
             newh.seaLevelHeight = h.seaLevelHeight;
             return newh;
@@ -58,16 +56,17 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
         TerrainGenerator.peaky = function (heights) {
             return TerrainGenerator.map(TerrainGenerator.normalize(heights), Math.sqrt);
         };
-        TerrainGenerator.mergeHeights = function () {
+        TerrainGenerator.mergeHeights = function (mesh) {
             var args = [];
-            for (var _i = 0; _i < arguments.length; _i++) {
-                args[_i] = arguments[_i];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
             }
+            console.log(mesh);
             var n = args[0].length;
-            var newVals = TerrainGenerator.resetTerrainHeights(args[0].mesh);
+            var newVals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < n; i++) {
-                for (var j = 0; j < arguments.length; j++) {
-                    newVals[i] += arguments[j][i];
+                for (var j = 0; j < args.length; j++) {
+                    newVals[i] += args[j][i];
                 }
             }
             return newVals;
@@ -78,7 +77,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             for (var i = 0; i < n; i++) {
                 mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
             }
-            var newvals = TerrainGenerator.resetTerrainHeights(mesh);
+            var newvals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < mesh.voronoiPoints.length; i++) {
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
@@ -87,7 +86,6 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                     newvals[i] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
                 }
             }
-            console.log(newvals);
             return newvals;
         };
         TerrainGenerator.continent = function (mesh, peakHeight, count, radius) {
@@ -97,8 +95,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             for (var i = 0; i < n; i++) {
                 mounts.push([mesh.extent.width * (Math.random() - 0.5), mesh.extent.height * (Math.random() - 0.5)]);
             }
-            console.log(mounts);
-            var newvals = TerrainGenerator.resetTerrainHeights(mesh);
+            var newvals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < mesh.voronoiPoints.length; i++) {
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
@@ -107,15 +104,13 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                     newvals[i] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
                 }
             }
-            console.log(newvals);
             return newvals;
         };
         // 傾斜をなだらかにする
-        TerrainGenerator.relax = function (h) {
-            // @ts-ignore
-            var newh = resetTerrainHeights(h.mesh);
+        TerrainGenerator.relax = function (mesh, h) {
+            var newh = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
-                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                 if (nbs.length < 3) {
                     newh[i] = 0;
                     continue;
@@ -125,15 +120,15 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             return newh;
         };
         // どのポイントからどのポイントに対して傾斜させるかを決定する
-        TerrainGenerator.downhill = function (h) {
+        TerrainGenerator.downhill = function (mesh, h) {
             if (h.downhill)
                 return h.downhill;
             function downFrom(i) {
-                if (util_1.TerrainCalcUtil.isEdge(h.mesh, i))
+                if (util_1.TerrainCalcUtil.isEdge(mesh, i))
                     return -2;
                 var best = -1;
                 var besth = h[i];
-                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+                var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                 for (var j = 0; j < nbs.length; j++) {
                     if (h[nbs[j]] < besth) {
                         besth = h[nbs[j]];
@@ -149,12 +144,12 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             h.downhill = downs;
             return downs;
         };
-        TerrainGenerator.fillSinks = function (h, epsilon) {
+        TerrainGenerator.fillSinks = function (mesh, h, epsilon) {
             epsilon = epsilon || 1e-5;
             var infinity = 999999;
-            var newHeights = TerrainGenerator.resetTerrainHeights(h.mesh);
+            var newHeights = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
-                if (util_1.TerrainCalcUtil.isNearEdge(h.mesh, i)) {
+                if (util_1.TerrainCalcUtil.isNearEdge(mesh, i)) {
                     newHeights[i] = h[i];
                 }
                 else {
@@ -166,7 +161,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                 for (var i = 0; i < h.length; i++) {
                     if (newHeights[i] == h[i])
                         continue;
-                    var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+                    var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                     for (var j = 0; j < nbs.length; j++) {
                         if (h[i] >= newHeights[nbs[j]] + epsilon) {
                             newHeights[i] = h[i];
@@ -184,11 +179,11 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                     return newHeights;
             }
         };
-        TerrainGenerator.getFlux = function (h) {
+        TerrainGenerator.getFlux = function (mesh, h) {
             // 傾斜を作成
-            var dh = TerrainGenerator.downhill(h);
+            var dh = TerrainGenerator.downhill(mesh, h);
             var idxs = [];
-            var flux = TerrainGenerator.resetTerrainHeights(h.mesh);
+            var flux = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
                 idxs[i] = i;
                 flux[i] = 1 / h.length;
@@ -204,26 +199,26 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             }
             return flux;
         };
-        TerrainGenerator.getSlope = function (h) {
-            var dh = TerrainGenerator.downhill(h);
-            var slope = TerrainGenerator.resetTerrainHeights(h.mesh);
+        TerrainGenerator.getSlope = function (mesh, h) {
+            var dh = TerrainGenerator.downhill(mesh, h);
+            var slope = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
-                var s = TerrainGenerator.trislope(h, i);
+                var s = TerrainGenerator.trislope(mesh, h, i);
                 slope[i] = Math.sqrt(s[0] * s[0] + s[1] * s[1]);
                 continue;
                 if (dh[i] < 0) {
                     slope[i] = 0;
                 }
                 else {
-                    slope[i] = (h[i] - h[dh[i]]) / util_1.TerrainCalcUtil.getDistance(h.mesh, i, dh[i]);
+                    slope[i] = (h[i] - h[dh[i]]) / util_1.TerrainCalcUtil.getDistance(mesh, i, dh[i]);
                 }
             }
             return slope;
         };
-        TerrainGenerator.erosionRate = function (h) {
-            var flux = TerrainGenerator.getFlux(h);
-            var slope = TerrainGenerator.getSlope(h);
-            var newh = TerrainGenerator.resetTerrainHeights(h.mesh);
+        TerrainGenerator.erosionRate = function (mesh, h) {
+            var flux = TerrainGenerator.getFlux(mesh, h);
+            var slope = TerrainGenerator.getSlope(mesh, h);
+            var newh = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
                 var river = Math.sqrt(flux[i]) * slope[i];
                 var creep = slope[i] * slope[i];
@@ -233,26 +228,26 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             }
             return newh;
         };
-        TerrainGenerator.erode = function (h, amount) {
-            var er = TerrainGenerator.erosionRate(h);
-            var newh = TerrainGenerator.resetTerrainHeights(h.mesh);
+        TerrainGenerator.erode = function (mesh, h, amount) {
+            var er = TerrainGenerator.erosionRate(mesh, h);
+            var newh = TerrainGenerator.generateZeroHeights(mesh);
             var maxr = d3.max(er) || 0;
             for (var i = 0; i < h.length; i++) {
                 newh[i] = h[i] - amount * (er[i] / maxr);
             }
             return newh;
         };
-        TerrainGenerator.doErosion = function (h, amount, n) {
+        TerrainGenerator.doErosion = function (mesh, h, amount, n) {
             n = n || 1;
-            h = TerrainGenerator.fillSinks(h);
+            h = TerrainGenerator.fillSinks(mesh, h);
             for (var i = 0; i < n; i++) {
-                h = TerrainGenerator.erode(h, amount);
-                h = TerrainGenerator.fillSinks(h);
+                h = TerrainGenerator.erode(mesh, h, amount);
+                h = TerrainGenerator.fillSinks(mesh, h);
             }
             return h;
         };
-        TerrainGenerator.setSeaLevel = function (h, q) {
-            var newh = TerrainGenerator.resetTerrainHeights(h.mesh);
+        TerrainGenerator.setSeaLevel = function (mesh, h, q) {
+            var newh = TerrainGenerator.generateZeroHeights(mesh);
             newh.seaLevelHeight = q;
             var delta = util_1.TerrainCalcUtil.getQuantile(h, q) || 0;
             for (var i = 0; i < h.length; i++) {
@@ -274,13 +269,13 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             }
             return h;
         };
-        TerrainGenerator.cleanCoast = function (h, iters) {
+        TerrainGenerator.cleanCoast = function (mesh, h, iters) {
             for (var iter = 0; iter < iters; iter++) {
                 var changed = 0;
-                var newh = TerrainGenerator.resetTerrainHeights(h.mesh);
+                var newh = TerrainGenerator.generateZeroHeights(mesh);
                 for (var i = 0; i < h.length; i++) {
                     newh[i] = h[i];
-                    var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+                    var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                     if (h[i] <= 0 || nbs.length != 3)
                         continue;
                     var count = 0;
@@ -299,10 +294,10 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
                     changed++;
                 }
                 h = newh;
-                newh = TerrainGenerator.resetTerrainHeights(h.mesh);
+                newh = TerrainGenerator.generateZeroHeights(mesh);
                 for (var i = 0; i < h.length; i++) {
                     newh[i] = h[i];
-                    var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+                    var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                     if (h[i] > 0 || nbs.length != 3)
                         continue;
                     var count = 0;
@@ -324,13 +319,13 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             }
             return h;
         };
-        TerrainGenerator.trislope = function (h, i) {
-            var nbs = util_1.TerrainCalcUtil.getNeighbourIds(h.mesh, i);
+        TerrainGenerator.trislope = function (mesh, h, i) {
+            var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
             if (nbs.length != 3)
                 return [0, 0];
-            var p0 = h.mesh.voronoiPoints[nbs[0]];
-            var p1 = h.mesh.voronoiPoints[nbs[1]];
-            var p2 = h.mesh.voronoiPoints[nbs[2]];
+            var p0 = mesh.voronoiPoints[nbs[0]];
+            var p1 = mesh.voronoiPoints[nbs[1]];
+            var p2 = mesh.voronoiPoints[nbs[2]];
             var x1 = p1.x - p0.x;
             var x2 = p2.x - p0.x;
             var y1 = p1.y - p0.y;
@@ -351,33 +346,32 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "js-priority-q
             newpath.push(path[path.length - 1]);
             return newpath;
         };
-        TerrainGenerator.dropEdge = function (h, p) {
+        TerrainGenerator.dropEdge = function (mesh, h, p) {
             p = p || 4;
-            var newh = TerrainGenerator.resetTerrainHeights(h.mesh);
+            var newh = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
-                var v = h.mesh.voronoiPoints[i];
-                var x = 2.4 * v.x / h.mesh.extent.width;
-                var y = 2.4 * v.y / h.mesh.extent.height;
+                var v = mesh.voronoiPoints[i];
+                var x = 2.4 * v.x / mesh.extent.width;
+                var y = 2.4 * v.y / mesh.extent.height;
                 newh[i] = h[i] - Math.exp(10 * (Math.pow(Math.pow(x, p) + Math.pow(y, p), 1 / p) - 1));
             }
             return newh;
         };
-        TerrainGenerator.generateCoast = function (npts, extent) {
-            var mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(npts, extent);
+        TerrainGenerator.generateCoast = function (mesh, extent) {
             var generatedSlopes = TerrainGenerator.slope(mesh, util_1.TerrainCalcUtil.randomVector(4));
             var generatedCones = TerrainGenerator.cone(mesh, util_1.TerrainCalcUtil.runif(-1, -1));
             var generatedMountains = TerrainGenerator.mountains(mesh, 50);
             console.log(generatedSlopes);
             console.log(mesh);
-            var h = TerrainGenerator.mergeHeights(generatedSlopes, generatedCones, generatedMountains);
+            var h = TerrainGenerator.mergeHeights(mesh, generatedSlopes, generatedCones, generatedMountains);
             for (var i = 0; i < 10; i++) {
-                h = TerrainGenerator.relax(h);
+                h = TerrainGenerator.relax(mesh, h);
             }
             h = TerrainGenerator.peaky(h);
-            h = TerrainGenerator.doErosion(h, util_1.TerrainCalcUtil.runif(0, 0.1), 5);
-            h = TerrainGenerator.setSeaLevel(h, util_1.TerrainCalcUtil.runif(0.2, 0.6));
-            h = TerrainGenerator.fillSinks(h);
-            h = TerrainGenerator.cleanCoast(h, 3);
+            h = TerrainGenerator.doErosion(mesh, h, util_1.TerrainCalcUtil.runif(0, 0.1), 5);
+            h = TerrainGenerator.setSeaLevel(mesh, h, util_1.TerrainCalcUtil.runif(0.2, 0.6));
+            h = TerrainGenerator.fillSinks(mesh, h);
+            h = TerrainGenerator.cleanCoast(mesh, h, 3);
             return h;
         };
         TerrainGenerator.defaultParams = {

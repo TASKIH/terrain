@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import {
-    MapRender
+    MapRender, MapMesh
 } from './terrain-interfaces';
 import { MeshGenerator } from './mesh-generator';
 import { TerrainCalcUtil } from './util';
@@ -60,18 +60,18 @@ export function drawTerrainControll() {
 
     var expDiv = d3.select("div#exp");
     var expSVG = addSVG(expDiv);
-    var expH = TerrainGenerator.resetTerrainHeights(MeshGenerator.generateGoodMesh(4096));
+    var expMesh = MeshGenerator.generateGoodMesh(4096);
+    var expH = TerrainGenerator.generateZeroHeights(expMesh);
 
     function expDraw() {
-        TerrainDrawer.visualizeVoronoi(expSVG, expH, -1, 1);
-        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expH, 0));
+        TerrainDrawer.visualizeVoronoi(expSVG, expMesh, expH, -1, 1);
+        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
     }
 
     expDiv.append("button")
         .text("Reset to flat")
         .on("click", function () {
-            // @ts-ignore
-            expH = resetTerrainHeights(expH.mesh);
+            expH = TerrainGenerator.generateZeroHeights(expMesh);
             expDraw();
         });
 
@@ -80,19 +80,20 @@ export function drawTerrainControll() {
         .on("click", function () {
             const height = +(document.getElementById("continent-height") as HTMLInputElement).value;
             const radius = +(document.getElementById("continent-radius") as HTMLInputElement).value;
-            expH = TerrainGenerator.mergeHeights(expH, TerrainGenerator.continent(expH.mesh!, height, 1, radius));
+            expH = TerrainGenerator.mergeHeights(expMesh, expH, TerrainGenerator.continent(expMesh, height, 1, radius));
+            console.log(expH);
             expDraw();
         });
 
 
     var primDiv = d3.select("div#prim");
     var primSVG = addSVG(primDiv);
-
-    var primH = TerrainGenerator.resetTerrainHeights(MeshGenerator.generateGoodMesh(4096));
+    var primMesh = MeshGenerator.generateGoodMesh(4096);
+    var primH = TerrainGenerator.generateZeroHeights(primMesh);
 
     function primDraw() {
-        // visualizeVoronoi(primSVG, primH, -1, 1);
-        // drawPaths(primSVG, 'coast', contour(primH, 0));
+        TerrainDrawer.visualizeVoronoi(primSVG, primMesh, primH, -1, 1);
+        TerrainDrawer.drawPaths(primSVG, 'coast', TerrainDrawer.contour(primMesh, primH, 0));
     }
 
     primDraw();
@@ -100,8 +101,7 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Reset to flat")
         .on("click", function () {
-            // @ts-ignore
-            primH = resetTerrainHeights(primH.mesh);
+            primH = TerrainGenerator.generateZeroHeights(primMesh);
             primDraw();
         });
 
@@ -115,11 +115,11 @@ export function drawTerrainControll() {
         .text("Add random slope")
         .on("click", function () {
             primH = TerrainGenerator.mergeHeights(
-                primH, TerrainGenerator.slope(primH.mesh!, TerrainCalcUtil.randomVector(4)));
-            TerrainDrawer.visualizeVoronoi(primSVG, primH);
+                primMesh, primH, TerrainGenerator.slope(primMesh, TerrainCalcUtil.randomVector(4)));
+            TerrainDrawer.visualizeVoronoi(primMesh, primSVG, primH);
             // visualizeHeight(primSVG, primH, -1, 1);
-            // primH = mergeHeights(primH, slope(primH.mesh!, [1, -1]));
-            console.log(primH.mesh!);
+            // primH = mergeHeights(primH, slope(primMesh, [1, -1]));
+            console.log(primMesh);
             primDraw();
         });
 
@@ -128,8 +128,7 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Add cone")
         .on("click", function () {
-            // @ts-ignore
-            primH = mergeHeights(primH, cone(primH.mesh, -0.5));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.cone(primMesh, -0.5));
             primDraw();
         });
 
@@ -137,39 +136,35 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Add inverted cone")
         .on("click", function () {
-            // @ts-ignore
-            primH = mergeHeights(primH, cone(primH.mesh, 0.5));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.cone(primMesh, 0.5));
             primDraw();
         });
 
     primDiv.append("button")
         .text("Add five blobs")
         .on("click", function () {
-            // @ts-ignore
-            primH = mergeHeights(primH, mountains(primH.mesh, 5));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.mountains(primMesh, 5));
             primDraw();
         });
 
     primDiv.append("button")
         .text("Add one continent ")
         .on("click", function () {
-            // @ts-ignore
-            primH = mergeHeights(primH, continent(primH.mesh, 0.4, 3, 0.2));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.4, 3, 0.2));
             primDraw();
         });
 
     primDiv.append("button")
         .text("大陸の生成")
         .on("click", function () {
-            
-            primH = TerrainGenerator.resetTerrainHeights(MeshGenerator.generateGoodMesh(13048));
+            primMesh = MeshGenerator.generateGoodMesh(13048);
+            primH = TerrainGenerator.generateZeroHeights(primMesh);
 
             console.log(primH);
-            // @ts-ignore
-            primH = TerrainGenerator.mergeHeights(primH, TerrainGenerator.continent(primH.mesh!, 0.2, 5, 1.4));
-            primH = TerrainGenerator.mergeHeights(primH, TerrainGenerator.continent(primH.mesh!, 0.4, 20, 0.05));
-            primH = TerrainGenerator.mergeHeights(primH, TerrainGenerator.continent(primH.mesh!, -0.05, 10, 1.4));
-            primH = TerrainGenerator.mergeHeights(primH, TerrainGenerator.continent(primH.mesh!, -0.1, 20, 0.05));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.2, 5, 1.4));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.4, 20, 0.05));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.05, 10, 1.4));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.1, 20, 0.05));
             console.log(primH);
             let average = TerrainCalcUtil.mean(primH);
             console.log(primH);
@@ -178,18 +173,19 @@ export function drawTerrainControll() {
             
 
             for(let i = 0; i < 5; i++)
-                primH = TerrainGenerator.relax(primH);
+                primH = TerrainGenerator.relax(primMesh, primH);
             
-            primH = TerrainGenerator.doErosion(primH, TerrainCalcUtil.runif(0, 0.1), 5);
-            primH = TerrainGenerator.cleanCoast(primH, 5);
+            primH = TerrainGenerator.doErosion(primMesh, primH, TerrainCalcUtil.runif(0, 0.1), 5);
+            primH = TerrainGenerator.cleanCoast(primMesh, primH, 5);
             console.log(primH);
             var myRenderer: MapRender = {
                 params: TerrainGenerator.defaultParams,
+                mesh: primMesh,
                 h:  primH
             };
             primH.seaLevelHeight = 0; 
-            myRenderer.rivers = TerrainFeatureGenerator.getRivers(myRenderer.h, 0.01);
-            myRenderer.coasts = TerrainDrawer.contour(myRenderer.h, 0);
+            myRenderer.rivers = TerrainFeatureGenerator.getRivers(primMesh, myRenderer.h, 0.01);
+            myRenderer.coasts = TerrainDrawer.contour(primMesh, myRenderer.h, 0);
 
             TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
@@ -226,14 +222,14 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Relax")
         .on("click", function () {
-            primH = TerrainGenerator.relax(primH);
+            primH = TerrainGenerator.relax(primMesh, primH);
             primDraw();
         });
 
     primDiv.append("button")
         .text("Set sea level to median")
         .on("click", function () {
-            primH = TerrainGenerator.setSeaLevel(primH, 0.5);
+            primH = TerrainGenerator.setSeaLevel(primMesh, primH, 0.5);
             primDraw();
         });
 
@@ -243,25 +239,27 @@ export function drawTerrainControll() {
     function generateUneroded() {
         var mesh = MeshGenerator.generateGoodMesh(4096);
         var h = TerrainGenerator.mergeHeights(
+            mesh,
             TerrainGenerator.slope(mesh, TerrainCalcUtil.randomVector(4)),
             TerrainGenerator.cone(mesh, TerrainCalcUtil.runif(-1, 1)),
             TerrainGenerator.mountains(mesh, 50));
         h = TerrainGenerator.peaky(h);
-        h = TerrainGenerator.fillSinks(h);
-        h = TerrainGenerator.setSeaLevel(h, 0);
+        h = TerrainGenerator.fillSinks(mesh, h);
+        h = TerrainGenerator.setSeaLevel(mesh, h, 0);
         return h;
     }
 
     var erodeH = primH;
+    var erodeMesh = primMesh;
     var erodeViewErosion = false;
 
     function erodeDraw() {
         if (erodeViewErosion) {
-            TerrainDrawer.visualizeVoronoi(erodeSVG, TerrainGenerator.erosionRate(erodeH));
+            TerrainDrawer.visualizeVoronoi(erodeMesh, erodeSVG, TerrainGenerator.erosionRate(erodeMesh, erodeH));
         } else {
-            TerrainDrawer.visualizeVoronoi(erodeSVG, erodeH, 0, 1);
+            TerrainDrawer.visualizeVoronoi(erodeMesh, erodeSVG, erodeH, 0, 1);
         }
-        TerrainDrawer.drawPaths(erodeSVG, "coast", TerrainDrawer.contour(erodeH, 0));
+        TerrainDrawer.drawPaths(erodeSVG, "coast", TerrainDrawer.contour(erodeMesh, erodeH, 0));
     }
 
     erodeDiv.append("button")
@@ -281,14 +279,14 @@ export function drawTerrainControll() {
     erodeDiv.append("button")
         .text("Erode")
         .on("click", function () {
-            erodeH = TerrainGenerator.doErosion(erodeH, 0.1);
+            erodeH = TerrainGenerator.doErosion(erodeMesh, erodeH, 0.1);
             erodeDraw();
         });
 
     erodeDiv.append("button")
         .text("Set sea level to median")
         .on("click", function () {
-            erodeH = TerrainGenerator.setSeaLevel(erodeH, 0.0);
+            erodeH = TerrainGenerator.setSeaLevel(erodeMesh, erodeH, 0.0);
             erodeDraw();
         });
 
@@ -296,8 +294,8 @@ export function drawTerrainControll() {
     erodeDiv.append("button")
         .text("Clean coastlines")
         .on("click", function () {
-            erodeH = TerrainGenerator.cleanCoast(erodeH, 1);
-            erodeH = TerrainGenerator.fillSinks(erodeH);
+            erodeH = TerrainGenerator.cleanCoast(erodeMesh, erodeH, 1);
+            erodeH = TerrainGenerator.fillSinks(erodeMesh, erodeH);
             erodeDraw();
         });
 
@@ -316,6 +314,7 @@ export function drawTerrainControll() {
     var physDiv = d3.select("div#phys");
     var physSVG = addSVG(physDiv);
     var physH = erodeH;
+    var physMesh = erodeMesh;
 
     var physViewCoast = false;
     var physViewRivers = false;
@@ -324,17 +323,17 @@ export function drawTerrainControll() {
 
     function physDraw() {
         if (physViewHeight) {
-            TerrainDrawer.visualizeVoronoi(physSVG, physH, 0);
+            TerrainDrawer.visualizeVoronoi(physMesh, physSVG, physH, 0);
         } else {
             physSVG.selectAll("path.field").remove();
         }
         if (physViewCoast) {
-            TerrainDrawer.drawPaths(physSVG, "coast", TerrainDrawer.contour(physH, 0));
+            TerrainDrawer.drawPaths(physSVG, "coast", TerrainDrawer.contour(physMesh, physH, 0));
         } else {
             TerrainDrawer.drawPaths(physSVG, "coast", []);
         }
         if (physViewRivers) {
-            TerrainDrawer.drawPaths(physSVG, "river", TerrainFeatureGenerator.getRivers(physH, 0.01));
+            TerrainDrawer.drawPaths(physSVG, "river", TerrainFeatureGenerator.getRivers(physMesh, physH, 0.01));
         } else {
             TerrainDrawer.drawPaths(physSVG, "river", []);
         }
@@ -342,14 +341,17 @@ export function drawTerrainControll() {
             TerrainDrawer.visualizeSlopes(physSVG, {
                 h:physH, params: TerrainGenerator.defaultParams});
         } else {
-            // @ts-ignore
-            visualizeSlopes(physSVG, {h:resetTerrainHeights(physH.mesh)});
+            TerrainDrawer.visualizeSlopes(physSVG, {
+                h: TerrainGenerator.generateZeroHeights(physMesh), 
+                params: TerrainGenerator.defaultParams
+            });
         }
     }
     physDiv.append("button")
         .text("Generate random heightmap")
         .on("click", function () {
-            physH = TerrainGenerator.generateCoast(4096, 
+            physMesh = MeshGenerator.generateGoodMesh(4096, defaultExtent);
+            physH = TerrainGenerator.generateCoast(physMesh, 
                 defaultExtent);
             physDraw();
         });
@@ -400,28 +402,27 @@ export function drawTerrainControll() {
 
     var cityViewScore = true;
 
-    function newCityRender(h?: any) {
-        h = h || TerrainGenerator.generateCoast(4096, defaultExtent);
+    function newCityRender(mesh?: MapMesh, h?: any): MapRender {
+        mesh = mesh || MeshGenerator.generateGoodMesh(4096, defaultExtent);
+        h = h || TerrainGenerator.generateCoast(mesh, defaultExtent);
         return {
             params: TerrainGenerator.defaultParams,
             h: h,
+            mesh: mesh,
             cities: []
         };
     }
-    var cityRender = newCityRender(physH);
+    var cityRender = newCityRender(physMesh, physH);
     function cityDraw() {
-        // @ts-ignore
-        cityRender.terr = getTerritories(cityRender);
+        cityRender.terr = TerrainFeatureGenerator.getTerritories(cityRender);
         if (cityViewScore) {
-            var score = TerrainFeatureGenerator.cityScore(cityRender.h, cityRender.cities);
-            // @ts-ignore
-            visualizeVoronoi(citySVG, score, d3.max(score) - 0.5);
+            var score = TerrainFeatureGenerator.cityScore(cityRender.mesh!, cityRender.h, cityRender.cities!);
+            TerrainDrawer.visualizeVoronoi(citySVG, cityRender.mesh!, score, (d3.max(score) || 0) - 0.5);
         } else {
-            // @ts-ignore
-            visualizeVoronoi(citySVG, cityRender.terr);
+            TerrainDrawer.visualizeVoronoi(citySVG, cityRender.mesh!, cityRender.terr);
         }
-        TerrainDrawer.drawPaths(citySVG, 'coast', TerrainDrawer.contour(cityRender.h, 0));
-        TerrainDrawer.drawPaths(citySVG, 'river', TerrainFeatureGenerator.getRivers(cityRender.h, 0.01));
+        TerrainDrawer.drawPaths(citySVG, 'coast', TerrainDrawer.contour(cityRender.mesh!, cityRender.h, 0));
+        TerrainDrawer.drawPaths(citySVG, 'river', TerrainFeatureGenerator.getRivers(cityRender.mesh!, cityRender.h, 0.01));
         TerrainDrawer.drawPaths(citySVG, 'border', TerrainFeatureGenerator.getBorders(cityRender));
         TerrainDrawer.visualizeSlopes(citySVG, cityRender);
         TerrainDrawer.visualizeCities(citySVG, cityRender);
@@ -437,7 +438,7 @@ export function drawTerrainControll() {
     cityDiv.append("button")
         .text("Copy heightmap from above")
         .on("click", function () {
-            cityRender = newCityRender(physH);
+            cityRender = newCityRender(physMesh, physH);
             cityDraw();
         });
 

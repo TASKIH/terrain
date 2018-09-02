@@ -54,7 +54,8 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
             return {
                 point: point,
                 connectingPoints: [],
-                relatedVoronoiSites: []
+                relatedVoronoiSites: [],
+                height: 0,
             };
         };
         MeshGenerator.makeMesh = function (pts, extent) {
@@ -125,8 +126,6 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
             };
             mesh.pointMapFunction = function (f) {
                 var mapped = voronoiPoints.map(f);
-                // @ts-ignore
-                mapped.mesh = mesh;
                 return mapped;
             };
             return mesh;
