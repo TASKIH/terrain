@@ -319,6 +319,7 @@ export class TerrainDrawer {
         tris.exit()
             .remove();
     
+        console.log(waters);
         svg.selectAll('path.field')
             .attr('d', TerrainDrawer.makeD3Path)
             .style('fill', function (d: TerrainPointContainer, i: number) {
@@ -381,6 +382,7 @@ export class TerrainDrawer {
     
     static getWaterColor(water: number): string {
         if (water > 0.8) {
+            console.log('here');
             return "#000099"
         }
         else if (water > 0.7) {

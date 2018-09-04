@@ -4,9 +4,14 @@ export interface Water {
     amount: number;
     deadEnd: boolean;
 }
+export interface FlowResult {
+    isFinished: boolean,
+    hasDeadend?: boolean,
+};
 export interface WaterFlowResult {
     waters: {[key: number]: Water};
     records: {[key: number]: {[key: number]: WaterFlow}}; 
+    result: FlowResult
 }
 export interface WaterFlow {
     from: TerrainPoint;

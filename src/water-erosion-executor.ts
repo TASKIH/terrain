@@ -1,4 +1,4 @@
-import { WaterRecorder, Water, WaterFlowResult } from './water-recorder';
+import { WaterRecorder, Water, WaterFlowResult, FlowResult } from './water-recorder';
 import { MapMesh, TerrainHeights, TerrainPoint } from './terrain-interfaces';
 import { TerrainGenerator } from './terrain-generator';
 
@@ -86,10 +86,6 @@ export class WaterErosionExecutor {
             return h[b.id] - h[a.id];
         });
 
-        interface FlowResult {
-            isFinished: boolean,
-            hasDeadend?: boolean,
-        };
         const getResult = (h: TerrainHeights, waters: {[key: number]: Water}): FlowResult => {
             let hasDeadend = false;
             for(let wk in waters) {
@@ -132,20 +128,18 @@ export class WaterErosionExecutor {
             hasDeadend: undefined,
             isFinished: false,
         };
+
         do {
-            do {
-                heightOrderedVoronois.forEach(e => {
-                    this.drain(mesh, h, e, waters, flowableAmount, record);
-                });
-                result = getResult(h, waters);
-                i++;
-            }
-            while(!result.isFinished && i <= 10000);
+            heightOrderedVoronois.forEach(e => {
+                this.drain(mesh, h, e, waters, flowableAmount, record);
+            });
+            result = getResult(h, waters);
+            i++;
+        }
+        while(!result.isFinished && i <= 10000);
 
-            // 土地を削る処理
-        } while(result.hasDeadend);
 
-        return {waters: waters, records: record.records};
+        return {waters: waters, records: record.records, result: result};
     }
     /**
      * 水による浸食を行う
@@ -153,7 +147,7 @@ export class WaterErosionExecutor {
      * @param h: 地盤の高さ
      * @param waters: 水の量
      */
-    static erodeByWater(mesh: MapMesh, h: TerrainHeights, waters: {[key: number]: number}): TerrainHeights {
+    static erodeByWater(mesh: MapMesh, h: TerrainHeights, waters: {[key: number]: Water}, erodeRate: number): TerrainHeights {
         var newh = TerrainGenerator.generateZeroHeights(mesh);
 
         // 高い順に並び変える
@@ -166,7 +160,7 @@ export class WaterErosionExecutor {
             const pointHeight = h[e.id];
 
             // 水が余っていて標高が0よりも高いところは隣の岩盤の弱いところを押し流す。
-            if (restWater > 0 && pointHeight > 0) {
+            if (restWater.amount > 0 && pointHeight > 0) {
                 // 自分よりも土地の高いところを切り崩す。
                 const robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(tgt => {
                     return h[tgt.id] > pointHeight;
@@ -181,10 +175,10 @@ export class WaterErosionExecutor {
                 const targetHeight = h[minRobustness.id];
                 const heightDelta = targetHeight - pointHeight;
 
-                newh[minRobustness.id] = heightDelta * -1;
-                waters[e.id] = 0;
+                newh[minRobustness.id] = heightDelta * -1 + erodeRate;
+                waters[e.id].amount = 0;
                 // 低くなったので水を押しつける。
-                waters[minRobustness.id] += restWater;
+                waters[minRobustness.id].amount += restWater.amount;
             }
         });
         return TerrainGenerator.mergeHeights(mesh, newh, h);

@@ -61,7 +61,8 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
             let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             });
-            const isFinished = (h, waters) => {
+            const getResult = (h, waters) => {
+                let hasDeadend = false;
                 for (let wk in waters) {
                     const water = waters[wk];
                     // 水がないところはスルーしてOK
@@ -74,12 +75,18 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
                     }
                     // 行き止まりに行き着いていたらスルーしてOK
                     if (water.deadEnd) {
+                        hasDeadend = true;
                         continue;
                     }
                     // それ以外は継続
-                    return false;
+                    return {
+                        isFinished: false,
+                    };
                 }
-                return true;
+                return {
+                    isFinished: true,
+                    hasDeadend: hasDeadend,
+                };
             };
             // 初期降水を設定
             heightOrderedVoronois.forEach(e => {
@@ -90,20 +97,18 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
             });
             const record = new water_recorder_1.WaterRecorder();
             let i = 0;
-            while (!isFinished(h, waters)) {
+            let result = {
+                hasDeadend: undefined,
+                isFinished: false,
+            };
+            do {
                 heightOrderedVoronois.forEach(e => {
                     this.drain(mesh, h, e, waters, flowableAmount, record);
                 });
+                result = getResult(h, waters);
                 i++;
-                // 最大でも1000回までにする。
-                if (i > 10000) {
-                    break;
-                }
-            }
-            console.log(waters);
-            console.log(record.records);
-            console.log(i);
-            return { waters: waters, records: record.records };
+            } while (!result.isFinished && i <= 10000);
+            return { waters: waters, records: record.records, result: result };
         }
         /**
          * 水による浸食を行う
@@ -111,7 +116,7 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
          * @param h: 地盤の高さ
          * @param waters: 水の量
          */
-        static erodeByWater(mesh, h, waters) {
+        static erodeByWater(mesh, h, waters, erodeRate) {
             var newh = terrain_generator_1.TerrainGenerator.generateZeroHeights(mesh);
             // 高い順に並び変える
             let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
@@ -121,7 +126,7 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
                 let restWater = waters[e.id];
                 const pointHeight = h[e.id];
                 // 水が余っていて標高が0よりも高いところは隣の岩盤の弱いところを押し流す。
-                if (restWater > 0 && pointHeight > 0) {
+                if (restWater.amount > 0 && pointHeight > 0) {
                     // 自分よりも土地の高いところを切り崩す。
                     const robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(tgt => {
                         return h[tgt.id] > pointHeight;
@@ -134,10 +139,10 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
                     const minRobustness = robustnessOrder[0];
                     const targetHeight = h[minRobustness.id];
                     const heightDelta = targetHeight - pointHeight;
-                    newh[minRobustness.id] = heightDelta * -1;
-                    waters[e.id] = 0;
+                    newh[minRobustness.id] = heightDelta * -1 + erodeRate;
+                    waters[e.id].amount = 0;
                     // 低くなったので水を押しつける。
-                    waters[minRobustness.id] += restWater;
+                    waters[minRobustness.id].amount += restWater.amount;
                 }
             });
             return terrain_generator_1.TerrainGenerator.mergeHeights(mesh, newh, h);

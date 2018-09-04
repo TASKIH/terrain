@@ -309,6 +309,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .classed('field', true);
             tris.exit()
                 .remove();
+            console.log(waters);
             svg.selectAll('path.field')
                 .attr('d', TerrainDrawer.makeD3Path)
                 .style('fill', function (d, i) {
@@ -366,6 +367,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
         }
         static getWaterColor(water) {
             if (water > 0.8) {
+                console.log('here');
                 return "#000099";
             }
             else if (water > 0.7) {

@@ -147,6 +147,7 @@ export function drawTerrainControll() {
         .text("水の流れの計算")
         .on("click", function () {
             waterResult = WaterErosionExecutor.calcWaterFlow(expMesh, expH, 0.2, 0.5);
+            console.log(waterResult);
             expDrawWater();
         });
 
