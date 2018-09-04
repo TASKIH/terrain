@@ -9,48 +9,46 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
-    var MeshGenerator = /** @class */ (function () {
-        function MeshGenerator() {
-        }
-        MeshGenerator.generatePoints = function (n, extent) {
+    class MeshGenerator {
+        static generatePoints(n, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
             var pts = [];
             for (var i = 0; i < n; i++) {
                 // ランダムな数値を得て、領域全体に散らばるように補正(領域のwidth/heightを乗じる）
-                var x = (Math.random() - 0.5) * extent.width;
-                var y = (Math.random() - 0.5) * extent.height;
+                const x = (Math.random() - 0.5) * extent.width;
+                const y = (Math.random() - 0.5) * extent.height;
                 pts.push([x, y]);
             }
             return pts;
-        };
-        MeshGenerator.appendPoints = function (pts, extent) {
+        }
+        static appendPoints(pts, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
             pts.concat(MeshGenerator.generateVoronoiDiagram(pts, extent)
                 .polygons()
                 .map(util_1.TerrainCalcUtil.centroid));
             return pts;
-        };
-        MeshGenerator.generateGoodPoints = function (n, extent) {
+        }
+        static generateGoodPoints(n, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
-            var pts = MeshGenerator.generatePoints(n, extent);
+            let pts = MeshGenerator.generatePoints(n, extent);
             pts = pts.sort(function (a, b) {
                 return a[0] - b[0];
             });
             return MeshGenerator.appendPoints(pts, extent);
-        };
-        MeshGenerator.generateGoodMesh = function (n, extent) {
+        }
+        static generateGoodMesh(n, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
             var pts = MeshGenerator.generateGoodPoints(n, extent);
             return MeshGenerator.makeMesh(pts, extent);
-        };
-        MeshGenerator.generateVoronoiDiagram = function (pts, extent) {
+        }
+        static generateVoronoiDiagram(pts, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
             var w = extent.width / 2;
             var h = extent.height / 2;
             // voronoi図の範囲を示し、VoronoiDiagramを作成する
             return d3.voronoi().extent([[-w, -h], [w, h]])(pts);
-        };
-        MeshGenerator.newTerrainPointContainer = function (point) {
+        }
+        static newTerrainPointContainer(point) {
             return {
                 point: point,
                 connectingPoints: [],
@@ -58,8 +56,8 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 height: 0,
                 robustness: 0
             };
-        };
-        MeshGenerator.makeMesh = function (pts, extent) {
+        }
+        static makeMesh(pts, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
             var vor = MeshGenerator.generateVoronoiDiagram(pts, extent);
             var pointToIdDict = {};
@@ -75,7 +73,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 if (e0Id == undefined) {
                     e0Id = voronoiPoints.length;
                     pointToIdDict[edge[0].toString()] = e0Id;
-                    var newPoint = {
+                    const newPoint = {
                         id: e0Id,
                         x: edge[0][0],
                         y: edge[0][1],
@@ -87,7 +85,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 if (e1Id == undefined) {
                     e1Id = voronoiPoints.length;
                     pointToIdDict[edge[1].toString()] = e1Id;
-                    var newPoint = {
+                    const newPoint = {
                         id: e1Id,
                         x: edge[1][0],
                         y: edge[1][1],
@@ -122,7 +120,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 pointDict: pointDict,
                 edges: edges,
                 extent: extent,
-                pointMapFunction: function (f) {
+                pointMapFunction: (f) => {
                 }
             };
             mesh.pointMapFunction = function (f) {
@@ -130,8 +128,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 return mapped;
             };
             return mesh;
-        };
-        return MeshGenerator;
-    }());
+        }
+    }
     exports.MeshGenerator = MeshGenerator;
 });

@@ -10,16 +10,14 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
     PriorityQueue = __importStar(PriorityQueue);
-    var TerrainFeatureGenerator = /** @class */ (function () {
-        function TerrainFeatureGenerator() {
-        }
+    class TerrainFeatureGenerator {
         /**
          * 各ポイントに堅牢性を適当に設定する
          * @param mesh
          */
-        TerrainFeatureGenerator.setRandomRoberstness = function (mesh) {
-            for (var key in mesh.pointDict) {
-                var pt = mesh.pointDict[key];
+        static setRandomRoberstness(mesh) {
+            for (const key in mesh.pointDict) {
+                let pt = mesh.pointDict[key];
                 pt.robustness = util_1.TerrainCalcUtil.normRand(0.5, 0.25);
                 if (pt.robustness < 0) {
                     pt.robustness = 0;
@@ -28,8 +26,8 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                     pt.robustness = 1;
                 }
             }
-        };
-        TerrainFeatureGenerator.cityScore = function (mesh, h, cities) {
+        }
+        static cityScore(mesh, h, cities) {
             var score = terrain_generator_1.TerrainGenerator.map(terrain_generator_1.TerrainGenerator.getFlux(mesh, h), Math.sqrt);
             for (var i = 0; i < h.length; i++) {
                 if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(mesh, i)) {
@@ -44,22 +42,22 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                 }
             }
             return score;
-        };
-        TerrainFeatureGenerator.placeCity = function (render) {
+        }
+        static placeCity(render) {
             render.cities = render.cities || [];
             var score = TerrainFeatureGenerator.cityScore(render.mesh, render.h, render.cities);
             var newcity = d3.scan(score, d3.descending);
             render.cities.push(newcity);
-        };
-        TerrainFeatureGenerator.placeCities = function (render) {
+        }
+        static placeCities(render) {
             var params = render.params;
             var h = render.h;
             var n = params.ncities;
             for (var i = 0; i < n; i++) {
                 TerrainFeatureGenerator.placeCity(render);
             }
-        };
-        TerrainFeatureGenerator.getRivers = function (mesh, h, limit) {
+        }
+        static getRivers(mesh, h, limit) {
             var dh = terrain_generator_1.TerrainGenerator.generateDownFromDict(mesh, h);
             var flux = terrain_generator_1.TerrainGenerator.getFlux(mesh, h);
             var links = [];
@@ -84,8 +82,8 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                 }
             }
             return util_1.TerrainCalcUtil.mergeSegments(links).map(terrain_generator_1.TerrainGenerator.relaxPath);
-        };
-        TerrainFeatureGenerator.getTerritories = function (render) {
+        }
+        static getTerritories(render) {
             var h = render.h;
             var cities = render.cities;
             var n = render.params.nterrs;
@@ -137,8 +135,8 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                 }
             }
             return terr;
-        };
-        TerrainFeatureGenerator.getBorders = function (render) {
+        }
+        static getBorders(render) {
             var terr = render.terr;
             var h = render.h;
             var edges = [];
@@ -155,8 +153,7 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
                 }
             }
             return util_1.TerrainCalcUtil.mergeSegments(edges).map(terrain_generator_1.TerrainGenerator.relaxPath);
-        };
-        return TerrainFeatureGenerator;
-    }());
+        }
+    }
     exports.TerrainFeatureGenerator = TerrainFeatureGenerator;
 });

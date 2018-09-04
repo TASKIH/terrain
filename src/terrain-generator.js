@@ -14,10 +14,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
         height: 1,
         margin: 0.10,
     };
-    var TerrainGenerator = /** @class */ (function () {
-        function TerrainGenerator() {
-        }
-        TerrainGenerator.generateZeroHeights = function (mesh) {
+    class TerrainGenerator {
+        static generateZeroHeights(mesh) {
             var z = [];
             for (var i = 0; i < mesh.voronoiPoints.length; i++) {
                 z[i] = 0;
@@ -25,51 +23,47 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             z.heightRange = [-1, 1];
             z.seaLevelHeight = 0;
             return z;
-        };
-        TerrainGenerator.slope = function (mesh, direction) {
+        }
+        static slope(mesh, direction) {
             return mesh.pointMapFunction(function (param) {
                 return param[0] * direction[0] + param[1] * direction[1];
             });
-        };
-        TerrainGenerator.gaussianLikeSlope = function (mesh) {
+        }
+        static gaussianLikeSlope(mesh) {
             return mesh.pointMapFunction(function (param) {
                 return Math.sqrt(-2.0 * Math.log(param[0] + ((Math.random() - 0.5) / 3))) * Math.cos(2.0 * Math.PI * param[1] + ((Math.random() - 0.5) / 3));
             });
-        };
-        TerrainGenerator.cone = function (mesh, slope) {
+        }
+        static cone(mesh, slope) {
             return mesh.pointMapFunction(function (param) {
                 return Math.pow(param[0] * param[0] + param[1] * param[1], 0.5) * slope;
             });
-        };
-        TerrainGenerator.map = function (h, f) {
+        }
+        static map(h, f) {
             var newh = h.map(f);
             newh.heightRange = h.heightRange;
             newh.seaLevelHeight = h.seaLevelHeight;
             return newh;
-        };
-        TerrainGenerator.normalize = function (h) {
+        }
+        static normalize(h) {
             var lo = d3.min(h);
             var hi = d3.max(h);
             return TerrainGenerator.map(h, function (x) {
                 return (x - (lo || 0)) / (hi || 0 - (lo || 0));
             });
-        };
-        TerrainGenerator.peaky = function (heights) {
+        }
+        static peaky(heights) {
             return TerrainGenerator.map(TerrainGenerator.normalize(heights), Math.sqrt);
-        };
-        TerrainGenerator.makeMarginSea = function (mesh, heights) {
+        }
+        static makeMarginSea(mesh, heights) {
             for (var i = 0; i < mesh.voronoiPoints.length; i++) {
                 var p = mesh.voronoiPoints[i];
                 if (util_1.TerrainCalcUtil.isNearEdge(mesh, i)) {
                     heights[p.id] = -0.4;
                 }
             }
-        };
-        TerrainGenerator.mergeHeights = function (mesh) {
-            var args = [];
-            for (var _i = 1; _i < arguments.length; _i++) {
-                args[_i - 1] = arguments[_i];
-            }
+        }
+        static mergeHeights(mesh, ...args) {
             console.log(args);
             var n = args[0].length;
             var newVals = TerrainGenerator.generateZeroHeights(mesh);
@@ -79,8 +73,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 }
             }
             return newVals;
-        };
-        TerrainGenerator.mountains = function (mesh, n, radius) {
+        }
+        static mountains(mesh, n, radius) {
             radius = radius || 0.05;
             var mounts = [];
             for (var i = 0; i < n; i++) {
@@ -91,18 +85,18 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
-                    var doubleDistanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
+                    const doubleDistanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
                     newvals[p.id] += Math.pow(Math.exp(-(doubleDistanceFromOrigin) / (2 * radius * radius)), 2);
                 }
             }
             return newvals;
-        };
-        TerrainGenerator.continent = function (mesh, peakHeight, count, radius, margin) {
+        }
+        static continent(mesh, peakHeight, count, radius, margin) {
             radius = radius || 0.05;
             margin = margin || 0;
-            var validWidth = mesh.extent.width - (margin * 2);
-            var validHeight = mesh.extent.height - (margin * 2);
-            var n = count;
+            const validWidth = mesh.extent.width - (margin * 2);
+            const validHeight = mesh.extent.height - (margin * 2);
+            const n = count;
             var mounts = [];
             for (var i = 0; i < n; i++) {
                 mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
@@ -112,32 +106,32 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 var p = mesh.voronoiPoints[i];
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
-                    var distanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
+                    const distanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
                     newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
                 }
             }
             return newvals;
-        };
+        }
         /**
          * 浸食・風化を実行
          * @param mesh: MapのMesh
          * @param h: 地盤の高さ
          * @param eroseRate: どれくらい浸食させるか
          */
-        TerrainGenerator.erodeSimply = function (mesh, h, eroseRate) {
-            var newHeights = h;
-            mesh.voronoiPoints.forEach(function (e) {
-                var myHeight = newHeights[e.id];
-                mesh.pointDict[e.id].connectingPoints.forEach(function (rel) {
-                    var nextHeight = newHeights[rel.id];
+        static erodeSimply(mesh, h, eroseRate) {
+            let newHeights = h;
+            mesh.voronoiPoints.forEach(e => {
+                const myHeight = newHeights[e.id];
+                mesh.pointDict[e.id].connectingPoints.forEach(rel => {
+                    const nextHeight = newHeights[rel.id];
                     // 自分の方が周りよりも低いときは何もしない
                     if (myHeight <= nextHeight) {
                         return;
                     }
                     // 高さの差分を見る。露出が多いほど浸食・風化が激しいという考え。
-                    var delta = myHeight - nextHeight;
+                    const delta = myHeight - nextHeight;
                     // 差分に風化レートと地盤の頑健さをかけあわせる
-                    var decHeight = delta * eroseRate * (1 - mesh.pointDict[e.id].robustness);
+                    const decHeight = delta * eroseRate * (1 - mesh.pointDict[e.id].robustness);
                     // 差分を引く
                     newHeights[e.id] = newHeights[e.id] - decHeight;
                     // 引いた分を低い方に流す（拡散方程式などが使えるかもしれないけど、今は単純に）
@@ -145,92 +139,88 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 });
             });
             return newHeights;
-        };
-        TerrainGenerator.resetWaterFlow = function (mesh) {
-            var waters = {};
-            mesh.voronoiPoints.forEach(function (e) {
+        }
+        static resetWaterFlow(mesh) {
+            const waters = {};
+            mesh.voronoiPoints.forEach(e => {
                 waters[e.id] = 0;
             });
             return waters;
-        };
-        TerrainGenerator.mergeWaterFlow = function (mesh) {
-            var args = [];
-            for (var _i = 1; _i < arguments.length; _i++) {
-                args[_i - 1] = arguments[_i];
-            }
-            var returnWater = TerrainGenerator.resetWaterFlow(mesh);
-            args.forEach(function (arg) {
-                for (var key in arg) {
+        }
+        static mergeWaterFlow(mesh, ...args) {
+            const returnWater = TerrainGenerator.resetWaterFlow(mesh);
+            args.forEach(arg => {
+                for (const key in arg) {
                     returnWater[key] += arg[key];
                 }
             });
             return returnWater;
-        };
-        TerrainGenerator.calcWaterFlow = function (mesh, h, rainfall, flowableAmount) {
-            var waters = {};
+        }
+        static calcWaterFlow(mesh, h, rainfall, flowableAmount) {
+            let waters = {};
             // 高い順に並び変える
-            var heightOrderedVoronois = mesh.voronoiPoints.sort(function (a, b) {
+            let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             });
             // 初期降水を設定
-            heightOrderedVoronois.forEach(function (e) {
+            heightOrderedVoronois.forEach(e => {
                 waters[e.id] = rainfall;
             });
             // 排水フェーズ
-            var drain = function (e) {
+            const drain = (e) => {
                 // 低い順に並び変える
-                var connectingPoints = mesh.pointDict[e.id].connectingPoints.sort(function (a, b) {
+                let connectingPoints = mesh.pointDict[e.id].connectingPoints.sort((a, b) => {
                     return h[a.id] - h[b.id];
                 });
-                var restWater = waters[e.id];
-                var myHeight = h[e.id];
-                connectingPoints.forEach(function (cp) {
-                    var nextHeight = h[cp.id];
+                let restWater = waters[e.id];
+                const myHeight = h[e.id];
+                connectingPoints.forEach(cp => {
+                    const nextHeight = h[cp.id];
                     // 隣の方が高い場合は何もしない
                     if (nextHeight >= myHeight) {
                         return;
                     }
                     // 最大flowableAmountの水を低い土地に流せる
-                    var flow = Math.min(flowableAmount, restWater);
+                    const flow = Math.min(flowableAmount, restWater);
                     restWater -= flow;
                     waters[e.id] -= flow;
                     waters[cp.id] += flow;
                 });
             };
-            heightOrderedVoronois.forEach(function (e) {
+            heightOrderedVoronois.forEach(e => {
                 drain(e);
             });
             return waters;
-        };
+        }
         /**
          * 水による浸食を行う
          * @param mesh: MapのMesh
          * @param h: 地盤の高さ
          * @param waters: 水の量
          */
-        TerrainGenerator.erodeByWater = function (mesh, h, waters) {
+        static erodeByWater(mesh, h, waters) {
             var newh = TerrainGenerator.generateZeroHeights(mesh);
             // 高い順に並び変える
-            var heightOrderedVoronois = mesh.voronoiPoints.sort(function (a, b) {
+            let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             });
-            heightOrderedVoronois.forEach(function (e) {
-                var restWater = waters[e.id];
-                var pointHeight = h[e.id];
+            heightOrderedVoronois.forEach(e => {
+                let restWater = waters[e.id];
+                const pointHeight = h[e.id];
                 // 水が余っていて標高が0よりも高いところは隣の岩盤の弱いところを押し流す。
                 if (restWater > 0 && pointHeight > 0) {
                     // 自分よりも土地の高いところを切り崩す。
-                    var robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(function (tgt) {
+                    const robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(tgt => {
                         return h[tgt.id] > pointHeight;
-                    }).sort(function (a, b) {
+                    }).sort((a, b) => {
                         return mesh.pointDict[a.id].robustness - mesh.pointDict[b.id].robustness;
                     });
                     if (robustnessOrder.length == 0) {
                         return;
                     }
-                    var minRobustness = robustnessOrder[0];
-                    var targetHeight = h[minRobustness.id];
-                    var heightDelta = targetHeight - pointHeight;
+                    const minRobustness = robustnessOrder[0];
+                    const targetHeight = h[minRobustness.id];
+                    const heightDelta = targetHeight - pointHeight;
                     newh[minRobustness.id] = heightDelta * -1;
                     waters[e.id] = 0;
                     // 低くなったので水を押しつける。
@@ -238,9 +228,9 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 }
             });
             return TerrainGenerator.mergeHeights(mesh, newh, h);
-        };
+        }
         // 傾斜をなだらかにする
-        TerrainGenerator.relax = function (mesh, h) {
+        static relax(mesh, h) {
             var newh = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
                 var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
@@ -251,9 +241,9 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 newh[i] = d3.mean(nbs.map(function (j) { return h[j]; })) || 0;
             }
             return newh;
-        };
+        }
         // 傾斜元IDのリストを取得する
-        TerrainGenerator.generateDownFromDict = function (mesh, h) {
+        static generateDownFromDict(mesh, h) {
             if (h.downFromDict)
                 return h.downFromDict;
             /**
@@ -267,7 +257,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 var besth = h[i];
                 var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                 for (var j = 0; j < nbs.length; j++) {
-                    var neighbousId = nbs[j];
+                    const neighbousId = nbs[j];
                     if (h[neighbousId] < besth) {
                         besth = h[neighbousId];
                         best = neighbousId;
@@ -277,12 +267,12 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             }
             var downs = {};
             for (var i = 0; i < h.length; i++) {
-                var downPoint = mesh.pointDict[downFrom(i)];
+                const downPoint = mesh.pointDict[downFrom(i)];
                 downs[i] = (downPoint) ? downPoint.point : null;
             }
             h.downFromDict = downs;
             return downs;
-        };
+        }
         /**
          * Sinkの平滑化。https://pro.arcgis.com/ja/pro-app/tool-reference/spatial-analyst/how-fill-works.htm
          * 変な窪地をなくすための処理
@@ -290,7 +280,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
          * @param h
          * @param epsilon
          */
-        TerrainGenerator.fillSinks = function (mesh, h, epsilon) {
+        static fillSinks(mesh, h, epsilon) {
             // ごく小さい値（何か意味があるわけじゃなく、必ず小さな傾斜をつけるために値を与えているだけ）
             epsilon = epsilon || 1e-5;
             var infinity = 999999;
@@ -310,7 +300,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                         continue;
                     var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
                     for (var j = 0; j < nbs.length; j++) {
-                        var nbHeight = newHeights[nbs[j]];
+                        const nbHeight = newHeights[nbs[j]];
                         // 最初の段階ではnewHeightsは極大の値なので、必ずnewHeightが与えられる
                         if (h[i] >= nbHeight + epsilon) {
                             newHeights[i] = h[i];
@@ -328,8 +318,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 if (!hasChanged)
                     return newHeights;
             }
-        };
-        TerrainGenerator.getFlux = function (mesh, h) {
+        }
+        static getFlux(mesh, h) {
             // 傾斜を作成
             var downFromDict = TerrainGenerator.generateDownFromDict(mesh, h);
             var indexes = [];
@@ -349,8 +339,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 }
             }
             return flux;
-        };
-        TerrainGenerator.getSlope = function (mesh, h) {
+        }
+        static getSlope(mesh, h) {
             var downFromDict = TerrainGenerator.generateDownFromDict(mesh, h);
             var slope = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
@@ -358,13 +348,13 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                     slope[i] = 0;
                 }
                 else {
-                    var delta = (h[i] - h[downFromDict[i].id]);
+                    const delta = (h[i] - h[downFromDict[i].id]);
                     slope[i] = delta / util_1.TerrainCalcUtil.getDistance(mesh, i, downFromDict[i].id);
                 }
             }
             return slope;
-        };
-        TerrainGenerator.erosionRate = function (mesh, h) {
+        }
+        static erosionRate(mesh, h) {
             var flux = TerrainGenerator.getFlux(mesh, h);
             var slope = TerrainGenerator.getSlope(mesh, h);
             var newh = TerrainGenerator.generateZeroHeights(mesh);
@@ -376,8 +366,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 newh[i] = total;
             }
             return newh;
-        };
-        TerrainGenerator.erode = function (mesh, h, amount) {
+        }
+        static erode(mesh, h, amount) {
             var er = TerrainGenerator.erosionRate(mesh, h);
             var newh = TerrainGenerator.generateZeroHeights(mesh);
             var maxr = d3.max(er) || 0;
@@ -385,8 +375,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 newh[i] = h[i] - amount * (er[i] / maxr);
             }
             return newh;
-        };
-        TerrainGenerator.doErosion = function (mesh, h, amount, n) {
+        }
+        static doErosion(mesh, h, amount, n) {
             n = n || 1;
             h = TerrainGenerator.fillSinks(mesh, h);
             for (var i = 0; i < n; i++) {
@@ -394,8 +384,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 h = TerrainGenerator.fillSinks(mesh, h);
             }
             return h;
-        };
-        TerrainGenerator.setSeaLevel = function (mesh, h, q) {
+        }
+        static setSeaLevel(mesh, h, q) {
             var newh = TerrainGenerator.generateZeroHeights(mesh);
             newh.seaLevelHeight = q;
             var delta = util_1.TerrainCalcUtil.getQuantile(h, q) || 0;
@@ -403,10 +393,10 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 newh[i] = h[i] - delta;
             }
             return newh;
-        };
+        }
         // 海抜ゼロメートル地点とみなす高さを設定して、既存のすべての高さを調整しなおす
-        TerrainGenerator.rescaleBySeaLevel = function (h, newSeaLevel) {
-            var delta = newSeaLevel - 0;
+        static rescaleBySeaLevel(h, newSeaLevel) {
+            const delta = newSeaLevel - 0;
             for (var i = 0; i < h.length; i++) {
                 h[i] = h[i] - delta;
                 if (h[i] > h.heightRange[1]) {
@@ -417,8 +407,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 }
             }
             return h;
-        };
-        TerrainGenerator.cleanCoast = function (mesh, h, iters) {
+        }
+        static cleanCoast(mesh, h, iters) {
             for (var iter = 0; iter < iters; iter++) {
                 var newh = TerrainGenerator.generateZeroHeights(mesh);
                 for (var i = 0; i < h.length; i++) {
@@ -427,7 +417,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                     // 既に水面下にある地点はスルー
                     if (h[i] <= 0 || nbs.length != 3)
                         continue;
-                    var doNotSetNewheight = false;
+                    let doNotSetNewheight = false;
                     var topNeighboursHeight = -999999;
                     for (var j = 0; j < nbs.length; j++) {
                         if (h[nbs[j]] > 0) {
@@ -450,7 +440,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                     // 既に地上になっている地点はスルー
                     if (h[i] > 0 || nbs.length != 3)
                         continue;
-                    var doNotSetNewheight = false;
+                    let doNotSetNewheight = false;
                     var bottomNeighboursHeight = 999999;
                     for (var j = 0; j < nbs.length; j++) {
                         if (h[nbs[j]] <= 0) {
@@ -468,14 +458,14 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 h = newh;
             }
             return h;
-        };
+        }
         /**
          * 周辺の点の高さを見てどれくらい傾いてるのか取得する
          * @param mesh
          * @param h
          * @param i
          */
-        TerrainGenerator.trislope = function (mesh, h, i) {
+        static trislope(mesh, h, i) {
             var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
             if (nbs.length != 3)
                 return [0, 0];
@@ -491,8 +481,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             var deltaHeightFrom2To0 = h[nbs[2]] - h[nbs[0]];
             return [(deltaYFrom2To0 * deltaHeightFrom1To0 - deltaYFrom1To0 * deltaHeightFrom2To0) / det,
                 (-deltaXFrom2To0 * deltaHeightFrom1To0 + deltaXFrom1To0 * deltaHeightFrom2To0) / det];
-        };
-        TerrainGenerator.relaxPath = function (path) {
+        }
+        static relaxPath(path) {
             var newpath = [path[0]];
             for (var i = 1; i < path.length - 1; i++) {
                 var newpt = [0.25 * path[i - 1][0] + 0.5 * path[i][0] + 0.25 * path[i + 1][0],
@@ -501,8 +491,8 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             }
             newpath.push(path[path.length - 1]);
             return newpath;
-        };
-        TerrainGenerator.dropEdge = function (mesh, h, p) {
+        }
+        static dropEdge(mesh, h, p) {
             p = p || 4;
             var newh = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < h.length; i++) {
@@ -512,11 +502,11 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 newh[i] = h[i] - Math.exp(10 * (Math.pow(Math.pow(x, p) + Math.pow(y, p), 1 / p) - 1));
             }
             return newh;
-        };
-        TerrainGenerator.generateCoast = function (mesh, extent) {
-            var generatedSlopes = TerrainGenerator.slope(mesh, util_1.TerrainCalcUtil.randomVector(4));
-            var generatedCones = TerrainGenerator.cone(mesh, util_1.TerrainCalcUtil.runif(-1, -1));
-            var generatedMountains = TerrainGenerator.mountains(mesh, 50);
+        }
+        static generateCoast(mesh, extent) {
+            const generatedSlopes = TerrainGenerator.slope(mesh, util_1.TerrainCalcUtil.randomVector(4));
+            const generatedCones = TerrainGenerator.cone(mesh, util_1.TerrainCalcUtil.runif(-1, -1));
+            const generatedMountains = TerrainGenerator.mountains(mesh, 50);
             console.log(generatedSlopes);
             console.log(mesh);
             var h = TerrainGenerator.mergeHeights(mesh, generatedSlopes, generatedCones, generatedMountains);
@@ -529,20 +519,19 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             // h = TerrainGenerator.fillSinks(mesh, h);
             h = TerrainGenerator.cleanCoast(mesh, h, 3);
             return h;
-        };
-        TerrainGenerator.defaultParams = {
-            extent: exports.defaultExtent,
-            generator: TerrainGenerator.generateCoast,
-            npts: 16384,
-            ncities: 15,
-            nterrs: 5,
-            fontsizes: {
-                region: 40,
-                city: 25,
-                town: 20
-            }
-        };
-        return TerrainGenerator;
-    }());
+        }
+    }
+    TerrainGenerator.defaultParams = {
+        extent: exports.defaultExtent,
+        generator: TerrainGenerator.generateCoast,
+        npts: 16384,
+        ncities: 15,
+        nterrs: 5,
+        fontsizes: {
+            region: 40,
+            city: 25,
+            town: 20
+        }
+    };
     exports.TerrainGenerator = TerrainGenerator;
 });

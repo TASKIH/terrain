@@ -7,6 +7,7 @@ import { TerrainCalcUtil } from './util';
 import { TerrainDrawer } from './terrain-drawer';
 import { TerrainGenerator, defaultExtent } from './terrain-generator';
 import { TerrainFeatureGenerator } from './terrain-feature-generator';
+import { WaterErosionExecutor } from './water-erosion-executor';
 
 export function drawTerrainControll() {
     function addSVG(div: any) {
@@ -60,9 +61,13 @@ export function drawTerrainControll() {
 
     var expDiv = d3.select("div#exp");
     var expSVG = addSVG(expDiv);
-    var expMesh = MeshGenerator.generateGoodMesh(4096);
+    var expMesh = MeshGenerator.generateGoodMesh(100);
     var expH = TerrainGenerator.generateZeroHeights(expMesh);
-    var waters = TerrainGenerator.resetWaterFlow(expMesh);
+    var waters = WaterErosionExecutor.resetWaterFlow(expMesh);
+    var waterResult = {
+        waters: waters,
+        records: {}
+    };
 
     function expDraw() {
         TerrainDrawer.visualizeVoronoi(expSVG, expMesh, expH, -1, 1);
@@ -70,7 +75,7 @@ export function drawTerrainControll() {
     }
 
     function expDrawWater() {
-        TerrainDrawer.visualizeWater(expSVG, expMesh, waters);
+        TerrainDrawer.visualizeWater(expSVG, expMesh, waterResult.waters);
         TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
     }
 
@@ -141,10 +146,11 @@ export function drawTerrainControll() {
         expDiv.append("button")
         .text("水の流れの計算")
         .on("click", function () {
-            waters = TerrainGenerator.calcWaterFlow(expMesh, expH, 0.2, 0.5);
+            waterResult = WaterErosionExecutor.calcWaterFlow(expMesh, expH, 0.2, 0.5);
             expDrawWater();
         });
 
+        /**
         expDiv.append("button")
         .text("水による浸食")
         .on("click", function () {
@@ -155,7 +161,7 @@ export function drawTerrainControll() {
             expH = TerrainGenerator.erodeByWater(expMesh, expH, waters);
             expDraw();
         });
-
+        */
         expDiv.append("button")
         .text("水の流れを見る")
         .on("click", function () {

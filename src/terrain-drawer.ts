@@ -6,6 +6,7 @@ import { TerrainFeatureGenerator } from "./terrain-feature-generator";
 import { TerrainGenerator } from "./terrain-generator";
 import { VoronoiSite } from "d3";
 import { MeshGenerator } from "./mesh-generator";
+import { Water } from "./water-recorder";
 
 export class TerrainDrawer {
     static drawLabels(svg: any, render: MapRender) {
@@ -302,7 +303,7 @@ export class TerrainDrawer {
             });
     }
     
-    static visualizeWater(svg: any, mesh: MapMesh, waters: {[key: number]: number} ) {
+    static visualizeWater(svg: any, mesh: MapMesh, waters: {[key: number]: Water} ) {
         const pointContainers: TerrainPointContainer[] = [];
 
         for (var key in  mesh.pointDict) {
@@ -321,7 +322,7 @@ export class TerrainDrawer {
         svg.selectAll('path.field')
             .attr('d', TerrainDrawer.makeD3Path)
             .style('fill', function (d: TerrainPointContainer, i: number) {
-                return TerrainDrawer.getWaterColor(waters[d.point.id]);
+                return TerrainDrawer.getWaterColor(waters[d.point.id].amount);
             });
     }
     

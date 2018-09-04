@@ -10,10 +10,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
     Object.defineProperty(exports, "__esModule", { value: true });
     language = __importStar(language);
     d3 = __importStar(d3);
-    var TerrainDrawer = /** @class */ (function () {
-        function TerrainDrawer() {
-        }
-        TerrainDrawer.drawLabels = function (svg, render) {
+    class TerrainDrawer {
+        static drawLabels(svg, render) {
             var params = render.params;
             var h = render.h;
             var terr = render.terr;
@@ -208,9 +206,9 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .style('text-anchor', 'middle')
                 .text(function (d) { return d.text; })
                 .raise();
-        };
+        }
         // 等高線の作成
-        TerrainDrawer.contour = function (mesh, h, level) {
+        static contour(mesh, h, level) {
             level = h.seaLevelHeight || 0;
             var edges = [];
             for (var i = 0; i < mesh.edges.length; i++) {
@@ -225,8 +223,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 }
             }
             return util_1.TerrainCalcUtil.mergeSegments(edges);
-        };
-        TerrainDrawer.drawMap = function (svg, render) {
+        }
+        static drawMap(svg, render) {
             render.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(render.mesh, render.h, 0.01);
             render.coasts = TerrainDrawer.contour(render.mesh, render.h, 0);
             render.terr = terrain_feature_generator_1.TerrainFeatureGenerator.getTerritories(render);
@@ -237,8 +235,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             TerrainDrawer.visualizeSlopes(svg, render);
             TerrainDrawer.visualizeCities(svg, render);
             TerrainDrawer.drawLabels(svg, render);
-        };
-        TerrainDrawer.doMap = function (svg, params) {
+        }
+        static doMap(svg, params) {
             var width = svg.attr('width');
             svg.attr('height', width * params.extent.height / params.extent.width);
             svg.attr('viewBox', -1000 * params.extent.width / 2 + ' ' +
@@ -253,8 +251,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             };
             terrain_feature_generator_1.TerrainFeatureGenerator.placeCities(render);
             TerrainDrawer.drawMap(svg, render);
-        };
-        TerrainDrawer.visualizePoints = function (svg, pts) {
+        }
+        static visualizePoints(svg, pts) {
             var circle = svg.selectAll('circle').data(pts);
             circle.enter()
                 .append('circle');
@@ -263,11 +261,11 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .attr('cx', function (d) { return 1000 * d.x; })
                 .attr('cy', function (d) { return 1000 * d.y; })
                 .attr('r', 100 / Math.sqrt(pts.length));
-        };
-        TerrainDrawer.makeD3Path = function (path) {
+        }
+        static makeD3Path(path) {
             var p = d3.path();
-            var idx = 0;
-            path.relatedVoronoiSites.forEach(function (e, i) {
+            let idx = 0;
+            path.relatedVoronoiSites.forEach((e, i) => {
                 if (i === 0) {
                     p.moveTo(1000 * e[0], 1000 * e[1]);
                 }
@@ -276,15 +274,15 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 }
             });
             return p.toString();
-        };
-        TerrainDrawer.visualizeVoronoi = function (svg, mesh, field, lo, hi) {
+        }
+        static visualizeVoronoi(svg, mesh, field, lo, hi) {
             if (hi == undefined)
                 hi = (d3.max(field) || 0) + 1e-9;
             if (lo == undefined)
                 lo = (d3.min(field) || 0) - 1e-9;
-            var pointContainers = [];
+            const pointContainers = [];
             for (var key in mesh.pointDict) {
-                var pointCnt = mesh.pointDict[key];
+                const pointCnt = mesh.pointDict[key];
                 pointContainers.push(pointCnt);
             }
             var tris = svg.selectAll('path.field').data(pointContainers);
@@ -298,11 +296,11 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .style('fill', function (d, i) {
                 return TerrainDrawer.getColor(field[d.point.id]);
             });
-        };
-        TerrainDrawer.visualizeWater = function (svg, mesh, waters) {
-            var pointContainers = [];
+        }
+        static visualizeWater(svg, mesh, waters) {
+            const pointContainers = [];
             for (var key in mesh.pointDict) {
-                var pointCnt = mesh.pointDict[key];
+                const pointCnt = mesh.pointDict[key];
                 pointContainers.push(pointCnt);
             }
             var tris = svg.selectAll('path.field').data(pointContainers);
@@ -314,14 +312,14 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             svg.selectAll('path.field')
                 .attr('d', TerrainDrawer.makeD3Path)
                 .style('fill', function (d, i) {
-                return TerrainDrawer.getWaterColor(waters[d.point.id]);
+                return TerrainDrawer.getWaterColor(waters[d.point.id].amount);
             });
-        };
-        TerrainDrawer.visualizeDownhill = function (mesh, h) {
+        }
+        static visualizeDownhill(mesh, h) {
             var links = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
             TerrainDrawer.drawPaths('river', links);
-        };
-        TerrainDrawer.drawPaths = function (svg, cls, paths) {
+        }
+        static drawPaths(svg, cls, paths) {
             var paths = svg.selectAll('path.' + cls).data(paths);
             paths.enter()
                 .append('path')
@@ -330,8 +328,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .remove();
             svg.selectAll('path.' + cls)
                 .attr('d', TerrainDrawer.makeD3Path);
-        };
-        TerrainDrawer.getColor = function (height) {
+        }
+        static getColor(height) {
             if (height < -0.4) {
                 return "#000099";
             }
@@ -365,8 +363,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             else {
                 return "#666633";
             }
-        };
-        TerrainDrawer.getWaterColor = function (water) {
+        }
+        static getWaterColor(water) {
             if (water > 0.8) {
                 return "#000099";
             }
@@ -388,8 +386,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             else {
                 return "#666633";
             }
-        };
-        TerrainDrawer.visualizeSlopes = function (svg, render) {
+        }
+        static visualizeSlopes(svg, render) {
             var h = render.h;
             var strokes = [];
             var r = 0.25 / Math.sqrt(h.length);
@@ -438,8 +436,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .attr('y1', function (d) { return 1000 * d[0][1]; })
                 .attr('x2', function (d) { return 1000 * d[1][0]; })
                 .attr('y2', function (d) { return 1000 * d[1][1]; });
-        };
-        TerrainDrawer.visualizeCities = function (svg, render) {
+        }
+        static visualizeCities(svg, render) {
             var cities = render.cities;
             var h = render.h;
             var n = render.params.nterrs;
@@ -458,8 +456,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .style('stroke-linecap', 'round')
                 .style('stroke', 'black')
                 .raise();
-        };
-        return TerrainDrawer;
-    }());
+        }
+    }
     exports.TerrainDrawer = TerrainDrawer;
 });
