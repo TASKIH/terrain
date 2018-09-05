@@ -139,15 +139,21 @@ export class WaterErosionExecutor {
         while(!result.isFinished && i <= 10000);
 
 
-        return {waters: waters, records: record.records, result: result};
+        return {waters: waters, records: record, result: result};
     }
     /**
      * 水による浸食を行う
      * @param mesh: MapのMesh
      * @param h: 地盤の高さ
      * @param waters: 水の量
+     * @param recorder
+     * @param erodeRate
      */
-    static erodeByWater(mesh: MapMesh, h: TerrainHeights, waters: {[key: number]: Water}, erodeRate: number): TerrainHeights {
+    static erodeByWater(mesh: MapMesh,
+                        h: TerrainHeights,
+                        waters: {[key: number]: Water},　
+                        recorder: WaterRecorder,
+                        erodeRate: number): TerrainHeights {
         var newh = TerrainGenerator.generateZeroHeights(mesh);
 
         // 高い順に並び変える
@@ -155,31 +161,12 @@ export class WaterErosionExecutor {
             return h[b.id] - h[a.id];
         });
 
+        const flowSummary = recorder.getSummaryWater();
         heightOrderedVoronois.forEach(e => { 
             let restWater = waters[e.id];
             const pointHeight = h[e.id];
-
-            // 水が余っていて標高が0よりも高いところは隣の岩盤の弱いところを押し流す。
-            if (restWater.amount > 0 && pointHeight > 0) {
-                // 自分よりも土地の高いところを切り崩す。
-                const robustnessOrder = mesh.pointDict[e.id].connectingPoints.filter(tgt => {
-                    return h[tgt.id] > pointHeight;
-                }).sort((a, b) => {
-                    return mesh.pointDict[a.id].robustness - mesh.pointDict[b.id].robustness;
-                });
-                if (robustnessOrder.length == 0) {
-                    return;
-                }
-
-                const minRobustness = robustnessOrder[0];
-                const targetHeight = h[minRobustness.id];
-                const heightDelta = targetHeight - pointHeight;
-
-                newh[minRobustness.id] = heightDelta * -1 + erodeRate;
-                waters[e.id].amount = 0;
-                // 低くなったので水を押しつける。
-                waters[minRobustness.id].amount += restWater.amount;
-            }
+            // 水の移動が多いところを削る
+            newh[e.id] -= flowSummary[e.id] * erodeRate * mesh.pointDict[e.id].robustness;
         });
         return TerrainGenerator.mergeHeights(mesh, newh, h);
     }

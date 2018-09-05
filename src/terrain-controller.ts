@@ -8,6 +8,7 @@ import { TerrainDrawer } from './terrain-drawer';
 import { TerrainGenerator, defaultExtent } from './terrain-generator';
 import { TerrainFeatureGenerator } from './terrain-feature-generator';
 import { WaterErosionExecutor } from './water-erosion-executor';
+import { WaterFlowResult, WaterRecorder } from './water-recorder';
 
 export function drawTerrainControll() {
     function addSVG(div: any) {
@@ -64,9 +65,13 @@ export function drawTerrainControll() {
     var expMesh = MeshGenerator.generateGoodMesh(100);
     var expH = TerrainGenerator.generateZeroHeights(expMesh);
     var waters = WaterErosionExecutor.resetWaterFlow(expMesh);
-    var waterResult = {
+    var waterResult: WaterFlowResult = {
         waters: waters,
-        records: {}
+        records: new WaterRecorder(),
+        result: {
+            hasDeadend: false,
+            isFinished: false,
+        } 
     };
 
     function expDraw() {
@@ -151,18 +156,16 @@ export function drawTerrainControll() {
             expDrawWater();
         });
 
-        /**
         expDiv.append("button")
         .text("水による浸食")
         .on("click", function () {
             for (let i = 0; i < 5; i++) {
 
             }
-            waters = TerrainGenerator.calcWaterFlow(expMesh, expH, 0.2, 0.5);
-            expH = TerrainGenerator.erodeByWater(expMesh, expH, waters);
+            expH = WaterErosionExecutor.erodeByWater(expMesh, expH, waterResult.waters, waterResult.records, 0.2);
             expDraw();
         });
-        */
+
         expDiv.append("button")
         .text("水の流れを見る")
         .on("click", function () {

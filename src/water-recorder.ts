@@ -10,7 +10,7 @@ export interface FlowResult {
 };
 export interface WaterFlowResult {
     waters: {[key: number]: Water};
-    records: {[key: number]: {[key: number]: WaterFlow}}; 
+    records: WaterRecorder;
     result: FlowResult
 }
 export interface WaterFlow {
@@ -24,7 +24,24 @@ export class WaterRecorder {
      * @type {any[]}
      */
     public records: {[key: number]: {[key: number]: WaterFlow}} = {};
-    
+
+    /**
+     * 水量のサマリーを返す
+     */
+    public getSummaryWater(): {[key: number]: number} {
+        let result: {[key: number]: number} = {};
+
+        for (let key in this.records) {
+            const rec = this.records[key];
+
+            for (let key2 in rec) {
+                result[key] = (result[key] || 0) + rec[key2].amount;
+                result[key2] = (result[key2] || 0) + rec[key2].amount;
+            }
+        }
+
+        return result;
+    }
     /**
      * from/toを逆にした記録が既に存在しているかどうか
      * @param from 

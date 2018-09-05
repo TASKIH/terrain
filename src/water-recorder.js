@@ -11,6 +11,20 @@ define(["require", "exports"], function (require, exports) {
             this.records = {};
         }
         /**
+         * 水量のサマリーを返す
+         */
+        getSummaryWater() {
+            let result = {};
+            for (let key in this.records) {
+                const rec = this.records[key];
+                for (let key2 in rec) {
+                    result[key] = (result[key] || 0) + rec[key2].amount;
+                    result[key2] = (result[key2] || 0) + rec[key2].amount;
+                }
+            }
+            return result;
+        }
+        /**
          * from/toを逆にした記録が既に存在しているかどうか
          * @param from
          * @param to
