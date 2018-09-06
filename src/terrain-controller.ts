@@ -62,7 +62,7 @@ export function drawTerrainControll() {
 
     var expDiv = d3.select("div#exp");
     var expSVG = addSVG(expDiv);
-    var expMesh = MeshGenerator.generateGoodMesh(100);
+    var expMesh = MeshGenerator.generateGoodMesh(4096);
     var expH = TerrainGenerator.generateZeroHeights(expMesh);
     var waters = WaterErosionExecutor.resetWaterFlow(expMesh);
     var waterResult: WaterFlowResult = {
@@ -162,7 +162,7 @@ export function drawTerrainControll() {
             for (let i = 0; i < 5; i++) {
 
             }
-            expH = WaterErosionExecutor.erodeByWater(expMesh, expH, waterResult.waters, waterResult.records, 0.2);
+            expH = WaterErosionExecutor.erodeByWater(expMesh, expH, waterResult.waters, waterResult.records, 0.01);
             expDraw();
         });
 

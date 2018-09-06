@@ -126,10 +126,10 @@ define(["require", "exports", "./water-recorder", "./terrain-generator"], functi
             });
             const flowSummary = recorder.getSummaryWater();
             heightOrderedVoronois.forEach(e => {
-                let restWater = waters[e.id];
-                const pointHeight = h[e.id];
                 // 水の移動が多いところを削る
-                newh[e.id] -= flowSummary[e.id] * erodeRate * mesh.pointDict[e.id].robustness;
+                const decreaseHeight = flowSummary[e.id] * erodeRate * (1 - mesh.pointDict[e.id].robustness);
+                newh[e.id] -= decreaseHeight;
+                newh[e.id] = Math.max(-1, newh[e.id]);
             });
             return terrain_generator_1.TerrainGenerator.mergeHeights(mesh, newh, h);
         }
