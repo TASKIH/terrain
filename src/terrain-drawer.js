@@ -262,7 +262,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .attr('cy', function (d) { return 1000 * d.y; })
                 .attr('r', 100 / Math.sqrt(pts.length));
         }
-        static makeD3Path(path) {
+        static makeD3PathByPointContainer(path) {
             var p = d3.path();
             let idx = 0;
             path.relatedVoronoiSites.forEach((e, i) => {
@@ -273,6 +273,14 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                     p.lineTo(1000 * e[0], 1000 * e[1]);
                 }
             });
+            return p.toString();
+        }
+        static makeD3PathByPath(path) {
+            var p = d3.path();
+            p.moveTo(1000 * path[0][0], 1000 * path[0][1]);
+            for (var i = 1; i < path.length; i++) {
+                p.lineTo(1000 * path[i][0], 1000 * path[i][1]);
+            }
             return p.toString();
         }
         static visualizeVoronoi(svg, mesh, field, lo, hi) {
@@ -292,7 +300,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             tris.exit()
                 .remove();
             svg.selectAll('path.field')
-                .attr('d', TerrainDrawer.makeD3Path)
+                .attr('d', TerrainDrawer.makeD3PathByPointContainer)
                 .style('fill', function (d, i) {
                 return TerrainDrawer.getColor(field[d.point.id]);
             });
@@ -311,7 +319,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .remove();
             console.log(waters);
             svg.selectAll('path.field')
-                .attr('d', TerrainDrawer.makeD3Path)
+                .attr('d', TerrainDrawer.makeD3PathByPointContainer)
                 .style('fill', function (d, i) {
                 return TerrainDrawer.getWaterColor(waters[d.point.id].amount);
             });
@@ -328,7 +336,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             paths.exit()
                 .remove();
             svg.selectAll('path.' + cls)
-                .attr('d', TerrainDrawer.makeD3Path);
+                .attr('d', TerrainDrawer.makeD3PathByPath);
         }
         static getColor(height) {
             if (height < -0.4) {

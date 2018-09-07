@@ -249,41 +249,40 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("大陸の生成")
         .on("click", function () {
-            primMesh = MeshGenerator.generateGoodMesh(13048);
+            primMesh = MeshGenerator.generateGoodMesh(20);
             primH = TerrainGenerator.generateZeroHeights(primMesh);
 
-            console.log(primH);
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.2, 5, 1.4));
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.4, 20, 0.05));
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.05, 10, 1.4));
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.1, 20, 0.05));
-            console.log(primH);
-            let average = TerrainCalcUtil.mean(primH);
-            console.log(primH);
-            average = TerrainCalcUtil.mean(primH) - 0.1;
-            primH = TerrainGenerator.rescaleBySeaLevel(primH, average);
-            
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.05, 5, 0.1));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.05, 20, 0.05));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.05, 10, 0.04));
+            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.02, 20, 0.05));
 
-            for(let i = 0; i < 5; i++)
-                primH = TerrainGenerator.relax(primMesh, primH);
-            
-            primH = TerrainGenerator.doErosion(primMesh, primH, TerrainCalcUtil.runif(0, 0.1), 5);
-            primH = TerrainGenerator.cleanCoast(primMesh, primH, 5);
-            console.log(primH);
+            waterResult = WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
+            for(let i = 0; i < 7; i++)
+                if (i == 5) {
+                    waterResult = WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
+                }
+                primH = WaterErosionExecutor.erodeByWater(primMesh, primH, waterResult.waters, waterResult.records, 0.005);
+
+            primH = TerrainGenerator.doErosion(primMesh, primH, TerrainCalcUtil.runif(0, 0.1), 30);
+
+            primH = TerrainGenerator.cleanCoast(primMesh, primH, 10);
             var myRenderer: MapRender = {
                 params: TerrainGenerator.defaultParams,
                 mesh: primMesh,
                 h:  primH
             };
-            primH.seaLevelHeight = 0; 
+
             myRenderer.rivers = TerrainFeatureGenerator.getRivers(primMesh, myRenderer.h, 0.01);
             myRenderer.coasts = TerrainDrawer.contour(primMesh, myRenderer.h, 0);
 
+            console.log(myRenderer.rivers);
+            console.log(myRenderer.coasts);
             TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
             TerrainDrawer.visualizeSlopes(primSVG, myRenderer);
 
-            // primDraw();
+            primDraw();
         });
 
 

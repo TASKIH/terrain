@@ -262,7 +262,7 @@ export class TerrainDrawer {
     }
     
     
-    static makeD3Path(path: TerrainPointContainer) {
+    static makeD3PathByPointContainer(path: TerrainPointContainer) {
         var p = d3.path();
 
         let idx = 0;
@@ -277,6 +277,15 @@ export class TerrainDrawer {
         return p.toString();
     }
 
+    static makeD3PathByPath(path: number[][]) {
+        var p = d3.path();
+        p.moveTo(1000*path[0][0], 1000*path[0][1]);
+        for (var i = 1; i < path.length; i++) {
+            p.lineTo(1000*path[i][0], 1000*path[i][1]);
+        }
+        return p.toString();
+    }
+    
     static visualizeVoronoi(svg: any, mesh: MapMesh, field: TerrainHeights, lo?: number, hi?: number) {
         if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
@@ -297,7 +306,7 @@ export class TerrainDrawer {
             .remove();
     
         svg.selectAll('path.field')
-            .attr('d', TerrainDrawer.makeD3Path)
+            .attr('d', TerrainDrawer.makeD3PathByPointContainer)
             .style('fill', function (d: TerrainPointContainer, i: number) {
                 return TerrainDrawer.getColor(field[d.point.id]);
             });
@@ -321,7 +330,7 @@ export class TerrainDrawer {
     
         console.log(waters);
         svg.selectAll('path.field')
-            .attr('d', TerrainDrawer.makeD3Path)
+            .attr('d', TerrainDrawer.makeD3PathByPointContainer)
             .style('fill', function (d: TerrainPointContainer, i: number) {
                 return TerrainDrawer.getWaterColor(waters[d.point.id].amount);
             });
@@ -332,7 +341,18 @@ export class TerrainDrawer {
         var links = TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
         TerrainDrawer.drawPaths('river', links);
     }
-    
+
+    static drawPathsRiver(svg: any, cls: any, paths?: any) {
+        var paths = svg.selectAll('path.' + cls).data(paths);
+        paths.enter()
+            .append('path')
+            .classed(cls, true);
+        paths.exit()
+            .remove();
+        svg.selectAll('path.' + cls)
+            .attr('d', TerrainDrawer.makeD3PathByPath);
+    }
+
     static drawPaths(svg: any, cls: any, paths?: any) {
         var paths = svg.selectAll('path.' + cls).data(paths);
         paths.enter()
@@ -341,7 +361,7 @@ export class TerrainDrawer {
         paths.exit()
             .remove();
         svg.selectAll('path.' + cls)
-            .attr('d', TerrainDrawer.makeD3Path);
+            .attr('d', TerrainDrawer.makeD3PathByPath);
     }
     
     static getColor(height: number): string {
