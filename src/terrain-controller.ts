@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import {
-    MapRender, MapMesh
+    MapRender, MapMesh, TerrainHeights
 } from './terrain-interfaces';
 import { MeshGenerator } from './mesh-generator';
 import { TerrainCalcUtil } from './util';
@@ -8,7 +8,7 @@ import { TerrainDrawer } from './terrain-drawer';
 import { TerrainGenerator, defaultExtent } from './terrain-generator';
 import { TerrainFeatureGenerator } from './terrain-feature-generator';
 import { WaterErosionExecutor } from './water-erosion-executor';
-import { WaterFlowResult, WaterRecorder } from './water-recorder';
+import { WaterFlowResult, WaterRecorder, Water } from './water-recorder';
 
 export function drawTerrainControll() {
     function addSVG(div: any) {
@@ -64,23 +64,28 @@ export function drawTerrainControll() {
     var expSVG = addSVG(expDiv);
     var expMesh = MeshGenerator.generateGoodMesh(4096);
     var expH = TerrainGenerator.generateZeroHeights(expMesh);
-    var waters = WaterErosionExecutor.resetWaterFlow(expMesh);
-    var waterResult: WaterFlowResult = {
-        waters: waters,
-        records: new WaterRecorder(),
-        result: {
-            hasDeadend: false,
-            isFinished: false,
-        } 
-    };
+    class ContinentData {
+        continent: TerrainHeights = [];
+        waters: {[key: number]: Water} = {};
+        waterResult: WaterFlowResult = {
+            waters: {},
+            records: new WaterRecorder(),
+            result: {
+                hasDeadend: false,
+                isFinished: false,
+            } 
+        };
+    }
+
+    var continents: ContinentData[] = [];
 
     function expDraw() {
         TerrainDrawer.visualizeVoronoi(expSVG, expMesh, expH, -1, 1);
         TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
     }
 
-    function expDrawWater() {
-        TerrainDrawer.visualizeWater(expSVG, expMesh, waterResult.waters);
+    function expDrawWater(waters: {[key: number]: Water}) {
+        TerrainDrawer.visualizeWater(expSVG, expMesh, waters);
         TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
     }
 
@@ -147,7 +152,7 @@ export function drawTerrainControll() {
             expH = TerrainGenerator.cleanCoast(expMesh, expH, 5);
             expDraw();
         });
-
+/*
         expDiv.append("button")
         .text("水の流れの計算")
         .on("click", function () {
@@ -177,7 +182,7 @@ export function drawTerrainControll() {
         .on("click", function () {
             expDraw();
         });
-
+*/
     var primDiv = d3.select("div#prim");
     var primSVG = addSVG(primDiv);
     var primMesh = MeshGenerator.generateGoodMesh(4096);
@@ -249,15 +254,19 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("大陸の生成")
         .on("click", function () {
-            primMesh = MeshGenerator.generateGoodMesh(20);
-            primH = TerrainGenerator.generateZeroHeights(primMesh);
+            primMesh = MeshGenerator.generateGoodMesh(16028);
+            let heights:TerrainHeights[] = [];
+            const layerCounts = 5;
+            let waterResult: any;
+            for(let i = 0; i < layerCounts; i++) {
+                let newHeight = TerrainGenerator.generateZeroHeights(primMesh);
+                newHeight = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.05, 5, 0.025));
+                waterResult = WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
 
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.05, 5, 0.1));
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.05, 20, 0.05));
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.05, 10, 0.04));
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, -0.02, 20, 0.05));
+                heights.push(newHeight);
+            }
 
-            waterResult = WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
+
             for(let i = 0; i < 7; i++)
                 if (i == 5) {
                     waterResult = WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
@@ -275,9 +284,7 @@ export function drawTerrainControll() {
 
             myRenderer.rivers = TerrainFeatureGenerator.getRivers(primMesh, myRenderer.h, 0.01);
             myRenderer.coasts = TerrainDrawer.contour(primMesh, myRenderer.h, 0);
-
             console.log(myRenderer.rivers);
-            console.log(myRenderer.coasts);
             TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
             TerrainDrawer.visualizeSlopes(primSVG, myRenderer);

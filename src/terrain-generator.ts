@@ -3,7 +3,7 @@ import * as d3 from 'd3';
 import * as language from './language';
 import 'js-priority-queue';
 import { Edge, MapExportParam, MapExtent, MapMesh, MapRender, TerrainHeights, TerrainPoint } from './terrain-interfaces';
-import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3-voronoi';
+import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3';
 import { VoronoiDiagram } from 'd3';
 import { MeshGenerator } from './mesh-generator';
 import { TerrainCalcUtil } from './util';
@@ -362,23 +362,21 @@ export class TerrainGenerator {
         }
     }
     
-    static getFlux(mesh: MapMesh, h: TerrainHeights):TerrainHeights {
+    static getFlux(mesh: MapMesh, h: TerrainHeights):{[key: number]: number} {
         // 傾斜を作成
         var downFromDict = TerrainGenerator.generateDownFromDict(mesh, h);
         var indexes = [];
+
+
     
         var flux = TerrainGenerator.generateZeroHeights(mesh);
 
-        for (var i = 0; i < h.length; i++) {
-            indexes[i] = i;
+        for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+            indexes.push(mesh.voronoiPoints[i].id);
             flux[i] = 1/h.length;
         }
 
-        // 隣接する点との傾斜が激しい順に並び替える
-        indexes.sort(function (idx1, idx2) {
-            return h[idx2] - h[idx1];
-        });
-        for (var i = 0; i < h.length; i++) {
+        for (var i = 0; i < indexes.length; i++) {
             var j = indexes[i];
             if (downFromDict[j]) {
                 flux[downFromDict[j]!.id] += flux[j];

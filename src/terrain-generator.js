@@ -324,15 +324,11 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             var downFromDict = TerrainGenerator.generateDownFromDict(mesh, h);
             var indexes = [];
             var flux = TerrainGenerator.generateZeroHeights(mesh);
-            for (var i = 0; i < h.length; i++) {
-                indexes[i] = i;
+            for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+                indexes.push(mesh.voronoiPoints[i].id);
                 flux[i] = 1 / h.length;
             }
-            // 隣接する点との傾斜が激しい順に並び替える
-            indexes.sort(function (idx1, idx2) {
-                return h[idx2] - h[idx1];
-            });
-            for (var i = 0; i < h.length; i++) {
+            for (var i = 0; i < indexes.length; i++) {
                 var j = indexes[i];
                 if (downFromDict[j]) {
                     flux[downFromDict[j].id] += flux[j];

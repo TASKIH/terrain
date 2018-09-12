@@ -1,4 +1,4 @@
-import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3-voronoi';
+import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3';
 import { VoronoiDiagram } from 'd3';
 
 export interface FontSize {

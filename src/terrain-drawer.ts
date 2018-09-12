@@ -4,7 +4,6 @@ import * as language from './language';
 import * as d3 from 'd3';
 import { TerrainFeatureGenerator } from "./terrain-feature-generator";
 import { TerrainGenerator } from "./terrain-generator";
-import { VoronoiSite } from "d3";
 import { MeshGenerator } from "./mesh-generator";
 import { Water } from "./water-recorder";
 
@@ -207,9 +206,10 @@ export class TerrainDrawer {
         for (var i = 0; i < mesh.edges.length; i++) {
             var edge = mesh.edges[i];
             if (edge.right == undefined) continue;
-    
+            /*
             if (TerrainCalcUtil.isNextEdge(mesh, edge.index1) || TerrainCalcUtil.isNextEdge(mesh, edge.index2))
                 continue;
+            */
     
             if ((h[edge.index1] > level && h[edge.index2] <= level) ||
                 (h[edge.index2] > level && h[edge.index1] <= level)) {

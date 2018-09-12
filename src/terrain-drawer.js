@@ -215,8 +215,10 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 var edge = mesh.edges[i];
                 if (edge.right == undefined)
                     continue;
-                if (util_1.TerrainCalcUtil.isNextEdge(mesh, edge.index1) || util_1.TerrainCalcUtil.isNextEdge(mesh, edge.index2))
+                /*
+                if (TerrainCalcUtil.isNextEdge(mesh, edge.index1) || TerrainCalcUtil.isNextEdge(mesh, edge.index2))
                     continue;
+                */
                 if ((h[edge.index1] > level && h[edge.index2] <= level) ||
                     (h[edge.index2] > level && h[edge.index1] <= level)) {
                     edges.push([edge.left, edge.right]);
@@ -327,6 +329,16 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
         static visualizeDownhill(mesh, h) {
             var links = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
             TerrainDrawer.drawPaths('river', links);
+        }
+        static drawPathsRiver(svg, cls, paths) {
+            var paths = svg.selectAll('path.' + cls).data(paths);
+            paths.enter()
+                .append('path')
+                .classed(cls, true);
+            paths.exit()
+                .remove();
+            svg.selectAll('path.' + cls)
+                .attr('d', TerrainDrawer.makeD3PathByPath);
         }
         static drawPaths(svg, cls, paths) {
             var paths = svg.selectAll('path.' + cls).data(paths);

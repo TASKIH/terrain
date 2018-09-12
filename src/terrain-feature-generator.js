@@ -28,7 +28,12 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
             }
         }
         static cityScore(mesh, h, cities) {
-            var score = terrain_generator_1.TerrainGenerator.map(terrain_generator_1.TerrainGenerator.getFlux(mesh, h), Math.sqrt);
+            var fluxes = terrain_generator_1.TerrainGenerator.getFlux(mesh, h);
+            var dataArray = [];
+            for (var key in fluxes) {
+                dataArray.push(fluxes[key]);
+            }
+            var score = terrain_generator_1.TerrainGenerator.map(dataArray, Math.sqrt);
             for (var i = 0; i < h.length; i++) {
                 if (h[i] <= 0 || util_1.TerrainCalcUtil.isNearEdge(mesh, i)) {
                     score[i] = -999999;
@@ -68,16 +73,14 @@ define(["require", "exports", "d3", "./util", "./terrain-generator", "js-priorit
             }
             limit *= above / h.length;
             for (var i = 0; i < h.length; i++) {
-                if (util_1.TerrainCalcUtil.isNearEdge(mesh, i))
-                    continue;
-                if (flux[i] > limit && h[i] > 0 && dh[i]) {
-                    var up = mesh.voronoiPoints[i];
-                    var down = mesh.voronoiPoints[dh[i].id];
-                    if (h[dh[i].id] > 0) {
-                        links.push([up, down]);
+                var up = mesh.voronoiPoints[i];
+                const down = dh[up.id];
+                if (flux[up.id] > limit && h[up.id] > 0 && down) {
+                    if (h[down.id] > 0) {
+                        links.push([[up.x, up.y], [down.x, down.y]]);
                     }
                     else {
-                        links.push([up, [(up.x + down.x) / 2, (up.y + down.y) / 2]]);
+                        links.push([[up.x, up.y], [(up.x + down.x) / 2, (up.y + down.y) / 2]]);
                     }
                 }
             }

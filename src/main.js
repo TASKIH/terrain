@@ -2,13 +2,13 @@
 requirejs.config({
     basePath: "/scripts",
     paths: {
-        d3: "http://d3js.org/d3.v4.min",
+        d3: "../lib/d3.min",
         "js-priority-queue": "../lib/priority-queue.min",
         "domReady": "../lib/domReady"
     }
 });
 
-requirejs(["terrain-controller", "domReady"], function(ctrl, domReady) {
+requirejs(["new-terrain-controller", "domReady"], function(ctrl, domReady) {
 
     domReady(() => {
         ctrl.drawTerrainControll();
