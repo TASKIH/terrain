@@ -18,6 +18,16 @@ define(["require", "exports", "d3"], function (require, exports, d3) {
             }
             return total / numbers.length;
         }
+        static standardDeviation(numbers, average) {
+            if (!average) {
+                average = TerrainCalcUtil.mean(numbers);
+            }
+            return Math.sqrt(numbers.map((num) => {
+                let diff = num - average;
+                return Math.pow(diff, 2);
+            })
+                .reduce((item1, item2) => item1 + item2) / numbers.length);
+        }
         // 乱数を生成する
         static runif(lo, hi) {
             return lo + Math.random() * (hi - lo);

@@ -2,7 +2,7 @@
 import * as d3 from 'd3';
 import * as language from './language';
 import 'js-priority-queue';
-import { Edge, MapExportParam, MapExtent, MapMesh, MapRender, TerrainHeights, TerrainPoint } from './terrain-interfaces';
+import { Edge, MapExportParam, MapExtent, MapMesh, MapRender, TerrainHeights, TerrainPoint, MergeMethod } from './terrain-interfaces';
 import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3';
 import { VoronoiDiagram } from 'd3';
 import { MeshGenerator } from './mesh-generator';
@@ -56,7 +56,17 @@ export class TerrainGenerator {
             return (x - (lo || 0)) / (hi || 0 - (lo || 0));
         });
     }
-    
+    // 平均0, 分散1のデータに標準化
+    static standardize(mesh: MapMesh, h: TerrainHeights): TerrainHeights {
+        const avg = TerrainCalcUtil.mean(h);
+        const std = TerrainCalcUtil.standardDeviation(h, avg);
+
+        let newH: TerrainHeights = TerrainGenerator.generateZeroHeights(mesh);
+        for(let i = 0; i < h.length; ++i) {
+            newH[i] = (h[i] - avg) / std;
+        }
+        return newH;
+    }
     static peaky(heights: TerrainHeights) {
         return TerrainGenerator.map(TerrainGenerator.normalize(heights), Math.sqrt);
     }
@@ -70,13 +80,29 @@ export class TerrainGenerator {
         }
     }
 
-    static mergeHeights(mesh: MapMesh, ...args: TerrainHeights[]): TerrainHeights {
-        console.log(args);
+    static mergeHeights(mesh: MapMesh, method: MergeMethod, ...args: TerrainHeights[]): TerrainHeights {
+        let mergeMethod: (left: number, right: number) => number;
+
+        switch(method) {
+            case MergeMethod.Add:
+                mergeMethod = (left: number, right: number): number => {
+                    return left + right;
+                }
+                break;
+            default:
+                mergeMethod = (left: number, right: number): number => {
+                    return (left + right) / 2;
+                };
+                break;
+        }
+
         var n = args[0].length;
         var newVals = TerrainGenerator.generateZeroHeights(mesh);
         for (var i = 0; i < n; i++) {
             for (var j = 0; j < args.length; j++) {
-                newVals[i] += args[j][i];
+                newVals[i] = mergeMethod(args[j][i], newVals[i]);
+                newVals[i] = Math.min(1, newVals[i]);
+                newVals[i] = Math.max(-1, newVals[i]);
             }
         }
         return newVals;
@@ -264,7 +290,7 @@ export class TerrainGenerator {
                 waters[minRobustness.id] += restWater;
             }
         });
-        return TerrainGenerator.mergeHeights(mesh, newh, h);
+        return TerrainGenerator.mergeHeights(mesh, MergeMethod.Add, newh, h);
     }
 
     // 傾斜をなだらかにする
@@ -366,9 +392,7 @@ export class TerrainGenerator {
         // 傾斜を作成
         var downFromDict = TerrainGenerator.generateDownFromDict(mesh, h);
         var indexes = [];
-
-
-    
+        
         var flux = TerrainGenerator.generateZeroHeights(mesh);
 
         for (var i = 0; i < mesh.voronoiPoints.length; i++) {
@@ -570,6 +594,7 @@ export class TerrainGenerator {
     
         var h = TerrainGenerator.mergeHeights(
             mesh,
+            MergeMethod.Add,
             generatedSlopes,
             generatedCones,
             generatedMountains

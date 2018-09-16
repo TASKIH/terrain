@@ -6,7 +6,10 @@ export interface FontSize {
     city: number;
     town: number;
 }
-
+export enum MergeMethod {
+    Add,
+    Average,
+}
 export interface MapExtent {
     width: number;
     height: number;

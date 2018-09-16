@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import {
-    MapRender, MapMesh, TerrainHeights
+    MapRender, MapMesh, TerrainHeights, MergeMethod
 } from './terrain-interfaces';
 import { MeshGenerator } from './mesh-generator';
 import { TerrainCalcUtil } from './util';
@@ -111,7 +111,7 @@ export function drawTerrainControll() {
         .on("click", function () {
             const height = +(document.getElementById("continent-height") as HTMLInputElement).value;
             const radius = +(document.getElementById("continent-radius") as HTMLInputElement).value;
-            expH = TerrainGenerator.mergeHeights(expMesh, expH, TerrainGenerator.continent(expMesh, height, 1, radius, expMesh.extent.margin));
+            expH = TerrainGenerator.mergeHeights(expMesh, MergeMethod.Add, expH, TerrainGenerator.continent(expMesh, height, 1, radius, expMesh.extent.margin));
             expDraw();
         });
 
@@ -212,7 +212,7 @@ export function drawTerrainControll() {
         .text("Add random slope")
         .on("click", function () {
             primH = TerrainGenerator.mergeHeights(
-                primMesh, primH, TerrainGenerator.slope(primMesh, TerrainCalcUtil.randomVector(4)));
+                primMesh, MergeMethod.Add, primH, TerrainGenerator.slope(primMesh, TerrainCalcUtil.randomVector(4)));
             TerrainDrawer.visualizeVoronoi(primMesh, primSVG, primH);
             // visualizeHeight(primSVG, primH, -1, 1);
             // primH = mergeHeights(primH, slope(primMesh, [1, -1]));
@@ -225,7 +225,7 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Add cone")
         .on("click", function () {
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.cone(primMesh, -0.5));
+            primH = TerrainGenerator.mergeHeights(primMesh, MergeMethod.Add, primH, TerrainGenerator.cone(primMesh, -0.5));
             primDraw();
         });
 
@@ -233,21 +233,21 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("Add inverted cone")
         .on("click", function () {
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.cone(primMesh, 0.5));
+            primH = TerrainGenerator.mergeHeights(primMesh, MergeMethod.Add, primH, TerrainGenerator.cone(primMesh, 0.5));
             primDraw();
         });
 
     primDiv.append("button")
         .text("Add five blobs")
         .on("click", function () {
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.mountains(primMesh, 5));
+            primH = TerrainGenerator.mergeHeights(primMesh, MergeMethod.Add, primH, TerrainGenerator.mountains(primMesh, 5));
             primDraw();
         });
 
     primDiv.append("button")
         .text("Add one continent ")
         .on("click", function () {
-            primH = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.4, 3, 0.2));
+            primH = TerrainGenerator.mergeHeights(primMesh, MergeMethod.Add, primH, TerrainGenerator.continent(primMesh, 0.4, 3, 0.2));
             primDraw();
         });
 
@@ -260,7 +260,7 @@ export function drawTerrainControll() {
             let waterResult: any;
             for(let i = 0; i < layerCounts; i++) {
                 let newHeight = TerrainGenerator.generateZeroHeights(primMesh);
-                newHeight = TerrainGenerator.mergeHeights(primMesh, primH, TerrainGenerator.continent(primMesh, 0.05, 5, 0.025));
+                newHeight = TerrainGenerator.mergeHeights(primMesh, MergeMethod.Add, primH, TerrainGenerator.continent(primMesh, 0.05, 5, 0.025));
                 waterResult = WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
 
                 heights.push(newHeight);
@@ -289,6 +289,7 @@ export function drawTerrainControll() {
             TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
             TerrainDrawer.visualizeSlopes(primSVG, myRenderer);
 
+            console.log(myRenderer.rivers);
             primDraw();
         });
 
@@ -338,6 +339,7 @@ export function drawTerrainControll() {
         var mesh = MeshGenerator.generateGoodMesh(4096);
         var h = TerrainGenerator.mergeHeights(
             mesh,
+            MergeMethod.Add,
             TerrainGenerator.slope(mesh, TerrainCalcUtil.randomVector(4)),
             TerrainGenerator.cone(mesh, TerrainCalcUtil.runif(-1, 1)),
             TerrainGenerator.mountains(mesh, 50));

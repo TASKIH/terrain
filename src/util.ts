@@ -11,7 +11,21 @@ export class TerrainCalcUtil {
         }
         return total / numbers.length;
     }
+    static standardDeviation(numbers: number[], average?: number): number {
+        if (!average) {
+            average = TerrainCalcUtil.mean(numbers);
+        }
 
+        return Math.sqrt(
+            numbers.map((num) => { 
+                let diff = num - average!; 
+                return diff ** 2;
+            })
+            .reduce((item1, item2) =>
+                item1 + item2  
+            ) / numbers.length
+        );
+    }
     // 乱数を生成する
     static runif(lo: number, hi: number): number {
         return lo + Math.random() * (hi - lo);

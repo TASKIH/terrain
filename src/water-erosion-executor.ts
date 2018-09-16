@@ -1,5 +1,5 @@
 import { WaterRecorder, Water, WaterFlowResult, FlowResult } from './water-recorder';
-import { MapMesh, TerrainHeights, TerrainPoint } from './terrain-interfaces';
+import { MapMesh, TerrainHeights, TerrainPoint, MergeMethod } from './terrain-interfaces';
 import { TerrainGenerator } from './terrain-generator';
 
 export class WaterErosionExecutor {
@@ -10,6 +10,7 @@ export class WaterErosionExecutor {
             waters[e.id] = {
                 amount: 0,
                 deadEnd: false,
+                isRevived: false
             }
         });
         return waters;
@@ -36,7 +37,7 @@ export class WaterErosionExecutor {
                     recorder: WaterRecorder): {[key: number]: Water} {
 
         let restWater = currentWater[terrainPoint.id];
-        if (restWater.amount <= 0) {
+        if (!restWater || restWater.amount <= 0) {
             return currentWater;
         }
         // 低い順に並び変える
@@ -62,6 +63,13 @@ export class WaterErosionExecutor {
             // 最大flowableAmountの水を低い土地に流せる
             const flow = Math.min(flowableAmount, restWater.amount);
             restWater.amount -= flow;
+            if (!currentWater[cp.id]) {
+                currentWater[cp.id] = {
+                   amount: 0,
+                   deadEnd: false,
+                   isRevived: true,
+                }
+            }
             currentWater[cp.id].amount += flow;
             recorder.addWaterFlow(terrainPoint, cp, flow);
 
@@ -84,9 +92,10 @@ export class WaterErosionExecutor {
         // 高い順に並び変える
         let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
             return h[b.id] - h[a.id];
-        });
+        }).map(e => e);
 
-        const getResult = (h: TerrainHeights, waters: {[key: number]: Water}): FlowResult => {
+        const getResult = (h: TerrainHeights, 
+            waters: {[key: number]: Water}): FlowResult => {
             let hasDeadend = false;
             for(let wk in waters) {
                 const water = waters[wk];
@@ -118,6 +127,7 @@ export class WaterErosionExecutor {
             waters[e.id] = {
                 amount: rainfall,
                 deadEnd: false,
+                isRevived: false,
             }
         });
 
@@ -128,18 +138,45 @@ export class WaterErosionExecutor {
             hasDeadend: undefined,
             isFinished: false,
         };
+        let finishedWaters: {[key: number]: Water} = {};
 
+        let targetVoronois = heightOrderedVoronois.filter(e => !!waters[e.id]);
         do {
-            heightOrderedVoronois.forEach(e => {
+            targetVoronois.forEach(e => {
                 this.drain(mesh, h, e, waters, flowableAmount, record);
             });
             result = getResult(h, waters);
+            const removableKeys: number[] = [];
+
+            /**
+             * 計算コスト削減のため、終わったものは計算から除外する
+             */
+            let doRefiltering = false;
+            for(let key in waters) {
+                let water = waters[key];
+                if (water.amount === 0 || result.isFinished) {
+                    finishedWaters[key] = water;
+                    removableKeys.push(parseInt(key));
+                    doRefiltering = true;
+                }
+                if (water.isRevived) {
+                    targetVoronois
+                    water.isRevived = false;
+                    doRefiltering = true;
+                }
+            }
+            for(let rv = 0; rv < removableKeys.length; rv++) {
+                delete waters[removableKeys[rv]];
+            }
+            if (doRefiltering) {
+                targetVoronois = heightOrderedVoronois.filter(e => !!waters[e.id]);
+            }
             i++;
         }
-        while(!result.isFinished && i <= 10000);
+        while(!result.isFinished && i <= 100);
 
 
-        return {waters: waters, records: record, result: result};
+        return {waters: finishedWaters, records: record, result: result};
     }
     /**
      * 水による浸食を行う
@@ -169,7 +206,7 @@ export class WaterErosionExecutor {
             newh[e.id] = Math.max(-1, newh[e.id]);
 
         });
-        return TerrainGenerator.mergeHeights(mesh, newh, h);
+        return TerrainGenerator.mergeHeights(mesh, MergeMethod.Add, newh, h);
     }
 
 }

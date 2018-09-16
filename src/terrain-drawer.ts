@@ -5,7 +5,7 @@ import * as d3 from 'd3';
 import { TerrainFeatureGenerator } from "./terrain-feature-generator";
 import { TerrainGenerator } from "./terrain-generator";
 import { MeshGenerator } from "./mesh-generator";
-import { Water } from "./water-recorder";
+import { Water, WaterFlow } from "./water-recorder";
 
 export class TerrainDrawer {
     static drawLabels(svg: any, render: MapRender) {
@@ -201,7 +201,6 @@ export class TerrainDrawer {
     
     // 等高線の作成
     static contour(mesh: MapMesh, h: TerrainHeights, level: number) {
-        level = h.seaLevelHeight || 0;
         var edges = [];
         for (var i = 0; i < mesh.edges.length; i++) {
             var edge = mesh.edges[i];
@@ -216,6 +215,7 @@ export class TerrainDrawer {
                 edges.push([edge.left, edge.right]);
             }
         }
+        console.log(edges);
         return TerrainCalcUtil.mergeSegments(edges);
     }
     
@@ -336,13 +336,7 @@ export class TerrainDrawer {
             });
     }
     
-
-    static visualizeDownhill(mesh: MapMesh, h: TerrainHeights) {
-        var links = TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
-        TerrainDrawer.drawPaths('river', links);
-    }
-
-    static drawPathsRiver(svg: any, cls: any, paths?: any) {
+    static visualizeWaterFlow(svg: any, cls: any, paths?: any) {
         var paths = svg.selectAll('path.' + cls).data(paths);
         paths.enter()
             .append('path')
@@ -351,6 +345,12 @@ export class TerrainDrawer {
             .remove();
         svg.selectAll('path.' + cls)
             .attr('d', TerrainDrawer.makeD3PathByPath);
+    }
+    
+
+    static visualizeDownhill(mesh: MapMesh, h: TerrainHeights) {
+        var links = TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
+        TerrainDrawer.drawPaths('river', links);
     }
 
     static drawPaths(svg: any, cls: any, paths?: any) {

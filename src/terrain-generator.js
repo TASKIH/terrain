@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "d3", "./util", "js-priority-queue"], function (require, exports, d3, util_1) {
+define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priority-queue"], function (require, exports, d3, terrain_interfaces_1, util_1) {
     'use strict';
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
@@ -52,6 +52,16 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 return (x - (lo || 0)) / (hi || 0 - (lo || 0));
             });
         }
+        // 平均0, 分散1のデータに標準化
+        static standardize(mesh, h) {
+            const avg = util_1.TerrainCalcUtil.mean(h);
+            const std = util_1.TerrainCalcUtil.standardDeviation(h, avg);
+            let newH = TerrainGenerator.generateZeroHeights(mesh);
+            for (let i = 0; i < h.length; ++i) {
+                newH[i] = (h[i] - avg) / std;
+            }
+            return newH;
+        }
         static peaky(heights) {
             return TerrainGenerator.map(TerrainGenerator.normalize(heights), Math.sqrt);
         }
@@ -63,13 +73,27 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                 }
             }
         }
-        static mergeHeights(mesh, ...args) {
-            console.log(args);
+        static mergeHeights(mesh, method, ...args) {
+            let mergeMethod;
+            switch (method) {
+                case terrain_interfaces_1.MergeMethod.Add:
+                    mergeMethod = (left, right) => {
+                        return left + right;
+                    };
+                    break;
+                default:
+                    mergeMethod = (left, right) => {
+                        return (left + right) / 2;
+                    };
+                    break;
+            }
             var n = args[0].length;
             var newVals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < n; i++) {
                 for (var j = 0; j < args.length; j++) {
-                    newVals[i] += args[j][i];
+                    newVals[i] = mergeMethod(args[j][i], newVals[i]);
+                    newVals[i] = Math.min(1, newVals[i]);
+                    newVals[i] = Math.max(-1, newVals[i]);
                 }
             }
             return newVals;
@@ -227,7 +251,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
                     waters[minRobustness.id] += restWater;
                 }
             });
-            return TerrainGenerator.mergeHeights(mesh, newh, h);
+            return TerrainGenerator.mergeHeights(mesh, terrain_interfaces_1.MergeMethod.Add, newh, h);
         }
         // 傾斜をなだらかにする
         static relax(mesh, h) {
@@ -505,7 +529,7 @@ define(["require", "exports", "d3", "./util", "js-priority-queue"], function (re
             const generatedMountains = TerrainGenerator.mountains(mesh, 50);
             console.log(generatedSlopes);
             console.log(mesh);
-            var h = TerrainGenerator.mergeHeights(mesh, generatedSlopes, generatedCones, generatedMountains);
+            var h = TerrainGenerator.mergeHeights(mesh, terrain_interfaces_1.MergeMethod.Add, generatedSlopes, generatedCones, generatedMountains);
             for (var i = 0; i < 10; i++) {
                 h = TerrainGenerator.relax(mesh, h);
             }

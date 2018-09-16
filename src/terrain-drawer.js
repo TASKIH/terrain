@@ -209,7 +209,6 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
         }
         // 等高線の作成
         static contour(mesh, h, level) {
-            level = h.seaLevelHeight || 0;
             var edges = [];
             for (var i = 0; i < mesh.edges.length; i++) {
                 var edge = mesh.edges[i];
@@ -224,6 +223,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                     edges.push([edge.left, edge.right]);
                 }
             }
+            console.log(edges);
             return util_1.TerrainCalcUtil.mergeSegments(edges);
         }
         static drawMap(svg, render) {
@@ -326,11 +326,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 return TerrainDrawer.getWaterColor(waters[d.point.id].amount);
             });
         }
-        static visualizeDownhill(mesh, h) {
-            var links = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
-            TerrainDrawer.drawPaths('river', links);
-        }
-        static drawPathsRiver(svg, cls, paths) {
+        static visualizeWaterFlow(svg, cls, paths) {
             var paths = svg.selectAll('path.' + cls).data(paths);
             paths.enter()
                 .append('path')
@@ -339,6 +335,10 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .remove();
             svg.selectAll('path.' + cls)
                 .attr('d', TerrainDrawer.makeD3PathByPath);
+        }
+        static visualizeDownhill(mesh, h) {
+            var links = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(mesh, h, 0.01);
+            TerrainDrawer.drawPaths('river', links);
         }
         static drawPaths(svg, cls, paths) {
             var paths = svg.selectAll('path.' + cls).data(paths);

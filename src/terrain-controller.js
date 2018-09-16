@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./terrain-feature-generator", "./water-erosion-executor", "./water-recorder"], function (require, exports, d3, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, terrain_feature_generator_1, water_erosion_executor_1, water_recorder_1) {
+define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./terrain-feature-generator", "./water-erosion-executor", "./water-recorder"], function (require, exports, d3, terrain_interfaces_1, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, terrain_feature_generator_1, water_erosion_executor_1, water_recorder_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
@@ -100,7 +100,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
             .on("click", function () {
             const height = +document.getElementById("continent-height").value;
             const radius = +document.getElementById("continent-radius").value;
-            expH = terrain_generator_1.TerrainGenerator.mergeHeights(expMesh, expH, terrain_generator_1.TerrainGenerator.continent(expMesh, height, 1, radius, expMesh.extent.margin));
+            expH = terrain_generator_1.TerrainGenerator.mergeHeights(expMesh, terrain_interfaces_1.MergeMethod.Add, expH, terrain_generator_1.TerrainGenerator.continent(expMesh, height, 1, radius, expMesh.extent.margin));
             expDraw();
         });
         expDiv.append("button")
@@ -189,7 +189,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         primDiv.append("button")
             .text("Add random slope")
             .on("click", function () {
-            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, primH, terrain_generator_1.TerrainGenerator.slope(primMesh, util_1.TerrainCalcUtil.randomVector(4)));
+            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, terrain_interfaces_1.MergeMethod.Add, primH, terrain_generator_1.TerrainGenerator.slope(primMesh, util_1.TerrainCalcUtil.randomVector(4)));
             terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primMesh, primSVG, primH);
             // visualizeHeight(primSVG, primH, -1, 1);
             // primH = mergeHeights(primH, slope(primMesh, [1, -1]));
@@ -201,26 +201,26 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         primDiv.append("button")
             .text("Add cone")
             .on("click", function () {
-            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, primH, terrain_generator_1.TerrainGenerator.cone(primMesh, -0.5));
+            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, terrain_interfaces_1.MergeMethod.Add, primH, terrain_generator_1.TerrainGenerator.cone(primMesh, -0.5));
             primDraw();
         });
         // これは逆に
         primDiv.append("button")
             .text("Add inverted cone")
             .on("click", function () {
-            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, primH, terrain_generator_1.TerrainGenerator.cone(primMesh, 0.5));
+            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, terrain_interfaces_1.MergeMethod.Add, primH, terrain_generator_1.TerrainGenerator.cone(primMesh, 0.5));
             primDraw();
         });
         primDiv.append("button")
             .text("Add five blobs")
             .on("click", function () {
-            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, primH, terrain_generator_1.TerrainGenerator.mountains(primMesh, 5));
+            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, terrain_interfaces_1.MergeMethod.Add, primH, terrain_generator_1.TerrainGenerator.mountains(primMesh, 5));
             primDraw();
         });
         primDiv.append("button")
             .text("Add one continent ")
             .on("click", function () {
-            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, primH, terrain_generator_1.TerrainGenerator.continent(primMesh, 0.4, 3, 0.2));
+            primH = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, terrain_interfaces_1.MergeMethod.Add, primH, terrain_generator_1.TerrainGenerator.continent(primMesh, 0.4, 3, 0.2));
             primDraw();
         });
         primDiv.append("button")
@@ -232,7 +232,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
             let waterResult;
             for (let i = 0; i < layerCounts; i++) {
                 let newHeight = terrain_generator_1.TerrainGenerator.generateZeroHeights(primMesh);
-                newHeight = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, primH, terrain_generator_1.TerrainGenerator.continent(primMesh, 0.05, 5, 0.025));
+                newHeight = terrain_generator_1.TerrainGenerator.mergeHeights(primMesh, terrain_interfaces_1.MergeMethod.Add, primH, terrain_generator_1.TerrainGenerator.continent(primMesh, 0.05, 5, 0.025));
                 waterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(primMesh, primH, 0.02, 0.5);
                 heights.push(newHeight);
             }
@@ -254,6 +254,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
             terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
             terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRenderer);
+            console.log(myRenderer.rivers);
             primDraw();
         });
         primDiv.append("button")
@@ -292,7 +293,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         var erodeSVG = addSVG(erodeDiv);
         function generateUneroded() {
             var mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(4096);
-            var h = terrain_generator_1.TerrainGenerator.mergeHeights(mesh, terrain_generator_1.TerrainGenerator.slope(mesh, util_1.TerrainCalcUtil.randomVector(4)), terrain_generator_1.TerrainGenerator.cone(mesh, util_1.TerrainCalcUtil.runif(-1, 1)), terrain_generator_1.TerrainGenerator.mountains(mesh, 50));
+            var h = terrain_generator_1.TerrainGenerator.mergeHeights(mesh, terrain_interfaces_1.MergeMethod.Add, terrain_generator_1.TerrainGenerator.slope(mesh, util_1.TerrainCalcUtil.randomVector(4)), terrain_generator_1.TerrainGenerator.cone(mesh, util_1.TerrainCalcUtil.runif(-1, 1)), terrain_generator_1.TerrainGenerator.mountains(mesh, 50));
             h = terrain_generator_1.TerrainGenerator.peaky(h);
             h = terrain_generator_1.TerrainGenerator.fillSinks(mesh, h);
             h = terrain_generator_1.TerrainGenerator.setSeaLevel(mesh, h, 0);

@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./terrain-feature-generator", "./water-erosion-executor", "./water-recorder"], function (require, exports, d3, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, terrain_feature_generator_1, water_erosion_executor_1, water_recorder_1) {
+define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./water-erosion-executor", "./water-recorder", "./continent-generator"], function (require, exports, d3, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, water_erosion_executor_1, water_recorder_1, continent_generator_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
@@ -47,47 +47,228 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
             primDraw();
         });
         primDiv.append("button")
-            .text("大陸の生成")
+            .text("パンゲアの生成")
             .on("click", function () {
-            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(2048);
-            wholeMapHeights = terrain_generator_1.TerrainGenerator.generateZeroHeights(wholeMapMesh);
-            let continentCount = 5;
-            for (let i = 0; i < continentCount; i++) {
-                let currentHeight = terrain_generator_1.TerrainGenerator.generateZeroHeights(wholeMapMesh);
-                currentHeight = terrain_generator_1.TerrainGenerator.mergeHeights(wholeMapMesh, currentHeight, terrain_generator_1.TerrainGenerator.continent(wholeMapMesh, 0.05, 5, 0.1));
-                currentHeight = terrain_generator_1.TerrainGenerator.mergeHeights(wholeMapMesh, currentHeight, terrain_generator_1.TerrainGenerator.continent(wholeMapMesh, 0.05, 20, 0.05));
-                currentHeight = terrain_generator_1.TerrainGenerator.mergeHeights(wholeMapMesh, currentHeight, terrain_generator_1.TerrainGenerator.continent(wholeMapMesh, -0.05, 10, 0.04));
-                let currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(wholeMapMesh, currentHeight, 0.02, 0.5);
-                for (let i = 0; i < 7; i++) {
-                    if (i == 5) {
-                        currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(wholeMapMesh, currentHeight, 0.02, 0.5);
-                    }
-                    currentHeight = water_erosion_executor_1.WaterErosionExecutor.erodeByWater(wholeMapMesh, currentHeight, currentWaterResult.waters, currentWaterResult.records, 0.005);
-                    currentHeight = terrain_generator_1.TerrainGenerator.doErosion(wholeMapMesh, currentHeight, util_1.TerrainCalcUtil.runif(0, 0.1), 5);
-                    currentHeight = terrain_generator_1.TerrainGenerator.cleanCoast(wholeMapMesh, currentHeight, 2);
-                }
-                wholeMapHeights = terrain_generator_1.TerrainGenerator.mergeHeights(wholeMapMesh, wholeMapHeights, currentHeight);
-            }
-            let currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(wholeMapMesh, wholeMapHeights, 0.02, 0.5);
-            for (let i = 0; i < 7; i++) {
-                if (i == 5) {
-                    currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(wholeMapMesh, wholeMapHeights, 0.02, 0.5);
-                }
-                wholeMapHeights = water_erosion_executor_1.WaterErosionExecutor.erodeByWater(wholeMapMesh, wholeMapHeights, currentWaterResult.waters, currentWaterResult.records, 0.005);
-                wholeMapHeights = terrain_generator_1.TerrainGenerator.doErosion(wholeMapMesh, wholeMapHeights, util_1.TerrainCalcUtil.runif(0, 0.1), 30);
-                wholeMapHeights = terrain_generator_1.TerrainGenerator.cleanCoast(wholeMapMesh, wholeMapHeights, 2);
-            }
-            var myRenderer = {
+            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16028);
+            wholeMapHeights = continent_generator_1.ContinentGenerator.generate(wholeMapMesh, continent_generator_1.pangeaTerrainSeed);
+            var myRender = {
                 params: terrain_generator_1.TerrainGenerator.defaultParams,
                 mesh: wholeMapMesh,
                 h: wholeMapHeights
             };
-            myRenderer.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(wholeMapMesh, myRenderer.h, 0.01);
-            myRenderer.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, myRenderer.h, 0);
-            console.log(myRenderer.rivers);
-            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
-            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
-            terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRenderer);
+            //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
+            myRender.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+            //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
+            terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRender);
+            primDraw();
+        });
+        primDiv.append("button")
+            .text("大陸の生成")
+            .on("click", function () {
+            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16028);
+            wholeMapHeights = continent_generator_1.ContinentGenerator.generate(wholeMapMesh, continent_generator_1.continentTerrainSeed);
+            var myRender = {
+                params: terrain_generator_1.TerrainGenerator.defaultParams,
+                mesh: wholeMapMesh,
+                h: wholeMapHeights
+            };
+            //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
+            myRender.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+            //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
+            terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRender);
+            primDraw();
+        });
+        /**
+         * 補助的な機能
+         */
+        let waterResult;
+        function getTerminalPoint(mesh, waterRecord) {
+            const fromPoints = {};
+            for (let key1 in waterRecord.records) {
+                let record = waterRecord.records[key1];
+                for (let key2 in record) {
+                    const flow = record[key2];
+                    if (!fromPoints[flow.from.id]) {
+                        fromPoints[flow.from.id] = true;
+                    }
+                    fromPoints[flow.to.id] = false;
+                }
+            }
+            const result = [];
+            for (let key in fromPoints) {
+                if (fromPoints[key]) {
+                    result.push(parseInt(key));
+                }
+            }
+            return result;
+        }
+        function addRiverIfTerminal(records, fromPoint, currentRiver, rivers) {
+            if (!currentRiver) {
+                currentRiver = {
+                    root: fromPoint,
+                    route: []
+                };
+            }
+            let curRecord = records[fromPoint.id];
+            if (!curRecord) {
+                currentRiver.dest = currentRiver.route[currentRiver.route.length - 1].to;
+                rivers.push(currentRiver);
+            }
+            else {
+                let isFirstLoop = true;
+                for (let key2 in curRecord) {
+                    let currentFlow = curRecord[key2];
+                    if (isFirstLoop) {
+                        currentRiver.route.push(currentFlow);
+                        addRiverIfTerminal(records, currentFlow.to, currentRiver, rivers);
+                        isFirstLoop = false;
+                    }
+                    else {
+                        let newRiver = JSON.parse(JSON.stringify(currentRiver));
+                        newRiver.route.push(currentFlow);
+                        addRiverIfTerminal(records, currentFlow.to, newRiver, rivers);
+                    }
+                }
+            }
+        }
+        function getTargetWaterFlowRecord(waterRecord, isTargetJudgeFunc) {
+            let result = {};
+            for (let key1 in waterRecord.records) {
+                for (let key2 in waterRecord.records[key1]) {
+                    let flow = waterRecord.records[key1][key2];
+                    if (isTargetJudgeFunc(flow.amount)) {
+                        if (!result[flow.from.id]) {
+                            result[flow.from.id] = {};
+                        }
+                        result[flow.from.id][flow.to.id] = flow;
+                    }
+                }
+            }
+            return result;
+        }
+        function generateWaterConnection(mesh, waterRecord) {
+            const rivers = [];
+            const terminalPoints = getTerminalPoint(mesh, waterRecord);
+            terminalPoints.forEach(pt => {
+                addRiverIfTerminal(waterRecord.records, mesh.pointDict[pt].point, undefined, rivers);
+            });
+            return rivers;
+        }
+        function drawWaterFlow(mesh, h, waterRecord) {
+            const watersArray = [];
+            let records = waterRecord.records;
+            for (let key1 in records) {
+                let curRecord = records[key1];
+                for (let key2 in curRecord) {
+                    watersArray.push(curRecord[key2].amount);
+                }
+            }
+            const mean = util_1.TerrainCalcUtil.mean(watersArray);
+            const sd = util_1.TerrainCalcUtil.standardDeviation(watersArray, mean);
+            const newTargetWaterRecord = new water_recorder_1.WaterRecorder();
+            newTargetWaterRecord.records = getTargetWaterFlowRecord(waterRecord, (amount) => {
+                let deviationVal = (amount - mean) / sd;
+                return deviationVal > 1.2;
+            });
+            const flowPoints = [];
+            const waterConnections = generateWaterConnection(mesh, newTargetWaterRecord);
+            waterConnections.forEach(conn => {
+                if (!conn.dest) {
+                    return;
+                }
+                // 終着点が海ではない場合は川として扱わない
+                if (h[conn.dest.id] > 0) {
+                    return;
+                }
+                conn.route.forEach(rt => {
+                    let newData = [];
+                    // 既に川が海に合流している場合は描画しない
+                    if (h[rt.from.id] < 0) {
+                        return;
+                    }
+                    let fromPt = [rt.from.x, rt.from.y];
+                    let toPt = [rt.to.x, rt.to.y];
+                    // 海に合流する場合は海への境界まで線を延ばす
+                    if (h[rt.to.id] <= 0) {
+                        toPt = [(rt.from.x + rt.to.x) / 2, (rt.from.y + rt.to.y) / 2];
+                    }
+                    newData.push(fromPt);
+                    newData.push(toPt);
+                    flowPoints.push(newData);
+                });
+            });
+            const rivers = util_1.TerrainCalcUtil.mergeSegments(flowPoints).map(terrain_generator_1.TerrainGenerator.relaxPath);
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'river', rivers);
+        }
+        function primDrawWater(waterRecord) {
+            let waters = {};
+            let summaries = waterRecord.getSummaryWater();
+            const watersArray = [];
+            for (let key in summaries) {
+                let summary = summaries[key];
+                watersArray.push(summary);
+            }
+            const mean = util_1.TerrainCalcUtil.mean(watersArray);
+            const sd = util_1.TerrainCalcUtil.standardDeviation(watersArray, mean);
+            for (let key in summaries) {
+                let summary = summaries[key];
+                waters[key] = {
+                    amount: (summary - mean) / sd,
+                    deadEnd: false,
+                    isRevived: false,
+                };
+            }
+            terrain_drawer_1.TerrainDrawer.visualizeWater(primSVG, wholeMapMesh, waters);
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0));
+        }
+        primDiv.append("button")
+            .text("水の流れの計算")
+            .on("click", function () {
+            waterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(wholeMapMesh, wholeMapHeights, 0.2, 0.5);
+            drawWaterFlow(wholeMapMesh, wholeMapHeights, waterResult.records);
+        });
+        primDiv.append("button")
+            .text("水の流れを見る")
+            .on("click", function () {
+            drawWaterFlow(wholeMapMesh, wholeMapHeights, waterResult.records);
+        });
+        primDiv.append("button")
+            .text("地形の高さを見る")
+            .on("click", function () {
+            primDraw();
+        });
+        primDiv.append("button")
+            .text("単純な浸食を実行")
+            .on("click", function () {
+            wholeMapHeights = terrain_generator_1.TerrainGenerator.erodeSimply(wholeMapMesh, wholeMapHeights, 0.2);
+            primDraw();
+        });
+        primDiv.append("button")
+            .text("普通の浸食を実行")
+            .on("click", function () {
+            wholeMapHeights = terrain_generator_1.TerrainGenerator.doErosion(wholeMapMesh, wholeMapHeights, 0.2);
+            primDraw();
+        });
+        primDiv.append("button")
+            .text("海岸線の整理")
+            .on("click", function () {
+            wholeMapHeights = terrain_generator_1.TerrainGenerator.cleanCoast(wholeMapMesh, wholeMapHeights, 1);
+            primDraw();
+        });
+        primDiv.append("button")
+            .text("Relax")
+            .on("click", function () {
+            wholeMapHeights = terrain_generator_1.TerrainGenerator.relax(wholeMapMesh, wholeMapHeights);
+            primDraw();
+        });
+        primDiv.append("button")
+            .text("水による浸食")
+            .on("click", function () {
+            for (let i = 0; i < 5; i++) {
+            }
+            wholeMapHeights = water_erosion_executor_1.WaterErosionExecutor.erodeByWater(wholeMapMesh, wholeMapHeights, waterResult.waters, waterResult.records, 0.01);
             primDraw();
         });
     }

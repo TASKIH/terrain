@@ -3,6 +3,7 @@ import { TerrainPointContainer, TerrainPoint } from './terrain-interfaces';
 export interface Water {
     amount: number;
     deadEnd: boolean;
+    isRevived: boolean;
 }
 export interface FlowResult {
     isFinished: boolean,
