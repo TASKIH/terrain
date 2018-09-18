@@ -210,21 +210,47 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
         // 等高線の作成
         static contour(mesh, h, level) {
             var edges = [];
+            var transactedDataDict = {};
+            const edgeKeyGenerator = (edge) => {
+                if (!edge.right) {
+                    return edge.left.toString();
+                }
+                return edge.left.toString() + '-' + edge.right.toString();
+            };
+            for (let i = 0; i < mesh.voronoiPoints.length; i++) {
+                let point = mesh.voronoiPoints[i];
+                let connectingSites = mesh.pointDict[point.id].relatedVoronoiSites;
+                for (let j = 0; j < connectingSites.length; j++) {
+                    let site = connectingSites[j];
+                    const curPointHeight = h[point.id];
+                    const nextSiteHeight = h[site.terrainPointIndex];
+                    if ((curPointHeight > level && nextSiteHeight <= level) ||
+                        (curPointHeight <= level && nextSiteHeight > level)) {
+                        if (!site.edge.right) {
+                            continue;
+                        }
+                        let edgeKey = edgeKeyGenerator(site.edge);
+                        if (transactedDataDict[edgeKey]) {
+                            continue;
+                        }
+                        edges.push([site.edge.left, site.edge.right]);
+                        transactedDataDict[edgeKey] = site.edge;
+                    }
+                }
+            }
+            return util_1.TerrainCalcUtil.mergeSegments(edges);
+            /**
             for (var i = 0; i < mesh.edges.length; i++) {
                 var edge = mesh.edges[i];
-                if (edge.right == undefined)
-                    continue;
-                /*
+                if (edge.right == undefined) continue;
                 if (TerrainCalcUtil.isNextEdge(mesh, edge.index1) || TerrainCalcUtil.isNextEdge(mesh, edge.index2))
                     continue;
-                */
+        
                 if ((h[edge.index1] > level && h[edge.index2] <= level) ||
                     (h[edge.index2] > level && h[edge.index1] <= level)) {
                     edges.push([edge.left, edge.right]);
                 }
-            }
-            console.log(edges);
-            return util_1.TerrainCalcUtil.mergeSegments(edges);
+            }*/
         }
         static drawMap(svg, render) {
             render.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(render.mesh, render.h, 0.01);
@@ -285,7 +311,19 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             }
             return p.toString();
         }
-        static visualizeVoronoi(svg, mesh, field, lo, hi) {
+        static genVoronoitInfo(h, elem) {
+            let result = 'id:' + elem.point.id + '<br>' +
+                'x:' + elem.point.x + '<br>' +
+                'y:' + elem.point.y + '<br>' +
+                'height:' + h[elem.point.id] + '<br>';
+            for (let i = 0; i < elem.relatedVoronoiSites.length; i++) {
+                let next = elem.relatedVoronoiSites[i];
+                console.log(next);
+                result += 'next ' + next.terrainPointIndex + 'height' + h[next.terrainPointIndex] + '<br>';
+            }
+            return result;
+        }
+        static visualizeVoronoi(svg, mesh, field, lo, hi, showDataId) {
             if (hi == undefined)
                 hi = (d3.max(field) || 0) + 1e-9;
             if (lo == undefined)
@@ -303,6 +341,15 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .remove();
             svg.selectAll('path.field')
                 .attr('d', TerrainDrawer.makeD3PathByPointContainer)
+                .on('mousedown', (elem) => {
+                console.log(elem);
+                if (showDataId) {
+                    document.getElementById(showDataId).innerHTML =
+                        '<div>' +
+                            TerrainDrawer.genVoronoitInfo(field, elem) +
+                            '</div>';
+                }
+            })
                 .style('fill', function (d, i) {
                 return TerrainDrawer.getColor(field[d.point.id]);
             });
@@ -341,6 +388,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
             TerrainDrawer.drawPaths('river', links);
         }
         static drawPaths(svg, cls, paths) {
+            console.log(paths.length);
             var paths = svg.selectAll('path.' + cls).data(paths);
             paths.enter()
                 .append('path')
@@ -444,6 +492,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                     }
                 }
                 else {
+                    // console.log('x: '+ x + 'l' + l + 'y' +  y + 's' + s);
                     strokes.push([[x - l, y + l * s], [x + l, y - l * s]]);
                 }
             }

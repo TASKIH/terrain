@@ -10,11 +10,15 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
     function drawTerrainControll() {
+        function mouseMove() {
+            // console.log(d3.mouse(this));
+        }
         function addSVG(div) {
             return div.insert("svg", ":first-child")
                 .attr("height", 400)
                 .attr("width", 400)
-                .attr("viewBox", "-500 -500 1000 1000");
+                .attr("viewBox", "-500 -500 1000 1000")
+                .on('mousemove', mouseMove);
         }
         var primDiv = d3.select("div#prim");
         var primSVG = addSVG(primDiv);
@@ -36,8 +40,17 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         }
         var continents = [];
         function primDraw() {
-            terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, -1, 1);
-            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0));
+            var myRender = {
+                params: terrain_generator_1.TerrainGenerator.defaultParams,
+                mesh: wholeMapMesh,
+                h: wholeMapHeights
+            };
+            //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
+            terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, -1, 1, 'prim-info');
+            terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRender);
+            myRender.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+            //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
         }
         primDraw();
         primDiv.append("button")
@@ -49,7 +62,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         primDiv.append("button")
             .text("パンゲアの生成")
             .on("click", function () {
-            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16028);
+            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(4096);
             wholeMapHeights = continent_generator_1.ContinentGenerator.generate(wholeMapMesh, continent_generator_1.pangeaTerrainSeed);
             var myRender = {
                 params: terrain_generator_1.TerrainGenerator.defaultParams,
@@ -66,18 +79,8 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         primDiv.append("button")
             .text("大陸の生成")
             .on("click", function () {
-            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16028);
+            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(2048);
             wholeMapHeights = continent_generator_1.ContinentGenerator.generate(wholeMapMesh, continent_generator_1.continentTerrainSeed);
-            var myRender = {
-                params: terrain_generator_1.TerrainGenerator.defaultParams,
-                mesh: wholeMapMesh,
-                h: wholeMapHeights
-            };
-            //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
-            myRender.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
-            //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
-            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
-            terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRender);
             primDraw();
         });
         /**

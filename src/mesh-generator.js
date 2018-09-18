@@ -57,6 +57,10 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 robustness: 0
             };
         }
+        static generateVoronoiSiteContainer(edge, site, terrainPointIndex) {
+            return Object.assign({ terrainPointIndex: terrainPointIndex,
+                edge: edge }, site);
+        }
         static makeMesh(pts, extent) {
             extent = extent || terrain_generator_1.defaultExtent;
             var vor = MeshGenerator.generateVoronoiDiagram(pts, extent);
@@ -96,23 +100,32 @@ define(["require", "exports", "d3", "./util", "./terrain-generator"], function (
                 }
                 pointDict[e0Id].connectingPoints.push(pointDict[e1Id].point);
                 pointDict[e1Id].connectingPoints.push(pointDict[e0Id].point);
+                const leftSite = MeshGenerator.generateVoronoiSiteContainer(edge, edge.left, e1Id);
+                let rightSite = undefined;
+                if (edge.right) {
+                    rightSite =
+                        MeshGenerator.generateVoronoiSiteContainer(edge, edge.right, e0Id);
+                }
                 edges.push({
                     index1: e0Id,
                     index2: e1Id,
                     left: edge.left,
                     right: edge.right
                 });
-                if (pointDict[e0Id].relatedVoronoiSites.indexOf(edge.left) === -1) {
-                    pointDict[e0Id].relatedVoronoiSites.push(edge.left);
+                if (leftSite.terrainPointIndex !== e0Id && pointDict[e0Id].relatedVoronoiSites.indexOf(leftSite) === -1) {
+                    pointDict[e0Id].relatedVoronoiSites.push(leftSite);
                 }
-                if (edge.right && pointDict[e0Id].relatedVoronoiSites.indexOf(edge.right) === -1) {
-                    pointDict[e0Id].relatedVoronoiSites.push(edge.right);
+                if (rightSite && rightSite.terrainPointIndex !== e0Id && pointDict[e0Id].relatedVoronoiSites.indexOf(rightSite) === -1) {
+                    pointDict[e0Id].relatedVoronoiSites.push(rightSite);
                 }
-                if (pointDict[e1Id].relatedVoronoiSites.indexOf(edge.left) === -1) {
-                    pointDict[e1Id].relatedVoronoiSites.push(edge.left);
+                if (leftSite.terrainPointIndex !== e1Id &&
+                    pointDict[e1Id].relatedVoronoiSites.indexOf(leftSite) === -1) {
+                    pointDict[e1Id].relatedVoronoiSites.push(leftSite);
                 }
-                if (edge.right && pointDict[e1Id].relatedVoronoiSites.indexOf(edge.right) === -1) {
-                    pointDict[e1Id].relatedVoronoiSites.push(edge.right);
+                if (rightSite &&
+                    rightSite.terrainPointIndex !== e1Id &&
+                    pointDict[e1Id].relatedVoronoiSites.indexOf(rightSite) === -1) {
+                    pointDict[e1Id].relatedVoronoiSites.push(rightSite);
                 }
             }
             var mesh = {

@@ -30,11 +30,16 @@ export interface TerrainPoint {
 
     height: number;
 }
-
+export interface VoronoiSiteContainer extends VoronoiSite<[number, number]> {
+    edge: VoronoiEdge<[number, number]>;
+    terrainPointIndex: number;
+}
+export class VoronoiSiteContainerArray extends Array<VoronoiSiteContainer> {
+}
 export interface TerrainPointContainer {
     point: TerrainPoint;
     connectingPoints: TerrainPoint[];
-    relatedVoronoiSites: VoronoiSite<[number, number]>[];
+    relatedVoronoiSites: VoronoiSiteContainerArray;
     // 地盤の強固さ
     robustness: number;
     // 地盤の高さ

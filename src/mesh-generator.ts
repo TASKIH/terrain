@@ -1,8 +1,8 @@
-import { MapExtent, MapMesh, Edge, TerrainPoint, TerrainPointContainer } from "./terrain-interfaces";
+import { MapExtent, MapMesh, Edge, TerrainPoint, TerrainPointContainer, VoronoiSiteContainer } from "./terrain-interfaces";
 import * as d3 from 'd3';
 import { TerrainCalcUtil } from "./util";
 import { defaultExtent } from "./terrain-generator";
-import { VoronoiDiagram, VoronoiSite } from "d3";
+import { VoronoiDiagram, VoronoiSite, VoronoiEdge } from "d3";
 
 export class MeshGenerator {
     static generatePoints(n: number, extent?: MapExtent): [number, number][] {
@@ -62,6 +62,14 @@ export class MeshGenerator {
                 robustness: 0
             }
     }
+    static generateVoronoiSiteContainer(
+        edge: VoronoiEdge<[number, number]>,
+        site: VoronoiSite<[number, number]>,
+        terrainPointIndex: number
+    ): VoronoiSiteContainer {
+        return Object.assign({terrainPointIndex: terrainPointIndex,
+        edge: edge}, site);
+    }
 
     static makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
         extent = extent || defaultExtent;
@@ -78,7 +86,7 @@ export class MeshGenerator {
 
             var e0Id = pointToIdDict[edge[0].toString()];
             var e1Id = pointToIdDict[edge[1].toString()];
-
+            
             if (e0Id == undefined) {
                 e0Id = voronoiPoints.length;
                 pointToIdDict[edge[0].toString()] = e0Id;
@@ -110,6 +118,15 @@ export class MeshGenerator {
 
             pointDict[e1Id].connectingPoints.push(pointDict[e0Id].point);
 
+            const leftSite: VoronoiSiteContainer = 
+            MeshGenerator.generateVoronoiSiteContainer(edge, edge.left, e1Id);
+            
+            let rightSite: VoronoiSiteContainer | undefined = undefined;
+            if (edge.right) {
+                rightSite = 
+                MeshGenerator.generateVoronoiSiteContainer(edge, edge.right, e0Id);
+            }
+
             edges.push({
                     index1: e0Id,
                     index2: e1Id,
@@ -117,18 +134,22 @@ export class MeshGenerator {
                     right: edge.right
             });
 
-            if (pointDict[e0Id].relatedVoronoiSites.indexOf(edge.left) === -1) {
-                pointDict[e0Id].relatedVoronoiSites.push(edge.left);
+            if (leftSite.terrainPointIndex !== e0Id && pointDict[e0Id].relatedVoronoiSites.indexOf(leftSite) === -1) {
+                pointDict[e0Id].relatedVoronoiSites.push(leftSite);
             }
-            if (edge.right && pointDict[e0Id].relatedVoronoiSites.indexOf(edge.right) === -1) {
-                pointDict[e0Id].relatedVoronoiSites.push(edge.right);
+            if (rightSite && rightSite.terrainPointIndex !== e0Id && pointDict[e0Id].relatedVoronoiSites.indexOf(rightSite!) === -1) {
+                pointDict[e0Id].relatedVoronoiSites.push(rightSite!);
             }
 
-            if (pointDict[e1Id].relatedVoronoiSites.indexOf(edge.left) === -1) {
-                pointDict[e1Id].relatedVoronoiSites.push(edge.left);
+            if (leftSite.terrainPointIndex !== e1Id && 
+                pointDict[e1Id].relatedVoronoiSites.indexOf(leftSite) === -1) {
+
+                pointDict[e1Id].relatedVoronoiSites.push(leftSite);
             }
-            if (edge.right && pointDict[e1Id].relatedVoronoiSites.indexOf(edge.right) === -1) {
-                pointDict[e1Id].relatedVoronoiSites.push(edge.right);
+            if (rightSite && 
+                rightSite.terrainPointIndex !== e1Id && 
+                pointDict[e1Id].relatedVoronoiSites.indexOf(rightSite!) === -1) {
+                pointDict[e1Id].relatedVoronoiSites.push(rightSite!);
             }
         }
 

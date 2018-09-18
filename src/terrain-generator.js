@@ -499,6 +499,9 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
             var det = deltaXFrom1To0 * deltaYFrom2To0 - deltaXFrom2To0 * deltaYFrom1To0;
             var deltaHeightFrom1To0 = h[nbs[1]] - h[nbs[0]];
             var deltaHeightFrom2To0 = h[nbs[2]] - h[nbs[0]];
+            if (det == 0) {
+                return [0, 0];
+            }
             return [(deltaYFrom2To0 * deltaHeightFrom1To0 - deltaYFrom1To0 * deltaHeightFrom2To0) / det,
                 (-deltaXFrom2To0 * deltaHeightFrom1To0 + deltaXFrom1To0 * deltaHeightFrom2To0) / det];
         }

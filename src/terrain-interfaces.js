@@ -6,4 +6,7 @@ define(["require", "exports"], function (require, exports) {
         MergeMethod[MergeMethod["Add"] = 0] = "Add";
         MergeMethod[MergeMethod["Average"] = 1] = "Average";
     })(MergeMethod = exports.MergeMethod || (exports.MergeMethod = {}));
+    class VoronoiSiteContainerArray extends Array {
+    }
+    exports.VoronoiSiteContainerArray = VoronoiSiteContainerArray;
 });

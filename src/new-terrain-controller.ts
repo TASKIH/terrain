@@ -12,15 +12,20 @@ import { WaterFlowResult, WaterRecorder, Water, WaterFlow } from './water-record
 import { ContinentGenerator, pangeaTerrainSeed, continentTerrainSeed } from './continent-generator';
 
 export function drawTerrainControll() {
+    function mouseMove(this: any) {
+        // console.log(d3.mouse(this));
+    }
     function addSVG(div: any) {
         return div.insert("svg", ":first-child")
             .attr("height", 400)
             .attr("width", 400)
-            .attr("viewBox", "-500 -500 1000 1000");
+            .attr("viewBox", "-500 -500 1000 1000")
+            .on('mousemove', mouseMove);
     }
 
     var primDiv = d3.select("div#prim");
     var primSVG = addSVG(primDiv);
+
     var wholeMapMesh = MeshGenerator.generateGoodMesh(4096);
     var wholeMapHeights = TerrainGenerator.generateZeroHeights(wholeMapMesh);
     
@@ -41,8 +46,19 @@ export function drawTerrainControll() {
 
 
     function primDraw() {
-        TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, -1, 1);
-        TerrainDrawer.drawPaths(primSVG, 'coast', TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0));
+        var myRender: MapRender = {
+            params: TerrainGenerator.defaultParams,
+            mesh: wholeMapMesh,
+            h:  wholeMapHeights
+        };
+
+        //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
+        TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, -1, 1, 'prim-info');
+        TerrainDrawer.visualizeSlopes(primSVG, myRender);
+        myRender.coasts = TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+        //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
+        TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
+
     }
 
     primDraw();
@@ -57,7 +73,7 @@ export function drawTerrainControll() {
     primDiv.append("button")
         .text("パンゲアの生成")
         .on("click", function () {
-            wholeMapMesh = MeshGenerator.generateGoodMesh(16028);
+            wholeMapMesh = MeshGenerator.generateGoodMesh(4096);
             wholeMapHeights = ContinentGenerator.generate(wholeMapMesh, pangeaTerrainSeed);
             
             var myRender: MapRender = {
@@ -78,20 +94,9 @@ export function drawTerrainControll() {
         primDiv.append("button")
         .text("大陸の生成")
         .on("click", function () {
-            wholeMapMesh = MeshGenerator.generateGoodMesh(16028);
+            wholeMapMesh = MeshGenerator.generateGoodMesh(2048);
             wholeMapHeights = ContinentGenerator.generate(wholeMapMesh, continentTerrainSeed);
             
-            var myRender: MapRender = {
-                params: TerrainGenerator.defaultParams,
-                mesh: wholeMapMesh,
-                h:  wholeMapHeights
-            };
-
-            //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
-            myRender.coasts = TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
-            //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
-            TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
-            TerrainDrawer.visualizeSlopes(primSVG, myRender);
 
             primDraw();
         });
