@@ -55,7 +55,7 @@ export function drawTerrainControll() {
         //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
         TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, -1, 1, 'prim-info');
         TerrainDrawer.visualizeSlopes(primSVG, myRender);
-        myRender.coasts = TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+        myRender.coasts = TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0);
         //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
         TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
 
@@ -83,7 +83,7 @@ export function drawTerrainControll() {
             };
 
             //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
-            myRender.coasts = TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+            myRender.coasts = TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0);
             //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
             TerrainDrawer.visualizeSlopes(primSVG, myRender);
@@ -94,7 +94,7 @@ export function drawTerrainControll() {
         primDiv.append("button")
         .text("大陸の生成")
         .on("click", function () {
-            wholeMapMesh = MeshGenerator.generateGoodMesh(2048);
+            wholeMapMesh = MeshGenerator.generateGoodMesh(16038);
             wholeMapHeights = ContinentGenerator.generate(wholeMapMesh, continentTerrainSeed);
             
 
@@ -271,7 +271,7 @@ export function drawTerrainControll() {
             };
         }
         TerrainDrawer.visualizeWater(primSVG, wholeMapMesh, waters);
-        TerrainDrawer.drawPaths(primSVG, 'coast', TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0));
+        TerrainDrawer.drawPaths(primSVG, 'coast', TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0));
     }
 
     primDiv.append("button")

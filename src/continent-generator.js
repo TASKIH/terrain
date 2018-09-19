@@ -1,4 +1,4 @@
-define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./water-erosion-executor", "./util"], function (require, exports, terrain_interfaces_1, terrain_generator_1, water_erosion_executor_1, util_1) {
+define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./water-erosion-executor"], function (require, exports, terrain_interfaces_1, terrain_generator_1, water_erosion_executor_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     ;
@@ -32,20 +32,21 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
         layerCount: 5,
         riseSeed: exports.continentRaiseSeed,
         waterFlowSeed: exports.defaultWaterFlowSeed,
-        waterErodeEffect: 0.005,
+        waterErodeEffect: 0.008,
         eachLayerErodeCount: 1,
         mergedLayerErodeCount: 3,
-        relaxCount: 5,
+        relaxCount: 7,
         cleanCoastCount: 1,
     };
     class ContinentGenerator {
-        static erodeByWater(mapMesh, mapHeight, rainAmount, maxFlowAmount, erodeEffect, erodeCount) {
-            let currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(mapMesh, mapHeight, rainAmount, maxFlowAmount);
+        static erodeByWater(mapMesh, mapHeight, rainAmount, erodeEffect, erodeCount) {
+            //let currentWaterResult = WaterErosionExecutor.calcWaterFlow(mapMesh, mapHeight,                   rainAmount, maxFlowAmount);
+            let currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(mapMesh, mapHeight, rainAmount);
             for (let i = 0; i < erodeCount; i++) {
                 if (i == 5) {
-                    currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlow(mapMesh, mapHeight, rainAmount, maxFlowAmount);
+                    currentWaterResult = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(mapMesh, mapHeight, rainAmount);
                 }
-                mapHeight = water_erosion_executor_1.WaterErosionExecutor.erodeByWater(mapMesh, mapHeight, currentWaterResult.waters, currentWaterResult.records, erodeEffect);
+                mapHeight = water_erosion_executor_1.WaterErosionExecutor.erodeByWaterRate(mapMesh, mapHeight, currentWaterResult, erodeEffect);
             }
             return mapHeight;
         }
@@ -57,16 +58,15 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
                 seed.riseSeed.forEach(s => {
                     currentHeight = terrain_generator_1.TerrainGenerator.mergeHeights(mapMesh, terrain_interfaces_1.MergeMethod.Add, currentHeight, terrain_generator_1.TerrainGenerator.continent(mapMesh, s.riseHeight, s.riseCount, s.radius));
                 });
-                currentHeight = ContinentGenerator.erodeByWater(mapMesh, currentHeight, seed.waterFlowSeed.rainAmount, seed.waterFlowSeed.maxFlowAmount, seed.waterErodeEffect, seed.eachLayerErodeCount);
-                currentHeight = terrain_generator_1.TerrainGenerator.doErosion(mapMesh, currentHeight, util_1.TerrainCalcUtil.runif(0, 0.1), 20);
+                currentHeight = ContinentGenerator.erodeByWater(mapMesh, currentHeight, seed.waterFlowSeed.rainAmount, seed.waterErodeEffect, seed.eachLayerErodeCount);
                 currentHeight = terrain_generator_1.TerrainGenerator.cleanCoast(mapMesh, currentHeight, seed.cleanCoastCount);
                 wholeMapHeights = terrain_generator_1.TerrainGenerator.mergeHeights(mapMesh, terrain_interfaces_1.MergeMethod.Add, wholeMapHeights, currentHeight);
             }
-            wholeMapHeights = ContinentGenerator.erodeByWater(mapMesh, wholeMapHeights, seed.waterFlowSeed.rainAmount, seed.waterFlowSeed.maxFlowAmount, seed.waterErodeEffect, seed.mergedLayerErodeCount);
+            wholeMapHeights = ContinentGenerator.erodeByWater(mapMesh, wholeMapHeights, seed.waterFlowSeed.rainAmount, seed.waterErodeEffect, seed.mergedLayerErodeCount);
             for (let i = 0; i < seed.relaxCount; i++) {
                 wholeMapHeights = terrain_generator_1.TerrainGenerator.relax(mapMesh, wholeMapHeights);
             }
-            wholeMapHeights = ContinentGenerator.erodeByWater(mapMesh, wholeMapHeights, seed.waterFlowSeed.rainAmount, seed.waterFlowSeed.maxFlowAmount, seed.waterErodeEffect, seed.mergedLayerErodeCount);
+            wholeMapHeights = ContinentGenerator.erodeByWater(mapMesh, wholeMapHeights, seed.waterFlowSeed.rainAmount, seed.waterErodeEffect, seed.mergedLayerErodeCount);
             for (let i = 0; i < seed.relaxCount; i++) {
                 wholeMapHeights = terrain_generator_1.TerrainGenerator.relax(mapMesh, wholeMapHeights);
             }

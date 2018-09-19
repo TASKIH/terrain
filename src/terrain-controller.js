@@ -75,11 +75,11 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
         var continents = [];
         function expDraw() {
             terrain_drawer_1.TerrainDrawer.visualizeVoronoi(expSVG, expMesh, expH, -1, 1);
-            terrain_drawer_1.TerrainDrawer.drawPaths(expSVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(expMesh, expH, 0));
+            terrain_drawer_1.TerrainDrawer.drawPaths(expSVG, 'coast', terrain_drawer_1.TerrainDrawer.generateContour(expMesh, expH, 0));
         }
         function expDrawWater(waters) {
             terrain_drawer_1.TerrainDrawer.visualizeWater(expSVG, expMesh, waters);
-            terrain_drawer_1.TerrainDrawer.drawPaths(expSVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(expMesh, expH, 0));
+            terrain_drawer_1.TerrainDrawer.drawPaths(expSVG, 'coast', terrain_drawer_1.TerrainDrawer.generateContour(expMesh, expH, 0));
         }
         expDiv.append("button")
             .text("Reset to flat")
@@ -171,7 +171,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
         var primH = terrain_generator_1.TerrainGenerator.generateZeroHeights(primMesh);
         function primDraw() {
             terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primSVG, primMesh, primH, -1, 1);
-            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(primMesh, primH, 0));
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', terrain_drawer_1.TerrainDrawer.generateContour(primMesh, primH, 0));
         }
         primDraw();
         primDiv.append("button")
@@ -249,7 +249,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
                 h: primH
             };
             myRenderer.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(primMesh, myRenderer.h, 0.01);
-            myRenderer.coasts = terrain_drawer_1.TerrainDrawer.contour(primMesh, myRenderer.h, 0);
+            myRenderer.coasts = terrain_drawer_1.TerrainDrawer.generateContour(primMesh, myRenderer.h, 0);
             console.log(myRenderer.rivers);
             terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
@@ -309,7 +309,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
             else {
                 terrain_drawer_1.TerrainDrawer.visualizeVoronoi(erodeMesh, erodeSVG, erodeH, 0, 1);
             }
-            terrain_drawer_1.TerrainDrawer.drawPaths(erodeSVG, "coast", terrain_drawer_1.TerrainDrawer.contour(erodeMesh, erodeH, 0));
+            terrain_drawer_1.TerrainDrawer.drawPaths(erodeSVG, "coast", terrain_drawer_1.TerrainDrawer.generateContour(erodeMesh, erodeH, 0));
         }
         erodeDiv.append("button")
             .text("Generate random heightmap")
@@ -370,7 +370,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
                 physSVG.selectAll("path.field").remove();
             }
             if (physViewCoast) {
-                terrain_drawer_1.TerrainDrawer.drawPaths(physSVG, "coast", terrain_drawer_1.TerrainDrawer.contour(physMesh, physH, 0));
+                terrain_drawer_1.TerrainDrawer.drawPaths(physSVG, "coast", terrain_drawer_1.TerrainDrawer.generateContour(physMesh, physH, 0));
             }
             else {
                 terrain_drawer_1.TerrainDrawer.drawPaths(physSVG, "coast", []);
@@ -457,7 +457,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
             else {
                 terrain_drawer_1.TerrainDrawer.visualizeVoronoi(citySVG, cityRender.mesh, cityRender.terr);
             }
-            terrain_drawer_1.TerrainDrawer.drawPaths(citySVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(cityRender.mesh, cityRender.h, 0));
+            terrain_drawer_1.TerrainDrawer.drawPaths(citySVG, 'coast', terrain_drawer_1.TerrainDrawer.generateContour(cityRender.mesh, cityRender.h, 0));
             terrain_drawer_1.TerrainDrawer.drawPaths(citySVG, 'river', terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(cityRender.mesh, cityRender.h, 0.01));
             terrain_drawer_1.TerrainDrawer.drawPaths(citySVG, 'border', terrain_feature_generator_1.TerrainFeatureGenerator.getBorders(cityRender));
             terrain_drawer_1.TerrainDrawer.visualizeSlopes(citySVG, cityRender);

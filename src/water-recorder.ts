@@ -14,6 +14,9 @@ export interface WaterFlowResult {
     records: WaterRecorder;
     result: FlowResult
 }
+export interface WaterFlowRate {
+    rate: number;
+}
 export interface WaterFlow {
     from: TerrainPoint;
     to: TerrainPoint;

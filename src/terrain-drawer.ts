@@ -200,8 +200,8 @@ export class TerrainDrawer {
 
     }
     
-    // 等高線の作成
-    static contour(mesh: MapMesh, h: TerrainHeights, level: number) {
+    // levelを基準にした等高線の作成
+    static generateContour(mesh: MapMesh, h: TerrainHeights, level: number) {
         var edges = [];
         var transactedDataDict: any = {};
         const edgeKeyGenerator = (edge: VoronoiEdge<[number, number]>): string => {
@@ -253,7 +253,7 @@ export class TerrainDrawer {
     
     static drawMap(svg: any, render: MapRender) {
         render.rivers = TerrainFeatureGenerator.getRivers(render.mesh!, render.h, 0.01);
-        render.coasts = TerrainDrawer.contour(render.mesh!, render.h, 0);
+        render.coasts = TerrainDrawer.generateContour(render.mesh!, render.h, 0);
         render.terr = TerrainFeatureGenerator.getTerritories(render);
         render.borders = TerrainFeatureGenerator.getBorders(render);
         TerrainDrawer.drawPaths(svg, 'river', render.rivers);

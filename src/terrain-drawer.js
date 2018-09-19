@@ -207,8 +207,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
                 .text(function (d) { return d.text; })
                 .raise();
         }
-        // 等高線の作成
-        static contour(mesh, h, level) {
+        // levelを基準にした等高線の作成
+        static generateContour(mesh, h, level) {
             var edges = [];
             var transactedDataDict = {};
             const edgeKeyGenerator = (edge) => {
@@ -254,7 +254,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-feature-g
         }
         static drawMap(svg, render) {
             render.rivers = terrain_feature_generator_1.TerrainFeatureGenerator.getRivers(render.mesh, render.h, 0.01);
-            render.coasts = TerrainDrawer.contour(render.mesh, render.h, 0);
+            render.coasts = TerrainDrawer.generateContour(render.mesh, render.h, 0);
             render.terr = terrain_feature_generator_1.TerrainFeatureGenerator.getTerritories(render);
             render.borders = terrain_feature_generator_1.TerrainFeatureGenerator.getBorders(render);
             TerrainDrawer.drawPaths(svg, 'river', render.rivers);

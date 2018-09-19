@@ -48,7 +48,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
             //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
             terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, -1, 1, 'prim-info');
             terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRender);
-            myRender.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+            myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0);
             //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
         }
@@ -70,7 +70,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
                 h: wholeMapHeights
             };
             //myRenderer.rivers = TerrainFeatureGenerator.getRivers(wholeMapMesh, wholeMapHeights, 0.005);
-            myRender.coasts = terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0);
+            myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0);
             //TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
             terrain_drawer_1.TerrainDrawer.visualizeSlopes(primSVG, myRender);
@@ -79,7 +79,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
         primDiv.append("button")
             .text("大陸の生成")
             .on("click", function () {
-            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(2048);
+            wholeMapMesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16038);
             wholeMapHeights = continent_generator_1.ContinentGenerator.generate(wholeMapMesh, continent_generator_1.continentTerrainSeed);
             primDraw();
         });
@@ -224,7 +224,7 @@ define(["require", "exports", "d3", "./mesh-generator", "./util", "./terrain-dra
                 };
             }
             terrain_drawer_1.TerrainDrawer.visualizeWater(primSVG, wholeMapMesh, waters);
-            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', terrain_drawer_1.TerrainDrawer.contour(wholeMapMesh, wholeMapHeights, 0));
+            terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', terrain_drawer_1.TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0));
         }
         primDiv.append("button")
             .text("水の流れの計算")

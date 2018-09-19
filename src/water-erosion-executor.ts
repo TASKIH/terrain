@@ -1,4 +1,4 @@
-import { WaterRecorder, Water, WaterFlowResult, FlowResult } from './water-recorder';
+import { WaterRecorder, Water, WaterFlowResult, FlowResult, WaterFlowRate } from './water-recorder';
 import { MapMesh, TerrainHeights, TerrainPoint, MergeMethod } from './terrain-interfaces';
 import { TerrainGenerator } from './terrain-generator';
 
@@ -81,6 +81,56 @@ export class WaterErosionExecutor {
         }
 
         return currentWater;
+    }
+
+    /**
+     * 水が流れそうな場所をRatingする
+     * remarks: calcWaterFlowでやった方が正確に見えるが、計算コストがメチャクチャ高いので敢えて似たような関数を作った。
+     * @param mesh 
+     * @param h 
+     * @param initWaterRate 初期の水分量
+     */
+    static calcWaterFlowRate(mesh: MapMesh, 
+        h: TerrainHeights,
+        initWaterRate: number): {[key: number]: WaterFlowRate} {
+
+        const waterFlowRates: {[key: number]: WaterFlowRate} = {};
+
+
+        // 高い順に並び変える
+        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            return h[b.id] - h[a.id];
+        }).map(e => e);
+
+        heightOrderedVoronois.forEach(vor => {
+            const pointCnt = mesh.pointDict[vor.id];
+            if(!waterFlowRates[pointCnt.point.id]) {
+                waterFlowRates[pointCnt.point.id] = {
+                    rate: initWaterRate
+                };
+            }
+
+            const lowerPoints:number[] = []
+            pointCnt.connectingPoints.forEach(relPtr => {
+                if (h[vor.id] <= h[relPtr.id]){ 
+                    return;
+                }
+                
+                if(!waterFlowRates[relPtr.id]) {
+                    waterFlowRates[relPtr.id] = {
+                        rate: initWaterRate
+                    };
+                }
+
+                lowerPoints.push(relPtr.id);
+            });
+            // 自身より低い位置に水を分散させる（低い土地の数で等分する）
+            lowerPoints.forEach(lowerPtr => {
+                waterFlowRates[lowerPtr].rate += waterFlowRates[pointCnt.point.id].rate / lowerPoints.length;
+            });
+        });
+
+        return waterFlowRates;
     }
 
     static calcWaterFlow(mesh: MapMesh, 
@@ -209,4 +259,31 @@ export class WaterErosionExecutor {
         return TerrainGenerator.mergeHeights(mesh, MergeMethod.Add, newh, h);
     }
 
+    /**
+     * 水による浸食を行う
+     * @param mesh: MapのMesh
+     * @param h: 地盤の高さ
+     * @param waterRate: 流れた水の割合
+     * @param erodeRate
+     */
+    static erodeByWaterRate(mesh: MapMesh,
+        h: TerrainHeights,
+        waterRate: {[key: number]: WaterFlowRate},
+        erodeRate: number): TerrainHeights {
+        var newh = TerrainGenerator.generateZeroHeights(mesh);
+
+        // 高い順に並び変える
+        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+        return h[b.id] - h[a.id];
+        });
+
+        heightOrderedVoronois.forEach(e => {
+        // 水の移動が多いところを削る
+        const decreaseHeight = waterRate[e.id].rate * erodeRate * (1 - mesh.pointDict[e.id].robustness);
+        newh[e.id] -= decreaseHeight;
+        newh[e.id] = Math.max(-1, newh[e.id]);
+
+        });
+        return TerrainGenerator.mergeHeights(mesh, MergeMethod.Add, newh, h);
+        }
 }

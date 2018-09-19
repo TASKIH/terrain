@@ -81,12 +81,12 @@ export function drawTerrainControll() {
 
     function expDraw() {
         TerrainDrawer.visualizeVoronoi(expSVG, expMesh, expH, -1, 1);
-        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
+        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.generateContour(expMesh, expH, 0));
     }
 
     function expDrawWater(waters: {[key: number]: Water}) {
         TerrainDrawer.visualizeWater(expSVG, expMesh, waters);
-        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.contour(expMesh, expH, 0));
+        TerrainDrawer.drawPaths(expSVG, 'coast', TerrainDrawer.generateContour(expMesh, expH, 0));
     }
 
     expDiv.append("button")
@@ -190,7 +190,7 @@ export function drawTerrainControll() {
 
     function primDraw() {
         TerrainDrawer.visualizeVoronoi(primSVG, primMesh, primH, -1, 1);
-        TerrainDrawer.drawPaths(primSVG, 'coast', TerrainDrawer.contour(primMesh, primH, 0));
+        TerrainDrawer.drawPaths(primSVG, 'coast', TerrainDrawer.generateContour(primMesh, primH, 0));
     }
 
     primDraw();
@@ -283,7 +283,7 @@ export function drawTerrainControll() {
             };
 
             myRenderer.rivers = TerrainFeatureGenerator.getRivers(primMesh, myRenderer.h, 0.01);
-            myRenderer.coasts = TerrainDrawer.contour(primMesh, myRenderer.h, 0);
+            myRenderer.coasts = TerrainDrawer.generateContour(primMesh, myRenderer.h, 0);
             console.log(myRenderer.rivers);
             TerrainDrawer.drawPaths(primSVG, 'river', myRenderer.rivers);
             TerrainDrawer.drawPaths(primSVG, 'coast', myRenderer.coasts);
@@ -359,7 +359,7 @@ export function drawTerrainControll() {
         } else {
             TerrainDrawer.visualizeVoronoi(erodeMesh, erodeSVG, erodeH, 0, 1);
         }
-        TerrainDrawer.drawPaths(erodeSVG, "coast", TerrainDrawer.contour(erodeMesh, erodeH, 0));
+        TerrainDrawer.drawPaths(erodeSVG, "coast", TerrainDrawer.generateContour(erodeMesh, erodeH, 0));
     }
 
     erodeDiv.append("button")
@@ -428,7 +428,7 @@ export function drawTerrainControll() {
             physSVG.selectAll("path.field").remove();
         }
         if (physViewCoast) {
-            TerrainDrawer.drawPaths(physSVG, "coast", TerrainDrawer.contour(physMesh, physH, 0));
+            TerrainDrawer.drawPaths(physSVG, "coast", TerrainDrawer.generateContour(physMesh, physH, 0));
         } else {
             TerrainDrawer.drawPaths(physSVG, "coast", []);
         }
@@ -521,7 +521,7 @@ export function drawTerrainControll() {
         } else {
             TerrainDrawer.visualizeVoronoi(citySVG, cityRender.mesh!, cityRender.terr);
         }
-        TerrainDrawer.drawPaths(citySVG, 'coast', TerrainDrawer.contour(cityRender.mesh!, cityRender.h, 0));
+        TerrainDrawer.drawPaths(citySVG, 'coast', TerrainDrawer.generateContour(cityRender.mesh!, cityRender.h, 0));
         TerrainDrawer.drawPaths(citySVG, 'river', TerrainFeatureGenerator.getRivers(cityRender.mesh!, cityRender.h, 0.01));
         TerrainDrawer.drawPaths(citySVG, 'border', TerrainFeatureGenerator.getBorders(cityRender));
         TerrainDrawer.visualizeSlopes(citySVG, cityRender);
