@@ -86,21 +86,6 @@ define(["require", "exports", "d3"], function (require, exports, d3) {
             }
             return [x / pts.length, y / pts.length];
         }
-        static terrCenter(h, terr, city, landOnly) {
-            var x = 0;
-            var y = 0;
-            var n = 0;
-            for (var i = 0; i < terr.length; i++) {
-                if (terr[i] != city)
-                    continue;
-                if (landOnly && h[i] <= 0)
-                    continue;
-                x += terr.mesh.voronoiPoints[i].x;
-                y += terr.mesh.voronoiPoints[i].y;
-                n++;
-            }
-            return [x / n, y / n];
-        }
         static isEdge(mesh, i) {
             return (mesh.pointDict[i].connectingPoints.length < 3);
         }

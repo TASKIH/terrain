@@ -23,6 +23,12 @@ export interface Edge {
     right: VoronoiSite<[number, number]> | null;
 }
 
+export interface River {
+    root: TerrainPoint;
+    dest?: TerrainPoint;
+    route: TerrainPoint[];
+}
+
 export interface TerrainPoint {
     id: number;
     x: number;
@@ -57,14 +63,10 @@ export interface MapMesh {
 
 
 export interface MapRender {
-    params: MapExportParam,
     mesh?: MapMesh;
     h: TerrainHeights,
-    cities?: any[],
-    terr?: any[],
     rivers?: any[],
     coasts?: any[],
-    borders?: any[],
 }
 
 export interface TerrainHeights extends Array<number> {
@@ -73,12 +75,4 @@ export interface TerrainHeights extends Array<number> {
     heightRange?: [number, number];
     seaLevelHeight?: number;
 }
-
-export interface MapExportParam {
-    extent: MapExtent;
-    generator: (mesh: MapMesh, extent: MapExtent) => any;
-    npts: number;
-    ncities: number;
-    nterrs: number;
-    fontsizes: FontSize;
-}
+export const COAST_LINE_HEIGHT = 0;

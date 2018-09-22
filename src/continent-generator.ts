@@ -54,7 +54,7 @@ export const pangeaTerrainSeed: TerrainSeed = {
     waterErodeEffect: 0.005,
     eachLayerErodeCount: 1,
     mergedLayerErodeCount: 2,
-    relaxCount: 5,
+    relaxCount: 8,
     cleanCoastCount: 1,
 
 } 
@@ -65,8 +65,8 @@ export const continentTerrainSeed: TerrainSeed = {
     waterErodeEffect: 0.008,
     eachLayerErodeCount: 1,
     mergedLayerErodeCount: 3,
-    relaxCount: 7,
-    cleanCoastCount: 1,
+    relaxCount: 8,
+    cleanCoastCount: 10,
 
 } 
 
@@ -95,7 +95,7 @@ export class ContinentGenerator {
         for(let i = 0; i < continentCount; i++) {
             let currentHeight = TerrainGenerator.generateZeroHeights(mapMesh);
             seed.riseSeed.forEach(s => {
-                currentHeight = TerrainGenerator.mergeHeights(mapMesh, MergeMethod.Add, currentHeight, TerrainGenerator.continent(mapMesh, s.riseHeight, s.riseCount, s.radius));
+                currentHeight = TerrainGenerator.mergeHeights(mapMesh, MergeMethod.Add, currentHeight, TerrainGenerator.generateContinent(mapMesh, s.riseHeight, s.riseCount, s.radius));
             });
 
             currentHeight = ContinentGenerator.erodeByWater(
@@ -121,6 +121,11 @@ export class ContinentGenerator {
             wholeMapHeights = TerrainGenerator.relax(mapMesh, wholeMapHeights);
         }
 
-        return TerrainGenerator.cleanCoast(mapMesh, wholeMapHeights, seed.cleanCoastCount);  
+        for(let i = 0; i < seed.cleanCoastCount; i++){
+            wholeMapHeights = TerrainGenerator.cleanCoast(mapMesh, wholeMapHeights, seed.cleanCoastCount);
+            wholeMapHeights = TerrainGenerator.sinkUnnaturalCoastSideMesh(mapMesh, wholeMapHeights);
+        } 
+
+        return wholeMapHeights;
     }
 }

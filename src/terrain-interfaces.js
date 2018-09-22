@@ -9,4 +9,5 @@ define(["require", "exports"], function (require, exports) {
     class VoronoiSiteContainerArray extends Array {
     }
     exports.VoronoiSiteContainerArray = VoronoiSiteContainerArray;
+    exports.COAST_LINE_HEIGHT = 0;
 });

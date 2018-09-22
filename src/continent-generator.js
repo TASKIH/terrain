@@ -25,7 +25,7 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
         waterErodeEffect: 0.005,
         eachLayerErodeCount: 1,
         mergedLayerErodeCount: 2,
-        relaxCount: 5,
+        relaxCount: 8,
         cleanCoastCount: 1,
     };
     exports.continentTerrainSeed = {
@@ -35,8 +35,8 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
         waterErodeEffect: 0.008,
         eachLayerErodeCount: 1,
         mergedLayerErodeCount: 3,
-        relaxCount: 7,
-        cleanCoastCount: 1,
+        relaxCount: 8,
+        cleanCoastCount: 10,
     };
     class ContinentGenerator {
         static erodeByWater(mapMesh, mapHeight, rainAmount, erodeEffect, erodeCount) {
@@ -56,7 +56,7 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
             for (let i = 0; i < continentCount; i++) {
                 let currentHeight = terrain_generator_1.TerrainGenerator.generateZeroHeights(mapMesh);
                 seed.riseSeed.forEach(s => {
-                    currentHeight = terrain_generator_1.TerrainGenerator.mergeHeights(mapMesh, terrain_interfaces_1.MergeMethod.Add, currentHeight, terrain_generator_1.TerrainGenerator.continent(mapMesh, s.riseHeight, s.riseCount, s.radius));
+                    currentHeight = terrain_generator_1.TerrainGenerator.mergeHeights(mapMesh, terrain_interfaces_1.MergeMethod.Add, currentHeight, terrain_generator_1.TerrainGenerator.generateContinent(mapMesh, s.riseHeight, s.riseCount, s.radius));
                 });
                 currentHeight = ContinentGenerator.erodeByWater(mapMesh, currentHeight, seed.waterFlowSeed.rainAmount, seed.waterErodeEffect, seed.eachLayerErodeCount);
                 currentHeight = terrain_generator_1.TerrainGenerator.cleanCoast(mapMesh, currentHeight, seed.cleanCoastCount);
@@ -70,7 +70,11 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
             for (let i = 0; i < seed.relaxCount; i++) {
                 wholeMapHeights = terrain_generator_1.TerrainGenerator.relax(mapMesh, wholeMapHeights);
             }
-            return terrain_generator_1.TerrainGenerator.cleanCoast(mapMesh, wholeMapHeights, seed.cleanCoastCount);
+            for (let i = 0; i < seed.cleanCoastCount; i++) {
+                wholeMapHeights = terrain_generator_1.TerrainGenerator.cleanCoast(mapMesh, wholeMapHeights, seed.cleanCoastCount);
+                wholeMapHeights = terrain_generator_1.TerrainGenerator.sinkUnnaturalCoastSideMesh(mapMesh, wholeMapHeights);
+            }
+            return wholeMapHeights;
         }
     }
     exports.ContinentGenerator = ContinentGenerator;
