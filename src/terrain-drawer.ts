@@ -1,5 +1,5 @@
-import { MapRender, TerrainHeights, TerrainPoint, MapMesh, TerrainPointContainer, Edge } from "./terrain-interfaces";
-import { TerrainCalcUtil } from "./util";
+import { MapRender, TerrainHeights, TerrainPoint, MapMesh, TerrainPointContainer, Edge, MapIcon, ShadowLevel } from "./terrain-interfaces";
+import { TerrainCalcUtil, TerrainUtil } from "./util";
 import * as language from './language';
 import * as d3 from 'd3';
 import { TerrainFeatureGenerator } from "./terrain-feature-generator";
@@ -7,11 +7,13 @@ import { TerrainGenerator } from "./terrain-generator";
 import { MeshGenerator } from "./mesh-generator";
 import { Water, WaterFlow } from "./water-recorder";
 import { VoronoiEdge } from "d3";
+import { CurrentStatusStore, ControlStatus } from "./status-store";
+import { MapEventHandler } from "./event-handler";
 
 export class TerrainDrawer {
-    static drawLabels(svg: any, render: MapRender) {
+    static drawLabels(svg: any, render: MapRender,) {
         var h = render.h;
-        //var cities = render.cities;
+        var icons = render.icons!;
         var avoids = [render.rivers, render.coasts];
         var lang = language.makeRandomLanguage();
         var citylabels: any = [];
@@ -29,13 +31,13 @@ export class TerrainDrawer {
                     pen += 100;
                 }
             }
-/*
-            for (var i = 0; i < cities!.length; i++) {
-                var c = render.mesh!.voronoiPoints[cities![i]];
-                if (label.x0 < c.x && label.x1 > c.x && label.y0 < c.y && label.y1 > c.y) {
+
+            for (let key in icons) {
+                const ico = icons[key];
+                if (label.x0 < ico.x && label.x1 > ico.x && label.y0 < ico.y && label.y1 > ico.y) {
                     pen += 100;
                 }
-            }*/
+            }/*
             for (var i = 0; i < avoids.length; i++) {
                 var avoid = avoids[i];
                 for (var j = 0; j < avoid!.length; j++) {
@@ -47,14 +49,16 @@ export class TerrainDrawer {
                         }
                     }
                 }
-            }
+            }*/
             return pen;
-        }/*
-        for (var i = 0; i < cities!.length; i++) {
-            var x = render.mesh!.voronoiPoints[cities![i]].x;
-            var y = render.mesh!.voronoiPoints[cities![i]].y;
-            var text = language.makeName(lang, 'city');
-            var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
+        }
+        for (var key in icons) {
+            const ico = icons[key];
+
+            var x = ico.x;
+            var y = ico.y;
+            var text = ico.name;
+            var size = 12;
             var sx = 0.65 * size/1000 * text.length;
             var sy = size/1000;
             var posslabels = [
@@ -107,7 +111,7 @@ export class TerrainDrawer {
             label.text = text;
             label.size = size;
             citylabels.push(label);
-        }*/
+        }
         var texts = svg.selectAll('text.city').data(citylabels);
         texts.enter()
             .append('text')
@@ -115,8 +119,8 @@ export class TerrainDrawer {
         texts.exit()
             .remove();
         svg.selectAll('text.city')
-            .attr('x', function (d: any) {return 1000*d.x;})
-            .attr('y', function (d: any) {return 1000*d.y;})
+            .attr('x', function (d: any) {return d.x;})
+            .attr('y', function (d: any) {return d.y;})
             .style('font-size', function (d: any) {return d.size;})
             .style('text-anchor', function (d: any) {return d.align;})
             .text(function (d: any) {return d.text;})
@@ -167,8 +171,8 @@ export class TerrainDrawer {
             .append('circle');
         circle.exit().remove();
         d3.selectAll('circle')
-            .attr('cx', function (d: any) {return 1000*d.x;})
-            .attr('cy', function (d: any) {return 1000*d.y;})
+            .attr('cx', function (d: any) {return d.x;})
+            .attr('cy', function (d: any) {return d.y;})
             .attr('r', 100 / Math.sqrt(pts.length));
     }
     
@@ -179,10 +183,10 @@ export class TerrainDrawer {
         let idx = 0;
         path.relatedVoronoiSites.forEach((e, i) => {
             if (i === 0){
-                p.moveTo(1000*e[0], 1000*e[1]);
+                p.moveTo(e[0], e[1]);
             }
             else {
-                p.lineTo(1000*e[0], 1000*e[1]);
+                p.lineTo(e[0], e[1]);
             }
         });
         return p.toString();
@@ -190,9 +194,9 @@ export class TerrainDrawer {
 
     static makeD3PathByPath(path: number[][]) {
         var p = d3.path();
-        p.moveTo(1000*path[0][0], 1000*path[0][1]);
+        p.moveTo(path[0][0], path[0][1]);
         for (var i = 1; i < path.length; i++) {
-            p.lineTo(1000*path[i][0], 1000*path[i][1]);
+            p.lineTo(path[i][0], path[i][1]);
         }
         return p.toString();
     }
@@ -212,7 +216,7 @@ export class TerrainDrawer {
         
         return result;
     }
-    static visualizeVoronoi(svg: any, mesh: MapMesh, field: TerrainHeights, lo?: number, hi?: number, showDataId?: string, doColorize?: boolean) {
+    static visualizeVoronoi(svg: any, mesh: MapMesh, field: TerrainHeights, ev: MapEventHandler, lo?: number, hi?: number, showDataId?: string, doColorize?: boolean) {
         if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
 
@@ -234,17 +238,17 @@ export class TerrainDrawer {
         const drawer = svg.selectAll('path.field')
             .attr('d', TerrainDrawer.makeD3PathByPointContainer)
             .on('mousedown', (elem: any) => {
-                console.log(elem);
                 if (showDataId) {
                     document.getElementById(showDataId)!.innerHTML =
                         '<div>' +
                         TerrainDrawer.genVoronoiInfo(field, elem)+
                         '</div>';
                 }
+                ev.onMeshClick(elem.point.x, elem.point.y);
             });
         if (doColorize) {
             drawer.style('fill', function (d: TerrainPointContainer, i: number) {
-                return TerrainDrawer.getColor(field[d.point.id]);
+                return TerrainDrawer.getColor(field, d);
             });
         }
     }
@@ -271,39 +275,57 @@ export class TerrainDrawer {
             .attr('d', TerrainDrawer.makeD3PathByPath);
     }
     
-    static getColor(height: number): string {
-        if (height < -0.4) {
+    static getColor(h: TerrainHeights, point: TerrainPointContainer): string {
+        const height = h[point.point.id];
+        if (height < 0) {
             return "#000099"
         }
-        else if (height < -0.4) {
-            return "#1a1aff"
-        }
-        else if (height < -0.3) {
-            return "#4d4dff"
-        }
-        else if (height < -0.2) {
-            return "#8080ff"
-        }
-        else if (height < -0.1) {
-            return "#b3b3ff"
-        }
-        else if (height < 0) {
-            return "#e6e6ff"
-        }
         else if (height < 0.1) {
-            return "#f6f6ee"
+            if (point.shadow === ShadowLevel.Dark1) {
+                return "#EBF0E2"
+            }
+            else if (point.shadow === ShadowLevel.Dark2) {
+                return "#E4ECD8"
+            }
+            else {
+                return "#F1F5EB"
+            }
         }
         else if (height < 0.2) {
-            return "#ddddbb"
+            return "#BDD09F"
         }
         else if (height < 0.3) {
-            return "#cccc99"
+            if (point.shadow === ShadowLevel.Dark1) {
+                return "#B99C6B"
+            }
+            else if (point.shadow === ShadowLevel.Dark2) {
+                return "#947C55"
+            }
+            else {
+                return "#C7AF88"
+            }
         }
-        else if (height < 0.4) {
-            return "#bbbb77"
+        else if (height < 0.6) {
+            if (point.shadow === ShadowLevel.Dark1) {
+                return "#493829"
+            }
+            else if (point.shadow === ShadowLevel.Dark2) {
+                return "#2B2118"
+            }
+            else {
+                return "#5B4B3E"
+            }
         }
         else {
-            return "#666633"
+            if (point.shadow === ShadowLevel.Dark1) {
+                return "#A3ADB8"
+            }
+            else if (point.shadow === ShadowLevel.Dark2) {
+                return "#727980"
+            }
+            else {
+                return "#C7CDD4"
+            }
         }
     }
     
@@ -334,10 +356,13 @@ export class TerrainDrawer {
     static visualizeSlopes(svg: any, render: MapRender) {
         var h = render.h;
         var strokes = [];
+        const magnificationRate = (render.mesh!.extent.height + render.mesh!.extent.width) / 2;
         var r = 0.25 / Math.sqrt(h.length);
         
         for (var i = 0; i < h.length; i++) {
-            if (h[i] <= 0 || TerrainCalcUtil.isNextEdge(render.mesh!, i)) continue;
+            if (h[i] <= 0 || TerrainCalcUtil.isNextEdge(render.mesh!, i)) {
+                continue;
+            }
             var nbs = TerrainCalcUtil.getNeighbourIds(render.mesh!, i);
             nbs.push(i);
             var s = 0;
@@ -349,8 +374,10 @@ export class TerrainDrawer {
             }
             s /= nbs.length;
             s2 /= nbs.length;
-            if (Math.abs(s) < TerrainCalcUtil.runif(0.1, 0.4)) continue;
-            var l = r * TerrainCalcUtil.runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2/100);
+            if (Math.abs(s * 2 * magnificationRate) < TerrainCalcUtil.runif(0.1, 0.4)){
+                continue;
+            }
+            var l = r * TerrainCalcUtil.runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2/100) * magnificationRate / 2;
             var x = render.mesh!.pointDict[i].point.x;
             var y = render.mesh!.pointDict[i].point.y;
             if (Math.abs(l*s) > 2 * r) {
@@ -358,13 +385,13 @@ export class TerrainDrawer {
                 l /= n;
                 if (n > 4) n = 4;
                 for (var j = 0; j < n; j++) {
-                    var u = TerrainCalcUtil.rnorm() * r;
-                    var v = TerrainCalcUtil.rnorm() * r;
-                    strokes.push([[x+u-l, y+v+l*s], [x+u+l, y+v-l*s]]);
+                    var u = TerrainCalcUtil.rnorm() * r * 4 * magnificationRate / 4;
+                    var v = TerrainCalcUtil.rnorm() * r * 4 * magnificationRate / 4;
+                    strokes.push([[x+u-l, y+v+l*s*magnificationRate/2], [x+u+l, y+v-l*s*magnificationRate/2]]);
                 }
             } else {
                 // console.log('x: '+ x + 'l' + l + 'y' +  y + 's' + s);
-                strokes.push([[x-l, y+l*s], [x+l, y-l*s]]);
+                strokes.push([[x-l, y+l*s*magnificationRate/2], [x+l, y-l*s*magnificationRate/2]]);
             }
         }
         var lines = svg.selectAll('line.slope').data(strokes);
@@ -374,12 +401,40 @@ export class TerrainDrawer {
         lines.exit()
             .remove();
         svg.selectAll('line.slope')
-            .attr('x1', function (d: number[][]) {return 1000*d[0][0];})
-            .attr('y1', function (d: number[][]) {return 1000*d[0][1];})
-            .attr('x2', function (d: number[][]) {return 1000*d[1][0];})
-            .attr('y2', function (d: number[][]) {return 1000*d[1][1];});
+            .attr('x1', function (d: number[][]) {return d[0][0];})
+            .attr('y1', function (d: number[][]) {return d[0][1];})
+            .attr('x2', function (d: number[][]) {return d[1][0];})
+            .attr('y2', function (d: number[][]) {return d[1][1];});
     }
     
+    static visualizeIcons(svg: any, render: MapRender, eh: MapEventHandler) {
+        const icons = render.icons;
+        if (!icons) {
+            return ;
+        }
+        let dataList: MapIcon[] = [];
+        for(let key in icons) {
+            dataList.push(icons[key]);
+        }
+        const svgData = svg.selectAll('image.icon').data(dataList);
+
+        svgData.enter()
+                .append('image')
+                .classed('icon', true);
+        svgData.exit()
+               .remove();
+        svg.selectAll('image.icon')
+            .attr('x', function (d: MapIcon) {return d.x;})
+            .attr('y', function (d: MapIcon) {return d.y;})
+            .attr('width', function (d: MapIcon) {return 32;})
+            .attr('height', function (d: MapIcon) {return 32;})
+            .attr('xlink:href', function (d: MapIcon) {return d.src;})
+            .attr('id', function(d: MapIcon) {return TerrainUtil.getIconId(d.id);})
+            .on('mousedown', (elem: any) => {
+                eh.onIconClick(elem);
+            })
+            .raise();
+    }
     /*
     static visualizeCities(svg: any, render: MapRender) {
         var cities = render.cities;

@@ -3,6 +3,12 @@ import * as d3 from 'd3';
 
 'use strict';
 
+export class TerrainUtil {
+    static getIconId(id: number): string {
+        return 'icon-' + id.toString();
+    }
+}
+
 export class TerrainCalcUtil {
     static mean(numbers: number[]): number {
         var total = 0, i;
@@ -99,7 +105,7 @@ export class TerrainCalcUtil {
         var w = mesh.extent.width;
         var h = mesh.extent.height;
         var margin = mesh.extent.margin;
-        return (x < margin - 0.5) || (x > w - 0.5 - margin) || (y < margin - 0.5) || (y > h - 0.5 - margin);
+        return (x < (w/2) - w + margin ) || (x > w - (w/2) - margin) || (y < (h/2) - h + margin) || (y > h - (h/2) - margin);
     }
 
     // マップの端に隣接する領域かどうか
@@ -108,7 +114,13 @@ export class TerrainCalcUtil {
         var y = mesh.voronoiPoints[i].y;
         var w = mesh.extent.width;
         var h = mesh.extent.height;
-        return (x < -0.45 * w) || (x > 0.45 * w) || (y < -0.45 * h) || (y > 0.45 * h);
+        const marginW =  (w - (w/2)) / 100;
+        const marginH =  (h - (h/2)) / 100;
+
+        return (x < (w/2) - w + marginW) || 
+                (x > w - (w/2) - marginW) || 
+                (y < (h/2) - h + marginH) || 
+                (y > h - (h/2) - marginH); 
     }
 
     static getNeighbourIds(mesh: MapMesh, i: number): number[] {

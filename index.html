@@ -1,22 +1,71 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <title>Title</title>
     <script>var exports = {};</script>
     <script data-main="src/main" src="lib/require.js"></script>
     <link rel="stylesheet" href="terrain.css">
+    <!-- Compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
 
 </head>
+
 <body>
     <div id="prim-info">
-        
+
     </div>
-<div id="prim">
+    <div id="prim-ctrl">
+    </div>
+    <div id="prim">
 
-</div>
-<div id="erode">
+    </div>
+    <div id="feature-ctrl">
+        <p>現在選択中のアイコン：
+            <span id="current-selecting-icon"></span>
+            <button id="release-mode">アイコン配置モードを解除</button>
+        </p>
+        <p>地図上にアイコンを配置する</p>
+        <div class="row">
+            <div class="col s12">
+                <ul id="icon-tabs" class="tabs">
+                    <li class="tab col s3">
+                        <a href="#building">建物</a>
+                    </li>
+                    <li class="tab col s3">
+                        <a href="#nature">自然</a>
+                    </li>
+                    <li class="tab col s3">
+                        <a href="#occupation">職業・種族</a>
+                    </li>
+                </ul>
+            </div>
+            <div id="building" class="col s12"></div>
+            <div id="nature" class="col s12"></div>
+            <div id="occupation" class="col s12"></div>
+        </div>
+        <div class="row" id="symbolNameDiv">
+            <p>地名設定</p>
+            <input id="symbolName" type="text" name="name" size="40" maxlength="40">
+            <input id="save-name" type="button" value="名前を反映">
+            <input id="delete-symbol" type="button" value="削除">
+        </div>
+    </div>
+    <div id="erode">
 
-</div>
+    </div>
+    <!-- Credit -->
+    <p>アイコンは
+        <a href="https://game-icons.net/">Game-icons.net</a>様が配布されている素材を使用しております。</p>
+    <!-- Compiled and minified JavaScript -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
+    <script>
+        let el = document.getElementById("icon-tabs");
+        let options = {
+        }
+        var instance = M.Tabs.init(el, options);
+    </script>
 </body>
+
 </html>

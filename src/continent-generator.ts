@@ -27,21 +27,23 @@ interface TerrainSeed {
     mergedLayerErodeCount: number;
     // なだらかにする回数
     relaxCount: number;
+    // 単純な浸食をする回数
+    simpleErodeCount: number;
     // 海岸線を滑らかにする回数
     cleanCoastCount: number;
 };
 
 export const pangeaRaiseSeed: RiseSeed[] = [
-    {riseHeight: 0.01, riseCount: 5, radius: 0.1},
-    {riseHeight: 0.015, riseCount: 20, radius: 0.05},
-    {riseHeight: -0.01, riseCount: 10, radius: 0.04},
-    {riseHeight: 0.2, riseCount: 1, radius: 0.2},
+    {riseHeight: 0.01, riseCount: 5, radius: 50},
+    {riseHeight: 0.015, riseCount: 20, radius: 25},
+    {riseHeight: -0.01, riseCount: 10, radius: 20},
+    {riseHeight: 0.2, riseCount: 1, radius: 100},
 ];
 export const continentRaiseSeed: RiseSeed[] = [
-    {riseHeight: 0.01, riseCount: 2, radius: 0.15},
-    {riseHeight: 0.005, riseCount: 15, radius: 0.05},
-    {riseHeight: -0.01, riseCount: 15, radius: 0.02},
-    {riseHeight: 0.15, riseCount: 2, radius: 0.1},
+    {riseHeight: 0.01, riseCount: 3, radius: 600.15},
+    {riseHeight: 0.005, riseCount: 15, radius: 300},
+    {riseHeight: -0.01, riseCount: 15, radius: 50},
+    {riseHeight: 0.15, riseCount: 2, radius: 200},
 ];
 export const defaultWaterFlowSeed: WaterFlowSeed = {
     rainAmount: 0.2,
@@ -55,6 +57,7 @@ export const pangeaTerrainSeed: TerrainSeed = {
     eachLayerErodeCount: 1,
     mergedLayerErodeCount: 2,
     relaxCount: 8,
+    simpleErodeCount: 20,
     cleanCoastCount: 1,
 
 } 
@@ -65,7 +68,8 @@ export const continentTerrainSeed: TerrainSeed = {
     waterErodeEffect: 0.008,
     eachLayerErodeCount: 1,
     mergedLayerErodeCount: 3,
-    relaxCount: 8,
+    relaxCount: 5,
+    simpleErodeCount: 20,
     cleanCoastCount: 10,
 
 } 
@@ -104,9 +108,8 @@ export class ContinentGenerator {
             
             currentHeight = TerrainGenerator.cleanCoast(mapMesh, currentHeight, seed.cleanCoastCount);  
             wholeMapHeights = TerrainGenerator.mergeHeights(mapMesh, MergeMethod.Add, 
-                wholeMapHeights, currentHeight);
+            wholeMapHeights, currentHeight);
         }
-
         wholeMapHeights = ContinentGenerator.erodeByWater(
             mapMesh, wholeMapHeights, seed.waterFlowSeed.rainAmount,  seed.waterErodeEffect,
             seed.mergedLayerErodeCount);
@@ -117,14 +120,14 @@ export class ContinentGenerator {
         wholeMapHeights = ContinentGenerator.erodeByWater(
             mapMesh, wholeMapHeights, seed.waterFlowSeed.rainAmount, seed.waterErodeEffect,
             seed.mergedLayerErodeCount);
-        for(let i = 0; i < seed.relaxCount; i++) {
-            wholeMapHeights = TerrainGenerator.relax(mapMesh, wholeMapHeights);
-        }
-
+            
         for(let i = 0; i < seed.cleanCoastCount; i++){
             wholeMapHeights = TerrainGenerator.cleanCoast(mapMesh, wholeMapHeights, seed.cleanCoastCount);
             wholeMapHeights = TerrainGenerator.sinkUnnaturalCoastSideMesh(mapMesh, wholeMapHeights);
-        } 
+        }
+        for(let i = 0; i < seed.simpleErodeCount; i++) {
+            wholeMapHeights = TerrainGenerator.erodeSimply(mapMesh, wholeMapHeights, 0.1);
+        }
 
         return wholeMapHeights;
     }

@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "./util", "./language", "d3", "./terrain-generator"], function (require, exports, util_1, language, d3, terrain_generator_1) {
+define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d3", "./terrain-generator"], function (require, exports, terrain_interfaces_1, util_1, language, d3, terrain_generator_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     language = __importStar(language);
@@ -13,7 +13,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
     class TerrainDrawer {
         static drawLabels(svg, render) {
             var h = render.h;
-            //var cities = render.cities;
+            var icons = render.icons;
             var avoids = [render.rivers, render.coasts];
             var lang = language.makeRandomLanguage();
             var citylabels = [];
@@ -34,17 +34,16 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                         pen += 100;
                     }
                 }
-                /*
-                            for (var i = 0; i < cities!.length; i++) {
-                                var c = render.mesh!.voronoiPoints[cities![i]];
-                                if (label.x0 < c.x && label.x1 > c.x && label.y0 < c.y && label.y1 > c.y) {
-                                    pen += 100;
-                                }
-                            }*/
+                for (let key in icons) {
+                    const ico = icons[key];
+                    if (label.x0 < ico.x && label.x1 > ico.x && label.y0 < ico.y && label.y1 > ico.y) {
+                        pen += 100;
+                    }
+                } /*
                 for (var i = 0; i < avoids.length; i++) {
                     var avoid = avoids[i];
-                    for (var j = 0; j < avoid.length; j++) {
-                        var avpath = avoid[j];
+                    for (var j = 0; j < avoid!.length; j++) {
+                        var avpath = avoid![j];
                         for (var k = 0; k < avpath.length; k++) {
                             var pt = avpath[k];
                             if (pt[0] > label.x0 && pt[0] < label.x1 && pt[1] > label.y0 && pt[1] < label.y1) {
@@ -52,16 +51,17 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                             }
                         }
                     }
-                }
+                }*/
                 return pen;
-            } /*
-            for (var i = 0; i < cities!.length; i++) {
-                var x = render.mesh!.voronoiPoints[cities![i]].x;
-                var y = render.mesh!.voronoiPoints[cities![i]].y;
-                var text = language.makeName(lang, 'city');
-                var size = i < nterrs ? params.fontsizes.city : params.fontsizes.town;
-                var sx = 0.65 * size/1000 * text.length;
-                var sy = size/1000;
+            }
+            for (var key in icons) {
+                const ico = icons[key];
+                var x = ico.x;
+                var y = ico.y;
+                var text = ico.name;
+                var size = 12;
+                var sx = 0.65 * size / 1000 * text.length;
+                var sy = size / 1000;
                 var posslabels = [
                     {
                         text: '',
@@ -91,9 +91,9 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                         x: x,
                         y: y - 0.8 * sy,
                         align: 'middle',
-                        x0: x - sx/2,
-                        y0: y - 1.9*sy,
-                        x1: x + sx/2,
+                        x0: x - sx / 2,
+                        y0: y - 1.9 * sy,
+                        x1: x + sx / 2,
                         y1: y - 0.7 * sy
                     },
                     {
@@ -102,17 +102,17 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                         x: x,
                         y: y + 1.2 * sy,
                         align: 'middle',
-                        x0: x - sx/2,
-                        y0: y + 0.1*sy,
-                        x1: x + sx/2,
-                        y1: y + 1.3*sy
+                        x0: x - sx / 2,
+                        y0: y + 0.1 * sy,
+                        x1: x + sx / 2,
+                        y1: y + 1.3 * sy
                     }
                 ];
-                var label = posslabels[d3.scan(posslabels, function (a: any, b: any) {return penalty(a) - penalty(b);}) || 0];
+                var label = posslabels[d3.scan(posslabels, function (a, b) { return penalty(a) - penalty(b); }) || 0];
                 label.text = text;
                 label.size = size;
                 citylabels.push(label);
-            }*/
+            }
             var texts = svg.selectAll('text.city').data(citylabels);
             texts.enter()
                 .append('text')
@@ -120,8 +120,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
             texts.exit()
                 .remove();
             svg.selectAll('text.city')
-                .attr('x', function (d) { return 1000 * d.x; })
-                .attr('y', function (d) { return 1000 * d.y; })
+                .attr('x', function (d) { return d.x; })
+                .attr('y', function (d) { return d.y; })
                 .style('font-size', function (d) { return d.size; })
                 .style('text-anchor', function (d) { return d.align; })
                 .text(function (d) { return d.text; })
@@ -166,8 +166,8 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                 .append('circle');
             circle.exit().remove();
             d3.selectAll('circle')
-                .attr('cx', function (d) { return 1000 * d.x; })
-                .attr('cy', function (d) { return 1000 * d.y; })
+                .attr('cx', function (d) { return d.x; })
+                .attr('cy', function (d) { return d.y; })
                 .attr('r', 100 / Math.sqrt(pts.length));
         }
         static makeD3PathByPointContainer(path) {
@@ -175,19 +175,19 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
             let idx = 0;
             path.relatedVoronoiSites.forEach((e, i) => {
                 if (i === 0) {
-                    p.moveTo(1000 * e[0], 1000 * e[1]);
+                    p.moveTo(e[0], e[1]);
                 }
                 else {
-                    p.lineTo(1000 * e[0], 1000 * e[1]);
+                    p.lineTo(e[0], e[1]);
                 }
             });
             return p.toString();
         }
         static makeD3PathByPath(path) {
             var p = d3.path();
-            p.moveTo(1000 * path[0][0], 1000 * path[0][1]);
+            p.moveTo(path[0][0], path[0][1]);
             for (var i = 1; i < path.length; i++) {
-                p.lineTo(1000 * path[i][0], 1000 * path[i][1]);
+                p.lineTo(path[i][0], path[i][1]);
             }
             return p.toString();
         }
@@ -203,7 +203,7 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
             }
             return result;
         }
-        static visualizeVoronoi(svg, mesh, field, lo, hi, showDataId, doColorize) {
+        static visualizeVoronoi(svg, mesh, field, ev, lo, hi, showDataId, doColorize) {
             if (hi == undefined)
                 hi = (d3.max(field) || 0) + 1e-9;
             if (lo == undefined)
@@ -222,17 +222,17 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
             const drawer = svg.selectAll('path.field')
                 .attr('d', TerrainDrawer.makeD3PathByPointContainer)
                 .on('mousedown', (elem) => {
-                console.log(elem);
                 if (showDataId) {
                     document.getElementById(showDataId).innerHTML =
                         '<div>' +
                             TerrainDrawer.genVoronoiInfo(field, elem) +
                             '</div>';
                 }
+                ev.onMeshClick(elem.point.x, elem.point.y);
             });
             if (doColorize) {
                 drawer.style('fill', function (d, i) {
-                    return TerrainDrawer.getColor(field[d.point.id]);
+                    return TerrainDrawer.getColor(field, d);
                 });
             }
         }
@@ -256,39 +256,57 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
             svg.selectAll('path.' + cls)
                 .attr('d', TerrainDrawer.makeD3PathByPath);
         }
-        static getColor(height) {
-            if (height < -0.4) {
+        static getColor(h, point) {
+            const height = h[point.point.id];
+            if (height < 0) {
                 return "#000099";
             }
-            else if (height < -0.4) {
-                return "#1a1aff";
-            }
-            else if (height < -0.3) {
-                return "#4d4dff";
-            }
-            else if (height < -0.2) {
-                return "#8080ff";
-            }
-            else if (height < -0.1) {
-                return "#b3b3ff";
-            }
-            else if (height < 0) {
-                return "#e6e6ff";
-            }
             else if (height < 0.1) {
-                return "#f6f6ee";
+                if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark1) {
+                    return "#EBF0E2";
+                }
+                else if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark2) {
+                    return "#E4ECD8";
+                }
+                else {
+                    return "#F1F5EB";
+                }
             }
             else if (height < 0.2) {
-                return "#ddddbb";
+                return "#BDD09F";
             }
             else if (height < 0.3) {
-                return "#cccc99";
+                if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark1) {
+                    return "#B99C6B";
+                }
+                else if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark2) {
+                    return "#947C55";
+                }
+                else {
+                    return "#C7AF88";
+                }
             }
-            else if (height < 0.4) {
-                return "#bbbb77";
+            else if (height < 0.6) {
+                if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark1) {
+                    return "#493829";
+                }
+                else if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark2) {
+                    return "#2B2118";
+                }
+                else {
+                    return "#5B4B3E";
+                }
             }
             else {
-                return "#666633";
+                if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark1) {
+                    return "#A3ADB8";
+                }
+                else if (point.shadow === terrain_interfaces_1.ShadowLevel.Dark2) {
+                    return "#727980";
+                }
+                else {
+                    return "#C7CDD4";
+                }
             }
         }
         static getWaterColor(water) {
@@ -318,10 +336,12 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
         static visualizeSlopes(svg, render) {
             var h = render.h;
             var strokes = [];
+            const magnificationRate = (render.mesh.extent.height + render.mesh.extent.width) / 2;
             var r = 0.25 / Math.sqrt(h.length);
             for (var i = 0; i < h.length; i++) {
-                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNextEdge(render.mesh, i))
+                if (h[i] <= 0 || util_1.TerrainCalcUtil.isNextEdge(render.mesh, i)) {
                     continue;
+                }
                 var nbs = util_1.TerrainCalcUtil.getNeighbourIds(render.mesh, i);
                 nbs.push(i);
                 var s = 0;
@@ -333,9 +353,10 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                 }
                 s /= nbs.length;
                 s2 /= nbs.length;
-                if (Math.abs(s) < util_1.TerrainCalcUtil.runif(0.1, 0.4))
+                if (Math.abs(s * 2 * magnificationRate) < util_1.TerrainCalcUtil.runif(0.1, 0.4)) {
                     continue;
-                var l = r * util_1.TerrainCalcUtil.runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100);
+                }
+                var l = r * util_1.TerrainCalcUtil.runif(1, 2) * (1 - 0.2 * Math.pow(Math.atan(s), 2)) * Math.exp(s2 / 100) * magnificationRate / 2;
                 var x = render.mesh.pointDict[i].point.x;
                 var y = render.mesh.pointDict[i].point.y;
                 if (Math.abs(l * s) > 2 * r) {
@@ -344,14 +365,14 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
                     if (n > 4)
                         n = 4;
                     for (var j = 0; j < n; j++) {
-                        var u = util_1.TerrainCalcUtil.rnorm() * r;
-                        var v = util_1.TerrainCalcUtil.rnorm() * r;
-                        strokes.push([[x + u - l, y + v + l * s], [x + u + l, y + v - l * s]]);
+                        var u = util_1.TerrainCalcUtil.rnorm() * r * 4 * magnificationRate / 4;
+                        var v = util_1.TerrainCalcUtil.rnorm() * r * 4 * magnificationRate / 4;
+                        strokes.push([[x + u - l, y + v + l * s * magnificationRate / 2], [x + u + l, y + v - l * s * magnificationRate / 2]]);
                     }
                 }
                 else {
                     // console.log('x: '+ x + 'l' + l + 'y' +  y + 's' + s);
-                    strokes.push([[x - l, y + l * s], [x + l, y - l * s]]);
+                    strokes.push([[x - l, y + l * s * magnificationRate / 2], [x + l, y - l * s * magnificationRate / 2]]);
                 }
             }
             var lines = svg.selectAll('line.slope').data(strokes);
@@ -361,10 +382,37 @@ define(["require", "exports", "./util", "./language", "d3", "./terrain-generator
             lines.exit()
                 .remove();
             svg.selectAll('line.slope')
-                .attr('x1', function (d) { return 1000 * d[0][0]; })
-                .attr('y1', function (d) { return 1000 * d[0][1]; })
-                .attr('x2', function (d) { return 1000 * d[1][0]; })
-                .attr('y2', function (d) { return 1000 * d[1][1]; });
+                .attr('x1', function (d) { return d[0][0]; })
+                .attr('y1', function (d) { return d[0][1]; })
+                .attr('x2', function (d) { return d[1][0]; })
+                .attr('y2', function (d) { return d[1][1]; });
+        }
+        static visualizeIcons(svg, render, eh) {
+            const icons = render.icons;
+            if (!icons) {
+                return;
+            }
+            let dataList = [];
+            for (let key in icons) {
+                dataList.push(icons[key]);
+            }
+            const svgData = svg.selectAll('image.icon').data(dataList);
+            svgData.enter()
+                .append('image')
+                .classed('icon', true);
+            svgData.exit()
+                .remove();
+            svg.selectAll('image.icon')
+                .attr('x', function (d) { return d.x; })
+                .attr('y', function (d) { return d.y; })
+                .attr('width', function (d) { return 32; })
+                .attr('height', function (d) { return 32; })
+                .attr('xlink:href', function (d) { return d.src; })
+                .attr('id', function (d) { return util_1.TerrainUtil.getIconId(d.id); })
+                .on('mousedown', (elem) => {
+                eh.onIconClick(elem);
+            })
+                .raise();
         }
     }
     exports.TerrainDrawer = TerrainDrawer;

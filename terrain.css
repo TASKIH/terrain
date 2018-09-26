@@ -14,11 +14,11 @@ path, line {
 }
 
 .river {
-    stroke-width: 3px;
+    stroke-width: 2px;
 }
 
 .coast {
-    stroke-width: 4px;
+    stroke-width: 2px;
 }
 
 .border {
@@ -41,7 +41,19 @@ text.region {
     font-variant: small-caps;
 }
 
+.map-symbol > img {
+    width: 32px;
+    height: auto;
+
+}
 svg {
     float: right;
     background-color: white;
+}
+
+svg.select-mode image.icon:hover,
+svg.select-mode image.icon.now-selecting {
+    width: 40px;
+    height: 40px;
+	transition-duration: 0.3s;	/*変化に掛かる時間*/
 }

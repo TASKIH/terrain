@@ -13,5 +13,9 @@ requirejs(["new-terrain-controller", "domReady"], function(ctrl, domReady) {
     domReady(() => {
         ctrl.drawTerrainControll();
 
+        document.getElementById("release-mode").addEventListener("click", ctrl.onReleaseModeClick);
+        document.getElementById("save-name").addEventListener("click", ctrl.onNameChangeClick);
+        document.getElementById("delete-symbol").addEventListener("click", ctrl.onSymbolDeleteClick);
     });
+
 });

@@ -1,6 +1,15 @@
 import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3';
 import { VoronoiDiagram } from 'd3';
 
+// 高さの差を「崖」だとみなす高さ
+export const CLIFF_BOUNDARY_HEIGHT = 0.05;
+
+export enum ShadowLevel {
+    Normal,
+    Dark1,
+    Dark2,
+}
+
 export interface FontSize {
     region: number;
     city: number;
@@ -9,6 +18,10 @@ export interface FontSize {
 export enum MergeMethod {
     Add,
     Average,
+}
+export enum EventKind {
+    IconChanged,
+    LabelChanged,
 }
 export interface MapExtent {
     width: number;
@@ -48,6 +61,7 @@ export interface TerrainPointContainer {
     relatedVoronoiSites: VoronoiSiteContainerArray;
     // 地盤の強固さ
     robustness: number;
+    shadow?: ShadowLevel;
     // 地盤の高さ
     height: number;
 }
@@ -61,12 +75,20 @@ export interface MapMesh {
     pointMapFunction: (f: any) => any;
 }
 
+export interface MapIcon {
+    id: number;
+    src: string;
+    name: string;
+    x: number;
+    y: number;
+}
 
 export interface MapRender {
     mesh?: MapMesh;
     h: TerrainHeights,
     rivers?: any[],
     coasts?: any[],
+    icons?: {[key: number]: MapIcon},
 }
 
 export interface TerrainHeights extends Array<number> {
@@ -75,4 +97,9 @@ export interface TerrainHeights extends Array<number> {
     heightRange?: [number, number];
     seaLevelHeight?: number;
 }
+
+export interface MapEventListener {
+    call: (kind: EventKind, ...args: any[]) => void;
+}
+
 export const COAST_LINE_HEIGHT = 0;

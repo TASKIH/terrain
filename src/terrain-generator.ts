@@ -2,7 +2,7 @@
 import * as d3 from 'd3';
 import * as language from './language';
 import 'js-priority-queue';
-import { Edge, MapExtent, MapMesh, MapRender, TerrainHeights, TerrainPoint, MergeMethod, COAST_LINE_HEIGHT } from './terrain-interfaces';
+import { Edge, MapExtent, MapMesh, MapRender, TerrainHeights, TerrainPoint, MergeMethod, COAST_LINE_HEIGHT, ShadowLevel, CLIFF_BOUNDARY_HEIGHT } from './terrain-interfaces';
 import { VoronoiEdge, VoronoiLayout, VoronoiSite } from 'd3';
 import { VoronoiDiagram } from 'd3';
 import { MeshGenerator } from './mesh-generator';
@@ -81,7 +81,7 @@ export class TerrainGenerator {
             var p = mesh.voronoiPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
-                const distanceFromOrigin = (p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]);
+                const distanceFromOrigin = Math.sqrt((p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]));
                 newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2) ) * peakHeight;
             }
         }
@@ -291,7 +291,52 @@ export class TerrainGenerator {
         return [(deltaYFrom2To0 * deltaHeightFrom1To0 - deltaYFrom1To0 * deltaHeightFrom2To0) / det,
             (-deltaXFrom2To0 * deltaHeightFrom1To0 + deltaXFrom1To0 * deltaHeightFrom2To0) / det];
     }
+
+    static getNearestUpperLeftPoint(mesh: MapMesh, targetPoint: TerrainPoint, points: TerrainPoint[]): TerrainPoint | undefined {
+        let leftPoint: TerrainPoint | undefined = undefined;
+        let topPoint: TerrainPoint | undefined = undefined;
+        for(let i = 0; i < points.length; i++) {
+            const pt = points[i];
+            if (pt.x < targetPoint.x && pt.y < targetPoint.y) {
+                return pt;
+            } else if(pt.x < targetPoint.x) {
+                leftPoint = pt;
+            } else if (pt.y < targetPoint.y) {
+                topPoint = pt;
+            }
+        }
+        if (leftPoint) {
+            return this.getNearestUpperLeftPoint(mesh, leftPoint, mesh.pointDict[leftPoint.id].connectingPoints);
+        } else if (topPoint) {
+            return this.getNearestUpperLeftPoint(mesh, topPoint, mesh.pointDict[topPoint.id].connectingPoints);
+        }
+        return undefined;
+    }
+    static calcShadow(mesh: MapMesh, h: TerrainHeights, point: TerrainPoint): ShadowLevel {
+        const nbs = mesh.pointDict[point.id].connectingPoints;
+        const compPoint = this.getNearestUpperLeftPoint(mesh, point, nbs);
+
+        if (!compPoint) {
+            return ShadowLevel.Normal;
+        }
+
+        if (h[compPoint.id] <= h[point.id]) {
+            return ShadowLevel.Normal;
+        }
+        const heighDelta = h[compPoint.id] - h[point.id];
+        if (heighDelta > CLIFF_BOUNDARY_HEIGHT) {
+            return ShadowLevel.Dark2;
+        }
+        return ShadowLevel.Dark1;
+    }
     
+    static setShadows(mesh: MapMesh, h: TerrainHeights) {
+        for(let key in mesh.pointDict) {
+            const point = mesh.pointDict[key];
+            point.shadow = this.calcShadow(mesh, h, point.point);
+        }
+    }
+
     static relaxPath(path: any[]) {
         var newpath = [path[0]];
         for (var i = 1; i < path.length - 1; i++) {
