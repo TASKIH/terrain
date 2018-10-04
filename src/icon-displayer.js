@@ -1,14 +1,6 @@
-define(["require", "exports", "./status-store"], function (require, exports, status_store_1) {
+define(["require", "exports", "./status-store", "./icon-files"], function (require, exports, status_store_1, icon_files_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
-    const buildingIcons = {
-        'build-bank': {
-            name: 'bank',
-            path: './resources/building/bank.png'
-        }
-    };
-    const natureIcons = [];
-    const jobIcons = [];
     function getCurrentIconAreaElement(src, alt) {
         let element = document.createElement("span");
         element.classList.add('map-symbol');
@@ -42,8 +34,36 @@ define(["require", "exports", "./status-store"], function (require, exports, sta
     function displayIcon() {
         let targetElem = document.getElementById('building');
         if (targetElem) {
-            for (let iKey in buildingIcons) {
-                const icon = buildingIcons[iKey];
+            for (let iKey in icon_files_1.ICON_FILES['building']) {
+                const icon = icon_files_1.ICON_FILES['building'][iKey];
+                targetElem.appendChild(getIconElement(icon));
+            }
+        }
+        targetElem = document.getElementById('items');
+        if (targetElem) {
+            for (let iKey in icon_files_1.ICON_FILES['items']) {
+                const icon = icon_files_1.ICON_FILES['items'][iKey];
+                targetElem.appendChild(getIconElement(icon));
+            }
+        }
+        targetElem = document.getElementById('weapons');
+        if (targetElem) {
+            for (let iKey in icon_files_1.ICON_FILES['weapons']) {
+                const icon = icon_files_1.ICON_FILES['weapons'][iKey];
+                targetElem.appendChild(getIconElement(icon));
+            }
+        }
+        targetElem = document.getElementById('jobs');
+        if (targetElem) {
+            for (let iKey in icon_files_1.ICON_FILES['jobs']) {
+                const icon = icon_files_1.ICON_FILES['jobs'][iKey];
+                targetElem.appendChild(getIconElement(icon));
+            }
+        }
+        targetElem = document.getElementById('nature');
+        if (targetElem) {
+            for (let iKey in icon_files_1.ICON_FILES['nature']) {
+                const icon = icon_files_1.ICON_FILES['nature'][iKey];
                 targetElem.appendChild(getIconElement(icon));
             }
         }

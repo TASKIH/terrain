@@ -7,11 +7,11 @@ interface RiseSeed {
     riseHeight: number;
     riseCount: number;
     radius: number;
-}
+};
 interface WaterFlowSeed {
     rainAmount: number;
     maxFlowAmount: number;
-}
+};
 interface TerrainSeed {
     // 地形を何層作るか
     layerCount: number;
@@ -32,7 +32,6 @@ interface TerrainSeed {
     // 海岸線を滑らかにする回数
     cleanCoastCount: number;
 };
-
 export const pangeaRaiseSeed: RiseSeed[] = [
     {riseHeight: 0.01, riseCount: 5, radius: 50},
     {riseHeight: 0.015, riseCount: 20, radius: 25},
@@ -45,10 +44,16 @@ export const continentRaiseSeed: RiseSeed[] = [
     {riseHeight: -0.01, riseCount: 15, radius: 50},
     {riseHeight: 0.15, riseCount: 2, radius: 200},
 ];
+export const localViewRaiseSeed: RiseSeed[] = [
+    {riseHeight: 0.02, riseCount: 3, radius: 1000.15},
+    {riseHeight: 0.005, riseCount: 15, radius: 300},
+    {riseHeight: -0.01, riseCount: 15, radius: 50},
+    {riseHeight: 0.15, riseCount: 2, radius: 200},
+];
 export const defaultWaterFlowSeed: WaterFlowSeed = {
     rainAmount: 0.2,
     maxFlowAmount: 0.5,
-}
+};
 export const pangeaTerrainSeed: TerrainSeed = {
     layerCount: 5,
     riseSeed: pangeaRaiseSeed,
@@ -60,7 +65,7 @@ export const pangeaTerrainSeed: TerrainSeed = {
     simpleErodeCount: 20,
     cleanCoastCount: 1,
 
-} 
+};
 export const continentTerrainSeed: TerrainSeed = {
     layerCount: 5,
     riseSeed: continentRaiseSeed,
@@ -72,8 +77,18 @@ export const continentTerrainSeed: TerrainSeed = {
     simpleErodeCount: 20,
     cleanCoastCount: 10,
 
-} 
-
+};
+export const localViewTerrainSeed: TerrainSeed = {
+    layerCount: 5,
+    riseSeed: localViewRaiseSeed,
+    waterFlowSeed: defaultWaterFlowSeed,
+    waterErodeEffect: 0.008,
+    eachLayerErodeCount: 1,
+    mergedLayerErodeCount: 3,
+    relaxCount: 5,
+    simpleErodeCount: 20,
+    cleanCoastCount: 10,
+};
 export class ContinentGenerator {
     
     static erodeByWater(mapMesh: MapMesh,
@@ -131,4 +146,4 @@ export class ContinentGenerator {
 
         return wholeMapHeights;
     }
-}
+};

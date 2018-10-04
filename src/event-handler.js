@@ -51,19 +51,45 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 if (nextIconElem) {
                     nextIconElem.classList.add('now-selecting');
                 }
+                const elems = document.getElementById("map-svg");
+                if (!elems) {
+                    return;
+                }
             }
         }
         onModeChange() {
+            const svg = document.getElementById("map-svg");
+            if (!svg) {
+                return;
+            }
+            const plcModeDiv = document.getElementById('place-mode-div');
+            const selectModeDiv = document.getElementById('select-mode-div');
             if (status_store_1.CurrentStatus.controlStatus === status_store_1.ControlStatus.None) {
-                const elems = document.getElementsByTagName("svg");
-                for (let i = 0; i < elems.length; i++) {
-                    elems[i].classList.add("select-mode");
+                const elems = document.getElementById("map-svg");
+                if (!elems) {
+                    return;
+                }
+                elems.classList.add("select-mode");
+                svg.classList.remove("place-mode");
+                if (plcModeDiv) {
+                    plcModeDiv.style.visibility = 'collapse';
+                }
+                if (selectModeDiv) {
+                    selectModeDiv.style.visibility = 'visible';
                 }
             }
             else {
-                const elems = document.getElementsByTagName("svg");
-                for (let i = 0; i < elems.length; i++) {
-                    elems[i].classList.remove("select-mode");
+                const elems = document.getElementById("map-svg");
+                if (!elems) {
+                    return;
+                }
+                elems.classList.remove("select-mode");
+                elems.classList.add("place-mode");
+                if (plcModeDiv) {
+                    plcModeDiv.style.visibility = 'visible';
+                }
+                if (selectModeDiv) {
+                    selectModeDiv.style.visibility = 'collapse';
                 }
             }
             const selectingIcons = document.getElementsByClassName('now-selecting');
@@ -73,7 +99,7 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 }
             }
         }
-        onReleaseModeClick() {
+        onSelectSymbolClick() {
             status_store_1.CurrentStatus.controlStatus = status_store_1.ControlStatus.None;
             status_store_1.CurrentStatus.currentIconAlt = "";
             status_store_1.CurrentStatus.currentIconPath = "";
@@ -104,12 +130,7 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 ev.call(terrain_interfaces_1.EventKind.LabelChanged);
             });
         }
-        onDeleteSymbolClick() {
-            const inputText = document.getElementById("symbolName");
-            if (!inputText) {
-                return;
-            }
-            const inputedValue = inputText.value;
+        onSymbolDeleteClick() {
             const symbolDiv = document.getElementById("symbolNameDiv");
             if (!symbolDiv) {
                 return;
@@ -125,6 +146,109 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
             this.eventListeners.forEach(ev => {
                 ev.call(terrain_interfaces_1.EventKind.IconChanged);
                 ev.call(terrain_interfaces_1.EventKind.LabelChanged);
+            });
+        }
+        onMapSaveClick() {
+            if (!status_store_1.CurrentStatus.render) {
+                return;
+            }
+            const saveObj = JSON.stringify({
+                mesh: status_store_1.CurrentStatus.render.mesh,
+                h: status_store_1.CurrentStatus.render.h,
+                rivers: status_store_1.CurrentStatus.render.rivers,
+                icons: status_store_1.CurrentStatus.render.icons,
+            });
+            const contentType = 'application/octet-stream';
+            const a = document.createElement('a');
+            const blob = new Blob([saveObj], { 'type': contentType });
+            a.href = window.URL.createObjectURL(blob);
+            a.download = 'MapData.json';
+            a.click();
+        }
+        onMapLoadClick(evt) {
+            const files = evt.target.files; // FileList object
+            const self = this;
+            if (files.length !== 1) {
+                return;
+            }
+            for (let i = 0, f; f = files[i]; i++) {
+                const reader = new FileReader();
+                // Closure to capture the file information.
+                reader.onload = (function (theFile) {
+                    return function (e) {
+                        const data = reader.result;
+                        if (typeof data !== 'string') {
+                            return;
+                        }
+                        const saveData = JSON.parse(data);
+                        status_store_1.CurrentStatus.render.mesh = saveData.mesh;
+                        status_store_1.CurrentStatus.render.icons = saveData.icons;
+                        status_store_1.CurrentStatus.render.h = saveData.h;
+                        status_store_1.CurrentStatus.render.rivers = saveData.rivers;
+                        status_store_1.CurrentStatus.controlStatus = status_store_1.ControlStatus.None;
+                        status_store_1.CurrentStatus.currentIconAlt = '';
+                        status_store_1.CurrentStatus.currentIconPath = '';
+                        let maxIconId = 0;
+                        for (let key in status_store_1.CurrentStatus.render.icons) {
+                            const icon = status_store_1.CurrentStatus.render.icons[key];
+                            if (icon.id > maxIconId) {
+                                maxIconId = icon.id;
+                            }
+                        }
+                        status_store_1.CurrentStatus.maxIconId = maxIconId;
+                        self.eventListeners.forEach(ev => {
+                            ev.call(terrain_interfaces_1.EventKind.WholeMapChanged);
+                        });
+                    };
+                })(f);
+                reader.readAsText(f);
+            }
+        }
+        onMapExport(svgId) {
+            const OFF_SCREEN_CANVAS_ID = "svgOffScreeenRenderCanvas";
+            const OFF_SCREEN_CANVAS_CLASS = "svg-off-screen-render-canvas";
+            function saveToPngByCanvg(callback) {
+                var svg = document.getElementById(svgId);
+                var svgStr = new XMLSerializer().serializeToString(svg);
+                var canvas = document.getElementById(OFF_SCREEN_CANVAS_ID);
+                if (!canvas) {
+                    var svgW = svg.getAttribute('width');
+                    var svgH = svg.getAttribute('height');
+                    canvas = createOffScreenCanvas(svgW, svgH);
+                }
+                // @ts-ignore
+                canvg(OFF_SCREEN_CANVAS_ID, svgStr, {
+                    renderCallback: function (data) {
+                        if (callback) {
+                            var newData = canvas.toDataURL('image/png');
+                            callback(newData);
+                            document.removeChild(document.getElementById(OFF_SCREEN_CANVAS_ID));
+                        }
+                    }
+                });
+            }
+            function createOffScreenCanvas(width, height) {
+                var newCanvas = document.createElement('canvas');
+                newCanvas.setAttribute('id', OFF_SCREEN_CANVAS_ID);
+                newCanvas.setAttribute('width', width);
+                newCanvas.setAttribute('height', height);
+                //styleの設定
+                var style = newCanvas.style;
+                style.position = 'absolute';
+                style.left = '-9999px';
+                style.top = '0px';
+                newCanvas.classList.add(OFF_SCREEN_CANVAS_CLASS);
+                document.querySelector('body').appendChild(newCanvas);
+                return newCanvas;
+            }
+            saveToPngByCanvg((imgData) => {
+                const a = document.createElement('a');
+                a.href = imgData;
+                a.download = 'MapData.png';
+                a.id = "imglink";
+                document.body.appendChild(a);
+                a.click();
+                document.body.removeChild(a);
             });
         }
     }

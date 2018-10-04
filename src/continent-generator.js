@@ -2,6 +2,8 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     ;
+    ;
+    ;
     exports.pangeaRaiseSeed = [
         { riseHeight: 0.01, riseCount: 5, radius: 50 },
         { riseHeight: 0.015, riseCount: 20, radius: 25 },
@@ -10,6 +12,12 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
     ];
     exports.continentRaiseSeed = [
         { riseHeight: 0.01, riseCount: 3, radius: 600.15 },
+        { riseHeight: 0.005, riseCount: 15, radius: 300 },
+        { riseHeight: -0.01, riseCount: 15, radius: 50 },
+        { riseHeight: 0.15, riseCount: 2, radius: 200 },
+    ];
+    exports.localViewRaiseSeed = [
+        { riseHeight: 0.02, riseCount: 3, radius: 1000.15 },
         { riseHeight: 0.005, riseCount: 15, radius: 300 },
         { riseHeight: -0.01, riseCount: 15, radius: 50 },
         { riseHeight: 0.15, riseCount: 2, radius: 200 },
@@ -32,6 +40,17 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
     exports.continentTerrainSeed = {
         layerCount: 5,
         riseSeed: exports.continentRaiseSeed,
+        waterFlowSeed: exports.defaultWaterFlowSeed,
+        waterErodeEffect: 0.008,
+        eachLayerErodeCount: 1,
+        mergedLayerErodeCount: 3,
+        relaxCount: 5,
+        simpleErodeCount: 20,
+        cleanCoastCount: 10,
+    };
+    exports.localViewTerrainSeed = {
+        layerCount: 5,
+        riseSeed: exports.localViewRaiseSeed,
         waterFlowSeed: exports.defaultWaterFlowSeed,
         waterErodeEffect: 0.008,
         eachLayerErodeCount: 1,
@@ -80,4 +99,5 @@ define(["require", "exports", "./terrain-interfaces", "./terrain-generator", "./
         }
     }
     exports.ContinentGenerator = ContinentGenerator;
+    ;
 });

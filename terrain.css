@@ -1,26 +1,23 @@
+/*
 path, line {
     fill: none;
     stroke: black;
     stroke-linecap: round;
 }
-
 .field {
     stroke: none;
-    fill-opacity: 1.0;
 }
 
 .slope {
     stroke-width: 1px;
 }
-
 .river {
+    stroke: #000099;
     stroke-width: 2px;
 }
-
 .coast {
     stroke-width: 2px;
 }
-
 .border {
     stroke-width: 5px;
     stroke-dasharray: 4,4;
@@ -28,7 +25,7 @@ path, line {
 }
 
 text {
-    font-family: "Palatino Linotype", "Book Antiqua", Palatino, serif;
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif, serif;
     color: black;
     stroke: white;
     stroke-width: 5px;
@@ -40,7 +37,11 @@ text.region {
     stroke-width:10px;
     font-variant: small-caps;
 }
+*/
 
+text {
+    font-family: "Palatino Linotype", "Book Antiqua", Palatino, 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif, serif;
+}
 .map-symbol > img {
     width: 32px;
     height: auto;
@@ -50,10 +51,22 @@ svg {
     float: right;
     background-color: white;
 }
-
 svg.select-mode image.icon:hover,
 svg.select-mode image.icon.now-selecting {
     width: 40px;
     height: 40px;
 	transition-duration: 0.3s;	/*変化に掛かる時間*/
+    cursor: pointer;
+}
+
+#place-mode-div {
+    visibility: collapse;
+}
+
+svg.place-mode {
+    cursor: crosshair;
+}
+
+.icon-list .map-symbol {
+    cursor: pointer;
 }

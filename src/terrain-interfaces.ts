@@ -22,6 +22,7 @@ export enum MergeMethod {
 export enum EventKind {
     IconChanged,
     LabelChanged,
+    WholeMapChanged,
 }
 export interface MapExtent {
     width: number;
@@ -73,6 +74,13 @@ export interface MapMesh {
     edges: Edge[];
     extent: MapExtent;
     pointMapFunction: (f: any) => any;
+}
+
+export interface SaveData {
+    mesh: MapMesh;
+    h: TerrainHeights,
+    rivers?: any[],
+    icons?: {[key: number]: MapIcon},
 }
 
 export interface MapIcon {

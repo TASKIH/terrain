@@ -122,6 +122,12 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
             svg.selectAll('text.city')
                 .attr('x', function (d) { return d.x; })
                 .attr('y', function (d) { return d.y; })
+                .attr('color', 'black')
+                .attr('font-family', '"Palatino Linotype", "Book Antiqua", Palatino, "Hiragino Kaku Gothic ProN", "ヒラギノ角ゴ ProN W3", sans-serif, serif;')
+                .attr('stroke', 'white')
+                .attr('stroke-width', '5px')
+                .attr('stroke-linejoin', 'round')
+                .attr('paint-order', 'stroke')
                 .style('font-size', function (d) { return d.size; })
                 .style('text-anchor', function (d) { return d.align; })
                 .text(function (d) { return d.text; })
@@ -181,12 +187,14 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                     p.lineTo(e[0], e[1]);
                 }
             });
+            p.closePath();
             return p.toString();
         }
         static makeD3PathByPath(path) {
             var p = d3.path();
             p.moveTo(path[0][0], path[0][1]);
-            for (var i = 1; i < path.length; i++) {
+            var i = 1;
+            for (i = 1; i < path.length; i++) {
                 p.lineTo(path[i][0], path[i][1]);
             }
             return p.toString();
@@ -231,6 +239,9 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                 ev.onMeshClick(elem.point.x, elem.point.y);
             });
             if (doColorize) {
+                drawer.style('stroke', function (d, i) {
+                    return TerrainDrawer.getColor(field, d);
+                });
                 drawer.style('fill', function (d, i) {
                     return TerrainDrawer.getColor(field, d);
                 });
@@ -254,7 +265,23 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
             paths.exit()
                 .remove();
             svg.selectAll('path.' + cls)
-                .attr('d', TerrainDrawer.makeD3PathByPath);
+                .attr('d', TerrainDrawer.makeD3PathByPath)
+                .attr('stroke', 'black')
+                .attr('stroke-linecap', 'round');
+            if (cls === 'coast') {
+                svg.selectAll('path.' + cls)
+                    .attr('fill', 'none')
+                    .attr('stroke-width', '2px');
+            }
+            else if (cls === 'river') {
+                svg.selectAll('path.' + cls)
+                    .attr('stroke', '#000099')
+                    .attr('stroke-width', '2px');
+            }
+            else if (cls === 'coast') {
+                svg.selectAll('path.' + cls)
+                    .attr('stroke-width', '2px');
+            }
         }
         static getColor(h, point) {
             const height = h[point.point.id];

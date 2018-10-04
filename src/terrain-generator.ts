@@ -329,7 +329,7 @@ export class TerrainGenerator {
         }
         return ShadowLevel.Dark1;
     }
-    
+
     static setShadows(mesh: MapMesh, h: TerrainHeights) {
         for(let key in mesh.pointDict) {
             const point = mesh.pointDict[key];

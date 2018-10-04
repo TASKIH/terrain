@@ -9,13 +9,13 @@ import { TerrainGenerator, defaultExtent } from './terrain-generator';
 import { TerrainFeatureGenerator } from './terrain-feature-generator';
 import { WaterErosionExecutor } from './water-erosion-executor';
 import { WaterFlowResult, WaterRecorder, Water, WaterFlow, WaterFlowRate } from './water-recorder';
-import { ContinentGenerator, pangeaTerrainSeed, continentTerrainSeed } from './continent-generator';
+import { ContinentGenerator, pangeaTerrainSeed, continentTerrainSeed, localViewTerrainSeed } from './continent-generator';
 import { RiverGenerator } from './feature-generator/river-generator';
 import { displayIcon } from './icon-displayer';
 import { MapEventHandler } from './event-handler';
 import { CurrentStatusStore, ControlStatus, CurrentStatus } from './status-store';
 
-    
+
 const mapExtent: MapExtent = {
     width: 1000,
     height: 500,
@@ -27,23 +27,22 @@ CurrentStatus.onControlStatusChangeListeners.push(e => {
 });
 
 
-var wholeMapMesh = MeshGenerator.generateGoodMesh(4096, mapExtent);
-var wholeMapHeights = TerrainGenerator.generateZeroHeights(wholeMapMesh);
-
 var primCtrlDiv = d3.select("div#prim-ctrl");
 var primDiv = d3.select("div#prim");
 var primSVG = addSVG(primDiv);
 
+var tmpMesh = MeshGenerator.generateGoodMesh(4096, mapExtent);
+
 const render: MapRender = {
-    mesh: wholeMapMesh,
-    h: wholeMapHeights
+    mesh: tmpMesh,
+    h: TerrainGenerator.generateZeroHeights(tmpMesh)
 }
 CurrentStatus.render = render;
 
 const eventListeners: MapEventListener[] = [
     {
         call: (kind: EventKind) => {
-            switch(kind) {
+            switch (kind) {
                 case EventKind.IconChanged:
                     TerrainDrawer.visualizeIcons(primSVG, render, mapEventHandler);
                     TerrainDrawer.drawLabels(primSVG, render);
@@ -51,6 +50,18 @@ const eventListeners: MapEventListener[] = [
 
                 case EventKind.LabelChanged:
                     TerrainDrawer.drawLabels(primSVG, render);
+                    break;
+
+                case EventKind.WholeMapChanged:
+                    TerrainGenerator.setShadows(CurrentStatus.render!.mesh!, CurrentStatus.render!.h!);
+                    TerrainDrawer.visualizeVoronoi(primSVG, CurrentStatus.render!.mesh!, CurrentStatus.render!.h!, mapEventHandler, -1, 1, 'prim-info', true);
+                    CurrentStatus.render!.coasts = TerrainDrawer.generateContour(CurrentStatus.render!.mesh!, CurrentStatus.render!.h!, 0);
+
+                    TerrainDrawer.drawPaths(primSVG, 'river', CurrentStatus.render!.rivers);
+
+                    TerrainDrawer.drawPaths(primSVG, 'coast', CurrentStatus.render!.coasts);
+                    TerrainDrawer.visualizeIcons(primSVG, CurrentStatus.render!, mapEventHandler);
+                    TerrainDrawer.drawLabels(primSVG, CurrentStatus.render!);
                     break;
             }
         }
@@ -62,20 +73,34 @@ export function onModeChange() {
     mapEventHandler.onModeChange();
 }
 
-export function onReleaseModeClick() {
-    mapEventHandler.onReleaseModeClick();
+export function onSelectSymbolClick() {
+    mapEventHandler.onSelectSymbolClick();
 }
 
 export function onNameChangeClick() {
     mapEventHandler.onNameChangeClick();
 }
-    
+
+export function onSymbolDeleteClick() {
+    mapEventHandler.onSymbolDeleteClick();
+}
+
+export function onMapSaveClick() {
+    mapEventHandler.onMapSaveClick();
+}
+export function onMapLoadClick(evt: any) {
+    mapEventHandler.onMapLoadClick(evt);
+}
+export function onDownloadClick() {
+    mapEventHandler.onMapExport('map-svg');
+}
 function addSVG(div: any) {
     return div.insert("svg", ":first-child")
         .attr("height", mapExtent.height)
         .attr("width", mapExtent.width)
         .attr("viewBox", getViewBoxString())
         .attr("class", "select-mode")
+        .attr("id", "map-svg")
         .on('mousemove', mouseMove);
 }
 function getViewBoxString(): string {
@@ -91,49 +116,39 @@ export function drawTerrainControll() {
 
     displayIcon();
 
-    class ContinentData {
-        continent: TerrainHeights = [];
-        waters: { [key: number]: Water } = {};
-        waterResult: WaterFlowResult = {
-            waters: {},
-            records: new WaterRecorder(),
-            result: {
-                hasDeadend: false,
-                isFinished: false,
-            }
-        };
-    }
-
-    var continents: ContinentData[] = [];
-
-
     function primDraw() {
-        render.mesh = wholeMapMesh;
-        render.h = wholeMapHeights;
-
-        TerrainGenerator.setShadows(render.mesh, render.h);
-        TerrainDrawer.visualizeVoronoi(primSVG, wholeMapMesh, wholeMapHeights, mapEventHandler, -1, 1, 'prim-info', true);
+        const myRender = CurrentStatus.render!;
+        TerrainGenerator.setShadows(myRender.mesh!, myRender.h);
+        TerrainDrawer.visualizeVoronoi(primSVG, myRender.mesh!, myRender.h, mapEventHandler, -1, 1, 'prim-info', true);
         // TerrainDrawer.visualizeSlopes(primSVG, myRender);
-        render.coasts = TerrainDrawer.generateContour(wholeMapMesh, wholeMapHeights, 0);
-        TerrainDrawer.drawPaths(primSVG, 'coast', render.coasts);
-
-        const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(wholeMapMesh, wholeMapHeights, 0.1);
-        drawWaterFlow(wholeMapMesh, wholeMapHeights, waterFlowRate);
+        if (myRender.rivers) {
+            TerrainDrawer.drawPaths(primSVG, 'river', myRender.rivers);
+        }
+        if (myRender.coasts) {
+            TerrainDrawer.drawPaths(primSVG, 'coast', myRender.coasts);
+        }
     }
     primDraw();
 
     primCtrlDiv.append("button")
         .text("Reset to flat")
         .on("click", function () {
-            wholeMapHeights = TerrainGenerator.generateZeroHeights(wholeMapMesh);
+            const myRender = CurrentStatus.render!;
+            myRender.h = TerrainGenerator.generateZeroHeights(myRender.mesh!);
             primDraw();
         });
 
     primCtrlDiv.append("button")
         .text("パンゲアの生成")
         .on("click", function () {
-            wholeMapMesh = MeshGenerator.generateGoodMesh(100, mapExtent);
-            wholeMapHeights = ContinentGenerator.generate(wholeMapMesh, pangeaTerrainSeed);
+            const myRender = CurrentStatus.render!;
+            myRender.mesh = MeshGenerator.generateGoodMesh(100, mapExtent);
+            myRender.h = ContinentGenerator.generate(myRender.mesh!, pangeaTerrainSeed);
+
+            myRender.coasts = TerrainDrawer.generateContour(myRender.mesh!, myRender.h, 0);
+
+            const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(myRender.mesh!, myRender.h, 0.1);
+            drawWaterFlow(myRender.mesh!, myRender.h, waterFlowRate);
 
             primDraw();
         });
@@ -141,14 +156,38 @@ export function drawTerrainControll() {
     primCtrlDiv.append("button")
         .text("大陸の生成")
         .on("click", function () {
-            wholeMapMesh = MeshGenerator.generateGoodMesh(16038, mapExtent);
-            wholeMapHeights = ContinentGenerator.generate(wholeMapMesh, continentTerrainSeed);
+            const myRender = CurrentStatus.render!;
+            myRender.mesh = MeshGenerator.generateGoodMesh(16038, mapExtent);
+            myRender.h = ContinentGenerator.generate(myRender.mesh!, continentTerrainSeed);
 
+            myRender.coasts = TerrainDrawer.generateContour(myRender.mesh!, myRender.h, 0);
+
+            const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(myRender.mesh!, myRender.h, 0.1);
+            drawWaterFlow(myRender.mesh!, myRender.h, waterFlowRate);
+
+            primDraw();
+        });
+
+    primCtrlDiv.append("button")
+        .text("地方図の生成")
+        .on("click", function () {
+            const myRender = CurrentStatus.render!;
+            const localViewExtent = {...mapExtent};
+            localViewExtent.height = localViewExtent.height += 500;
+            localViewExtent.width = localViewExtent.width += 500;
+            myRender.mesh = MeshGenerator.generateGoodMesh(16038, localViewExtent);
+            myRender.h = ContinentGenerator.generate(myRender.mesh!, localViewTerrainSeed);
+
+            myRender.coasts = TerrainDrawer.generateContour(myRender.mesh!, myRender.h, 0);
+
+            const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(myRender.mesh!, myRender.h, 0.1);
+            drawWaterFlow(myRender.mesh!, myRender.h, waterFlowRate);
 
             primDraw();
         });
 
     function drawWaterFlow(mesh: MapMesh, h: TerrainHeights, waterFlowRate: { [key: number]: WaterFlowRate }) {
+        const myRender = CurrentStatus.render!;
         const watersArray: number[] = [];
         for (let key1 in waterFlowRate) {
             let curRecord = waterFlowRate[key1];
@@ -173,7 +212,7 @@ export function drawTerrainControll() {
         }
 
         const flowPoints: number[][][] = [];
-        const waterConnections = RiverGenerator.generateRivers(wholeMapMesh, wholeMapHeights, 100, 10);
+        const waterConnections = RiverGenerator.generateRivers(render.mesh!, render.h!, 100, 10);
 
         waterConnections.forEach(conn => {
 
@@ -198,8 +237,7 @@ export function drawTerrainControll() {
                 curFromPt = rt;
             });
         });
-        const rivers = TerrainCalcUtil.mergeSegments(flowPoints).map(TerrainGenerator.relaxPath);
-        TerrainDrawer.drawPaths(primSVG, 'river', rivers);
+        myRender.rivers = TerrainCalcUtil.mergeSegments(flowPoints).map(TerrainGenerator.relaxPath);
     }
 
     primCtrlDiv.append("button")
@@ -211,7 +249,8 @@ export function drawTerrainControll() {
     primCtrlDiv.append("button")
         .text("単純な浸食を実行")
         .on("click", function () {
-            wholeMapHeights = TerrainGenerator.erodeSimply(wholeMapMesh, wholeMapHeights, 0.2);
+            const myRender = CurrentStatus.render!;
+            myRender.h = TerrainGenerator.erodeSimply(myRender.mesh!, myRender.h, 0.2);
             primDraw();
         });
 
@@ -219,34 +258,38 @@ export function drawTerrainControll() {
     primCtrlDiv.append("button")
         .text("海岸線の整理")
         .on("click", function () {
-            wholeMapHeights = TerrainGenerator.cleanCoast(wholeMapMesh, wholeMapHeights, 1);
+            const myRender = CurrentStatus.render!;
+            myRender.h = TerrainGenerator.cleanCoast(myRender.mesh!, myRender.h, 1);
             primDraw();
         });
 
     primCtrlDiv.append("button")
         .text("不自然なメッシュを沈める")
         .on("click", function () {
-            wholeMapHeights = TerrainGenerator.sinkUnnaturalCoastSideMesh(wholeMapMesh, wholeMapHeights);
+            const myRender = CurrentStatus.render!;
+            myRender.h = TerrainGenerator.sinkUnnaturalCoastSideMesh(myRender.mesh!, myRender.h);
             primDraw();
         });
 
     primCtrlDiv.append("button")
         .text("Relax")
         .on("click", function () {
-            wholeMapHeights = TerrainGenerator.relax(wholeMapMesh, wholeMapHeights);
+            const myRender = CurrentStatus.render!;
+            myRender.h = TerrainGenerator.relax(myRender.mesh!, myRender.h);
             primDraw();
         });
 
     primCtrlDiv.append("button")
         .text("水による浸食")
         .on("click", function () {
+            const myRender = CurrentStatus.render!;
             for (let i = 0; i < 5; i++) {
 
             }
-            const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(wholeMapMesh, wholeMapHeights, 0.1);
-            drawWaterFlow(wholeMapMesh, wholeMapHeights, waterFlowRate);
+            const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(myRender.mesh!, myRender.h, 0.1);
+            drawWaterFlow(myRender.mesh!, myRender.h, waterFlowRate);
 
-            wholeMapHeights = WaterErosionExecutor.erodeByWaterRate(wholeMapMesh, wholeMapHeights, waterFlowRate, 0.01);
+            myRender.h = WaterErosionExecutor.erodeByWaterRate(myRender.mesh!, myRender.h, waterFlowRate, 0.01);
             primDraw();
         });
 

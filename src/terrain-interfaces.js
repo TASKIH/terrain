@@ -18,6 +18,7 @@ define(["require", "exports"], function (require, exports) {
     (function (EventKind) {
         EventKind[EventKind["IconChanged"] = 0] = "IconChanged";
         EventKind[EventKind["LabelChanged"] = 1] = "LabelChanged";
+        EventKind[EventKind["WholeMapChanged"] = 2] = "WholeMapChanged";
     })(EventKind = exports.EventKind || (exports.EventKind = {}));
     class VoronoiSiteContainerArray extends Array {
     }
