@@ -108,6 +108,16 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 selectingIconElement.innerHTML = "";
             }
         }
+        onSelectSymbolOnMap(e) {
+            status_store_1.CurrentStatus.controlStatus = status_store_1.ControlStatus.IconSelect;
+            status_store_1.CurrentStatus.currentIconPath = e.target.src;
+            status_store_1.CurrentStatus.currentIconAlt = e.target.alt;
+            const currentIconArea = document.getElementById('current-selecting-icon');
+            if (currentIconArea) {
+                currentIconArea.textContent = null;
+                currentIconArea.appendChild(IconUtil.getCurrentIconAreaElement(e.target.src, e.target.alt));
+            }
+        }
         onNameChangeClick() {
             const inputText = document.getElementById("symbolName");
             if (!inputText) {

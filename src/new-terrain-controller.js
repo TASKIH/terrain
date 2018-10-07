@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./water-erosion-executor", "./continent-generator", "./feature-generator/river-generator", "./icon-displayer", "./event-handler", "./status-store"], function (require, exports, d3, terrain_interfaces_1, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, water_erosion_executor_1, continent_generator_1, river_generator_1, icon_displayer_1, event_handler_1, status_store_1) {
+define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./water-erosion-executor", "./continent-generator", "./feature-generator/river-generator", "./icons/icon-displayer", "./event-handler", "./status-store"], function (require, exports, d3, terrain_interfaces_1, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, water_erosion_executor_1, continent_generator_1, river_generator_1, icon_displayer_1, event_handler_1, status_store_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
@@ -97,7 +97,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
         // console.log(d3.mouse(this));
     }
     function drawTerrainControll() {
-        icon_displayer_1.displayIcon();
+        icon_displayer_1.displayIcon(mapEventHandler);
         function primDraw() {
             const myRender = status_store_1.CurrentStatus.render;
             terrain_generator_1.TerrainGenerator.setShadows(myRender.mesh, myRender.h);

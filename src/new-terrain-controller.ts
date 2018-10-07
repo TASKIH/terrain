@@ -11,7 +11,7 @@ import { WaterErosionExecutor } from './water-erosion-executor';
 import { WaterFlowResult, WaterRecorder, Water, WaterFlow, WaterFlowRate } from './water-recorder';
 import { ContinentGenerator, pangeaTerrainSeed, continentTerrainSeed, localViewTerrainSeed } from './continent-generator';
 import { RiverGenerator } from './feature-generator/river-generator';
-import { displayIcon } from './icon-displayer';
+import { displayIcon } from './icons/icon-displayer';
 import { MapEventHandler } from './event-handler';
 import { CurrentStatusStore, ControlStatus, CurrentStatus } from './status-store';
 
@@ -114,7 +114,7 @@ function mouseMove(this: any) {
 
 export function drawTerrainControll() {
 
-    displayIcon();
+    displayIcon(mapEventHandler);
 
     function primDraw() {
         const myRender = CurrentStatus.render!;

@@ -2,7 +2,7 @@ import { MapRender, MapIcon, EventKind, MapEventListener, SaveData, MapExtent } 
 import { CurrentStatusStore, ControlStatus, CurrentStatus } from "./status-store";
 import d3, { select, max } from "d3";
 import { TerrainUtil } from "./util";
-import { ICON_FILES } from "./icon-files";
+import { ICON_FILES } from "./icons/icon-files";
 
 
 export class MapEventHandler {
@@ -120,6 +120,17 @@ export class MapEventHandler {
         if (selectingIconElement) {
             selectingIconElement.innerHTML = "";
         }
+    }
+    onSelectSymbolOnMap(e: any) {
+        CurrentStatus.controlStatus = ControlStatus.IconSelect;
+        CurrentStatus.currentIconPath = e.target.src;
+        CurrentStatus.currentIconAlt = e.target.alt;
+
+        const currentIconArea = document.getElementById('current-selecting-icon');
+        if (currentIconArea) {
+            currentIconArea.textContent = null;
+            currentIconArea.appendChild(IconUtil.getCurrentIconAreaElement(e.target.src, e.target.alt));
+        }   
     }
     onNameChangeClick() {
         const inputText = <HTMLInputElement>document.getElementById("symbolName");
