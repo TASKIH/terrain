@@ -16,7 +16,7 @@ function getIconElement(icon: IconData, ev: MapEventHandler): Element {
 
     img.addEventListener("mousedown", (e: any) => {
         if (e && e.target) {
-            ev.onSelectSymbolOnMap(e);
+            ev.onSelectSymbolOnIconList(e);
         }
     });
 

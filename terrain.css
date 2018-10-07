@@ -70,3 +70,55 @@ svg.place-mode {
 .icon-list .map-symbol {
     cursor: pointer;
 }
+
+#select-mode-div {
+    visibility: collapse;
+    position: absolute;
+    width: 300px;
+    height: 160px;
+    border-radius: 5px;
+    background-color: #F3F3F3;
+    box-shadow: 10px 10px 10px rgba(0,0,0,0.4);
+    padding: 5px;
+    z-index: 100;
+}
+#delete-symbol {
+    margin-left: 40px;
+}
+#select-mode-whole-shadow {
+    visibility: collapse;
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 99;
+}
+#loading-screen {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 1000;
+}
+#loading-screen .inner{
+    width: 300px;
+    height: 300px;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    position: absolute;
+    margin: auto;
+}
+#loading-screen .inner .preloader-wrapper {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    position: absolute;
+    margin: auto;
+}
+#loading-status {
+    margin-top: 110px;
+    margin-left: 64px;
+}

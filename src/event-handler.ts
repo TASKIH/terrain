@@ -3,6 +3,8 @@ import { CurrentStatusStore, ControlStatus, CurrentStatus } from "./status-store
 import d3, { select, max } from "d3";
 import { TerrainUtil } from "./util";
 import { ICON_FILES } from "./icons/icon-files";
+import { IconUtil } from "./icons/icon-util";
+import { LoadingHandler } from "./loading-handler";
 
 
 export class MapEventHandler {
@@ -21,6 +23,7 @@ export class MapEventHandler {
             x: x - ICON_SIZE / 2,
             y: y - ICON_SIZE / 2,
             src: iconPath,
+            fontSize: 12,
             name: iconAlt,
         }
 
@@ -34,12 +37,27 @@ export class MapEventHandler {
         });
     }
 
+    private setSymbolDivVisibility(isVisible: boolean): void {
+        const selectModeDiv = document.getElementById('select-mode-div');
+        if (!selectModeDiv) {
+            return;
+        }
+        const selectModeShadowDiv = document.getElementById('select-mode-whole-shadow');
+        if (!selectModeShadowDiv) {
+            return;
+        }
+        const setModeStr = (isVisible)? 'visible' : 'collapse';
+        selectModeDiv.style.visibility = setModeStr;
+        selectModeShadowDiv.style.visibility = setModeStr;
+    }
+
     onMeshClick(x: number, y: number): void {
         if (CurrentStatus.controlStatus === ControlStatus.IconSelect) {
             this.addIcon(x, y, CurrentStatus.currentIconPath, CurrentStatus.currentIconAlt);
         }
     }
-    onIconClick(icon: MapIcon): void {
+    // 地図上のSymbolをクリックした時のイベント
+    onClickSymbolOnMap(icon: MapIcon, d3Event: any): void {
         if (CurrentStatus.controlStatus === ControlStatus.None) {
             const selectingIcons = document.getElementsByClassName('now-selecting');
             if (selectingIcons) {
@@ -58,6 +76,12 @@ export class MapEventHandler {
             }
             symbolNameInput.value = icon.name;
 
+            const symbolSizeInput = <HTMLInputElement>document.getElementById("symbolFontSize");
+            if (!symbolSizeInput) {
+                return;
+            }
+            symbolSizeInput.value = icon.fontSize.toString();
+
             const nextIconElem = document.getElementById(TerrainUtil.getIconId(icon.id));
             if (nextIconElem) {
                 nextIconElem.classList.add('now-selecting');
@@ -66,6 +90,18 @@ export class MapEventHandler {
             if (!elems) {
                 return;
             }
+            
+            const iconEditor = document.getElementById('select-mode-div');
+            if (iconEditor) {
+                const x = d3Event.pageX;
+                const y = d3Event.pageY + 36;
+                iconEditor.style.left = x.toString() + 'px';
+                iconEditor.style.top = y.toString() + 'px';
+            }
+            this.setSymbolDivVisibility(true);
+
+            // @ts-ignore
+            M.updateTextFields();
         }
     }
     onModeChange() {
@@ -75,7 +111,6 @@ export class MapEventHandler {
         }
 
         const plcModeDiv = document.getElementById('place-mode-div');
-        const selectModeDiv = document.getElementById('select-mode-div');
         if (CurrentStatus.controlStatus === ControlStatus.None) {
             const elems = document.getElementById("map-svg");
             if (!elems) {
@@ -85,9 +120,6 @@ export class MapEventHandler {
             svg.classList.remove("place-mode");
             if (plcModeDiv) {
                 plcModeDiv.style.visibility = 'collapse';
-            }
-            if (selectModeDiv) {
-                selectModeDiv.style.visibility = 'visible';
             }
         } else {
             const elems = document.getElementById("map-svg");
@@ -99,9 +131,7 @@ export class MapEventHandler {
             if (plcModeDiv) {
                 plcModeDiv.style.visibility = 'visible';
             }
-            if (selectModeDiv) {
-                selectModeDiv.style.visibility = 'collapse';
-            }
+            this.setSymbolDivVisibility(false);
         }
 
         const selectingIcons = document.getElementsByClassName('now-selecting');
@@ -121,7 +151,7 @@ export class MapEventHandler {
             selectingIconElement.innerHTML = "";
         }
     }
-    onSelectSymbolOnMap(e: any) {
+    onSelectSymbolOnIconList(e: any) {
         CurrentStatus.controlStatus = ControlStatus.IconSelect;
         CurrentStatus.currentIconPath = e.target.src;
         CurrentStatus.currentIconAlt = e.target.alt;
@@ -130,15 +160,21 @@ export class MapEventHandler {
         if (currentIconArea) {
             currentIconArea.textContent = null;
             currentIconArea.appendChild(IconUtil.getCurrentIconAreaElement(e.target.src, e.target.alt));
-        }   
+        }
     }
-    onNameChangeClick() {
+    onSymbolChangeClick() {
         const inputText = <HTMLInputElement>document.getElementById("symbolName");
         if (!inputText) {
             return;
         }
 
+        const symbolSizeInput = <HTMLInputElement>document.getElementById("symbolFontSize");
+        if (!symbolSizeInput) {
+            return;
+        }
+
         const inputedValue = inputText.value;
+        const inputedFontSize = parseFloat(symbolSizeInput.value);
         const symbolDiv = document.getElementById("symbolNameDiv");
         if (!symbolDiv) {
             return;
@@ -151,11 +187,13 @@ export class MapEventHandler {
 
         if (CurrentStatus.render) {
             CurrentStatus.render.icons![currentIdInt].name = inputedValue;
+            CurrentStatus.render.icons![currentIdInt].fontSize = inputedFontSize || 12;
         }
 
         this.eventListeners.forEach(ev => {
             ev.call(EventKind.LabelChanged);
         });
+        this.setSymbolDivVisibility(false);
     }
 
     onSymbolDeleteClick() {
@@ -176,6 +214,7 @@ export class MapEventHandler {
             ev.call(EventKind.IconChanged);
             ev.call(EventKind.LabelChanged);
         });
+        this.setSymbolDivVisibility(false);
     }
     onMapSaveClick() {
         if (!CurrentStatus.render) {
@@ -234,11 +273,16 @@ export class MapEventHandler {
                     self.eventListeners.forEach(ev => {
                         ev.call(EventKind.WholeMapChanged);
                     });
+
+                    LoadingHandler.setLoadingVisibility(false);
                 };
             })(f);
 
             reader.readAsText(f);
         }
+    }
+    onSelModeShadowClick() {
+        this.setSymbolDivVisibility(false);
     }
     onMapExport(svgId: string) {
         const OFF_SCREEN_CANVAS_ID = "svgOffScreeenRenderCanvas";
@@ -291,6 +335,7 @@ export class MapEventHandler {
             document.body.appendChild(a);
             a.click();
             document.body.removeChild(a);
+            LoadingHandler.setLoadingVisibility(false);
         });
     }
 }

@@ -9,7 +9,7 @@ define(["require", "exports", "./icon-files"], function (require, exports, icon_
         img.alt = icon.name;
         img.addEventListener("mousedown", (e) => {
             if (e && e.target) {
-                ev.onSelectSymbolOnMap(e);
+                ev.onSelectSymbolOnIconList(e);
             }
         });
         element.appendChild(img);

@@ -87,6 +87,7 @@ export interface MapIcon {
     id: number;
     src: string;
     name: string;
+    fontSize: number;
     x: number;
     y: number;
 }

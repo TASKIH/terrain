@@ -5,7 +5,7 @@ var __importStar = (this && this.__importStar) || function (mod) {
     result["default"] = mod;
     return result;
 };
-define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./water-erosion-executor", "./continent-generator", "./feature-generator/river-generator", "./icons/icon-displayer", "./event-handler", "./status-store"], function (require, exports, d3, terrain_interfaces_1, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, water_erosion_executor_1, continent_generator_1, river_generator_1, icon_displayer_1, event_handler_1, status_store_1) {
+define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", "./util", "./terrain-drawer", "./terrain-generator", "./water-erosion-executor", "./continent-generator", "./feature-generator/river-generator", "./icons/icon-displayer", "./event-handler", "./status-store", "./loading-handler"], function (require, exports, d3, terrain_interfaces_1, mesh_generator_1, util_1, terrain_drawer_1, terrain_generator_1, water_erosion_executor_1, continent_generator_1, river_generator_1, icon_displayer_1, event_handler_1, status_store_1, loading_handler_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     d3 = __importStar(d3);
@@ -59,26 +59,40 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
         mapEventHandler.onSelectSymbolClick();
     }
     exports.onSelectSymbolClick = onSelectSymbolClick;
-    function onNameChangeClick() {
-        mapEventHandler.onNameChangeClick();
+    function onSymbolChangeClick() {
+        mapEventHandler.onSymbolChangeClick();
     }
-    exports.onNameChangeClick = onNameChangeClick;
+    exports.onSymbolChangeClick = onSymbolChangeClick;
     function onSymbolDeleteClick() {
         mapEventHandler.onSymbolDeleteClick();
     }
     exports.onSymbolDeleteClick = onSymbolDeleteClick;
     function onMapSaveClick() {
-        mapEventHandler.onMapSaveClick();
+        loading_handler_1.LoadingHandler.setLoadingVisibility(true, 'セーブ中...');
+        setTimeout(function () {
+            mapEventHandler.onMapSaveClick();
+            loading_handler_1.LoadingHandler.setLoadingVisibility(false);
+        }, 50);
     }
     exports.onMapSaveClick = onMapSaveClick;
     function onMapLoadClick(evt) {
-        mapEventHandler.onMapLoadClick(evt);
+        loading_handler_1.LoadingHandler.setLoadingVisibility(true, 'ロード中...');
+        setTimeout(function () {
+            mapEventHandler.onMapLoadClick(evt);
+        }, 50);
     }
     exports.onMapLoadClick = onMapLoadClick;
     function onDownloadClick() {
-        mapEventHandler.onMapExport('map-svg');
+        loading_handler_1.LoadingHandler.setLoadingVisibility(true, '画像ファイルを生成中...');
+        setTimeout(function () {
+            mapEventHandler.onMapExport('map-svg');
+        }, 50);
     }
     exports.onDownloadClick = onDownloadClick;
+    function onSelModeShadowClick() {
+        mapEventHandler.onSelModeShadowClick();
+    }
+    exports.onSelModeShadowClick = onSelModeShadowClick;
     function addSVG(div) {
         return div.insert("svg", ":first-child")
             .attr("height", mapExtent.height)
@@ -121,38 +135,50 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
         primCtrlDiv.append("button")
             .text("パンゲアの生成")
             .on("click", function () {
-            const myRender = status_store_1.CurrentStatus.render;
-            myRender.mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(100, mapExtent);
-            myRender.h = continent_generator_1.ContinentGenerator.generate(myRender.mesh, continent_generator_1.pangeaTerrainSeed);
-            myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(myRender.mesh, myRender.h, 0);
-            const waterFlowRate = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(myRender.mesh, myRender.h, 0.1);
-            drawWaterFlow(myRender.mesh, myRender.h, waterFlowRate);
-            primDraw();
+            loading_handler_1.LoadingHandler.setLoadingVisibility(true, 'パンゲアを生成中...');
+            setTimeout(function () {
+                const myRender = status_store_1.CurrentStatus.render;
+                myRender.mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(100, mapExtent);
+                myRender.h = continent_generator_1.ContinentGenerator.generate(myRender.mesh, continent_generator_1.pangeaTerrainSeed);
+                myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(myRender.mesh, myRender.h, 0);
+                const waterFlowRate = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(myRender.mesh, myRender.h, 0.1);
+                drawWaterFlow(myRender.mesh, myRender.h, waterFlowRate);
+                primDraw();
+                loading_handler_1.LoadingHandler.setLoadingVisibility(false);
+            }, 50);
         });
         primCtrlDiv.append("button")
             .text("大陸の生成")
             .on("click", function () {
-            const myRender = status_store_1.CurrentStatus.render;
-            myRender.mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16038, mapExtent);
-            myRender.h = continent_generator_1.ContinentGenerator.generate(myRender.mesh, continent_generator_1.continentTerrainSeed);
-            myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(myRender.mesh, myRender.h, 0);
-            const waterFlowRate = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(myRender.mesh, myRender.h, 0.1);
-            drawWaterFlow(myRender.mesh, myRender.h, waterFlowRate);
-            primDraw();
+            loading_handler_1.LoadingHandler.setLoadingVisibility(true, '大陸を生成中...');
+            setTimeout(function () {
+                const myRender = status_store_1.CurrentStatus.render;
+                myRender.mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16038, mapExtent);
+                myRender.h = continent_generator_1.ContinentGenerator.generate(myRender.mesh, continent_generator_1.continentTerrainSeed);
+                myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(myRender.mesh, myRender.h, 0);
+                const waterFlowRate = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(myRender.mesh, myRender.h, 0.1);
+                drawWaterFlow(myRender.mesh, myRender.h, waterFlowRate);
+                primDraw();
+                loading_handler_1.LoadingHandler.setLoadingVisibility(false);
+            }, 50);
         });
         primCtrlDiv.append("button")
             .text("地方図の生成")
             .on("click", function () {
-            const myRender = status_store_1.CurrentStatus.render;
-            const localViewExtent = Object.assign({}, mapExtent);
-            localViewExtent.height = localViewExtent.height += 500;
-            localViewExtent.width = localViewExtent.width += 500;
-            myRender.mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16038, localViewExtent);
-            myRender.h = continent_generator_1.ContinentGenerator.generate(myRender.mesh, continent_generator_1.localViewTerrainSeed);
-            myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(myRender.mesh, myRender.h, 0);
-            const waterFlowRate = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(myRender.mesh, myRender.h, 0.1);
-            drawWaterFlow(myRender.mesh, myRender.h, waterFlowRate);
-            primDraw();
+            loading_handler_1.LoadingHandler.setLoadingVisibility(true, '地方図を生成中...');
+            setTimeout(function () {
+                const myRender = status_store_1.CurrentStatus.render;
+                const localViewExtent = Object.assign({}, mapExtent);
+                localViewExtent.height = localViewExtent.height += 500;
+                localViewExtent.width = localViewExtent.width += 500;
+                myRender.mesh = mesh_generator_1.MeshGenerator.generateGoodMesh(16038, localViewExtent);
+                myRender.h = continent_generator_1.ContinentGenerator.generate(myRender.mesh, continent_generator_1.localViewTerrainSeed);
+                myRender.coasts = terrain_drawer_1.TerrainDrawer.generateContour(myRender.mesh, myRender.h, 0);
+                const waterFlowRate = water_erosion_executor_1.WaterErosionExecutor.calcWaterFlowRate(myRender.mesh, myRender.h, 0.1);
+                drawWaterFlow(myRender.mesh, myRender.h, waterFlowRate);
+                primDraw();
+                loading_handler_1.LoadingHandler.setLoadingVisibility(false);
+            }, 50);
         });
         function drawWaterFlow(mesh, h, waterFlowRate) {
             const myRender = status_store_1.CurrentStatus.render;
@@ -244,6 +270,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
             myRender.h = water_erosion_executor_1.WaterErosionExecutor.erodeByWaterRate(myRender.mesh, myRender.h, waterFlowRate, 0.01);
             primDraw();
         });
+        loading_handler_1.LoadingHandler.setLoadingVisibility(false);
     }
     exports.drawTerrainControll = drawTerrainControll;
 });

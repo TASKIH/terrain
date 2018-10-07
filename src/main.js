@@ -14,11 +14,12 @@ requirejs(["new-terrain-controller", "domReady"], function(ctrl, domReady, canvg
         ctrl.drawTerrainControll();
 
         document.getElementById("select-symbol").addEventListener("click", ctrl.onSelectSymbolClick);
-        document.getElementById("save-name").addEventListener("click", ctrl.onNameChangeClick);
+        document.getElementById("save-name").addEventListener("click", ctrl.onSymbolChangeClick);
         document.getElementById("delete-symbol").addEventListener("click", ctrl.onSymbolDeleteClick);
         document.getElementById("save-map").addEventListener("click", ctrl.onMapSaveClick);
         document.getElementById("load-map").addEventListener("change", ctrl.onMapLoadClick, false);
         document.getElementById("download-image").addEventListener("click", ctrl.onDownloadClick, false);
+        document.getElementById("select-mode-whole-shadow").addEventListener("mousedown", ctrl.onSelModeShadowClick)
     });
 
 });

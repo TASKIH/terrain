@@ -1,4 +1,4 @@
-define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"], function (require, exports, terrain_interfaces_1, status_store_1, util_1) {
+define(["require", "exports", "./terrain-interfaces", "./status-store", "./util", "./icons/icon-util", "./loading-handler"], function (require, exports, terrain_interfaces_1, status_store_1, util_1, icon_util_1, loading_handler_1) {
     "use strict";
     Object.defineProperty(exports, "__esModule", { value: true });
     class MapEventHandler {
@@ -13,6 +13,7 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 x: x - ICON_SIZE / 2,
                 y: y - ICON_SIZE / 2,
                 src: iconPath,
+                fontSize: 12,
                 name: iconAlt,
             };
             if (!this.render.icons) {
@@ -24,12 +25,26 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 ev.call(terrain_interfaces_1.EventKind.IconChanged);
             });
         }
+        setSymbolDivVisibility(isVisible) {
+            const selectModeDiv = document.getElementById('select-mode-div');
+            if (!selectModeDiv) {
+                return;
+            }
+            const selectModeShadowDiv = document.getElementById('select-mode-whole-shadow');
+            if (!selectModeShadowDiv) {
+                return;
+            }
+            const setModeStr = (isVisible) ? 'visible' : 'collapse';
+            selectModeDiv.style.visibility = setModeStr;
+            selectModeShadowDiv.style.visibility = setModeStr;
+        }
         onMeshClick(x, y) {
             if (status_store_1.CurrentStatus.controlStatus === status_store_1.ControlStatus.IconSelect) {
                 this.addIcon(x, y, status_store_1.CurrentStatus.currentIconPath, status_store_1.CurrentStatus.currentIconAlt);
             }
         }
-        onIconClick(icon) {
+        // 地図上のSymbolをクリックした時のイベント
+        onClickSymbolOnMap(icon, d3Event) {
             if (status_store_1.CurrentStatus.controlStatus === status_store_1.ControlStatus.None) {
                 const selectingIcons = document.getElementsByClassName('now-selecting');
                 if (selectingIcons) {
@@ -47,6 +62,11 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                     return;
                 }
                 symbolNameInput.value = icon.name;
+                const symbolSizeInput = document.getElementById("symbolFontSize");
+                if (!symbolSizeInput) {
+                    return;
+                }
+                symbolSizeInput.value = icon.fontSize.toString();
                 const nextIconElem = document.getElementById(util_1.TerrainUtil.getIconId(icon.id));
                 if (nextIconElem) {
                     nextIconElem.classList.add('now-selecting');
@@ -55,6 +75,16 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 if (!elems) {
                     return;
                 }
+                const iconEditor = document.getElementById('select-mode-div');
+                if (iconEditor) {
+                    const x = d3Event.pageX;
+                    const y = d3Event.pageY + 36;
+                    iconEditor.style.left = x.toString() + 'px';
+                    iconEditor.style.top = y.toString() + 'px';
+                }
+                this.setSymbolDivVisibility(true);
+                // @ts-ignore
+                M.updateTextFields();
             }
         }
         onModeChange() {
@@ -63,7 +93,6 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 return;
             }
             const plcModeDiv = document.getElementById('place-mode-div');
-            const selectModeDiv = document.getElementById('select-mode-div');
             if (status_store_1.CurrentStatus.controlStatus === status_store_1.ControlStatus.None) {
                 const elems = document.getElementById("map-svg");
                 if (!elems) {
@@ -73,9 +102,6 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 svg.classList.remove("place-mode");
                 if (plcModeDiv) {
                     plcModeDiv.style.visibility = 'collapse';
-                }
-                if (selectModeDiv) {
-                    selectModeDiv.style.visibility = 'visible';
                 }
             }
             else {
@@ -88,9 +114,7 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 if (plcModeDiv) {
                     plcModeDiv.style.visibility = 'visible';
                 }
-                if (selectModeDiv) {
-                    selectModeDiv.style.visibility = 'collapse';
-                }
+                this.setSymbolDivVisibility(false);
             }
             const selectingIcons = document.getElementsByClassName('now-selecting');
             if (selectingIcons) {
@@ -108,22 +132,27 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 selectingIconElement.innerHTML = "";
             }
         }
-        onSelectSymbolOnMap(e) {
+        onSelectSymbolOnIconList(e) {
             status_store_1.CurrentStatus.controlStatus = status_store_1.ControlStatus.IconSelect;
             status_store_1.CurrentStatus.currentIconPath = e.target.src;
             status_store_1.CurrentStatus.currentIconAlt = e.target.alt;
             const currentIconArea = document.getElementById('current-selecting-icon');
             if (currentIconArea) {
                 currentIconArea.textContent = null;
-                currentIconArea.appendChild(IconUtil.getCurrentIconAreaElement(e.target.src, e.target.alt));
+                currentIconArea.appendChild(icon_util_1.IconUtil.getCurrentIconAreaElement(e.target.src, e.target.alt));
             }
         }
-        onNameChangeClick() {
+        onSymbolChangeClick() {
             const inputText = document.getElementById("symbolName");
             if (!inputText) {
                 return;
             }
+            const symbolSizeInput = document.getElementById("symbolFontSize");
+            if (!symbolSizeInput) {
+                return;
+            }
             const inputedValue = inputText.value;
+            const inputedFontSize = parseFloat(symbolSizeInput.value);
             const symbolDiv = document.getElementById("symbolNameDiv");
             if (!symbolDiv) {
                 return;
@@ -135,10 +164,12 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
             const currentIdInt = parseInt(currentId);
             if (status_store_1.CurrentStatus.render) {
                 status_store_1.CurrentStatus.render.icons[currentIdInt].name = inputedValue;
+                status_store_1.CurrentStatus.render.icons[currentIdInt].fontSize = inputedFontSize || 12;
             }
             this.eventListeners.forEach(ev => {
                 ev.call(terrain_interfaces_1.EventKind.LabelChanged);
             });
+            this.setSymbolDivVisibility(false);
         }
         onSymbolDeleteClick() {
             const symbolDiv = document.getElementById("symbolNameDiv");
@@ -157,6 +188,7 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 ev.call(terrain_interfaces_1.EventKind.IconChanged);
                 ev.call(terrain_interfaces_1.EventKind.LabelChanged);
             });
+            this.setSymbolDivVisibility(false);
         }
         onMapSaveClick() {
             if (!status_store_1.CurrentStatus.render) {
@@ -209,10 +241,14 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                         self.eventListeners.forEach(ev => {
                             ev.call(terrain_interfaces_1.EventKind.WholeMapChanged);
                         });
+                        loading_handler_1.LoadingHandler.setLoadingVisibility(false);
                     };
                 })(f);
                 reader.readAsText(f);
             }
+        }
+        onSelModeShadowClick() {
+            this.setSymbolDivVisibility(false);
         }
         onMapExport(svgId) {
             const OFF_SCREEN_CANVAS_ID = "svgOffScreeenRenderCanvas";
@@ -259,6 +295,7 @@ define(["require", "exports", "./terrain-interfaces", "./status-store", "./util"
                 document.body.appendChild(a);
                 a.click();
                 document.body.removeChild(a);
+                loading_handler_1.LoadingHandler.setLoadingVisibility(false);
             });
         }
     }

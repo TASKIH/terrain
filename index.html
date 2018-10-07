@@ -20,6 +20,65 @@
 </head>
 
 <body>
+    <div id="loading-screen" class="valign-wrapper">
+        <div class="inner">
+            <div class="preloader-wrapper big active">
+                <div class="spinner-layer spinner-blue">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+
+                <div class="spinner-layer spinner-red">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+
+                <div class="spinner-layer spinner-yellow">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+
+                <div class="spinner-layer spinner-green">
+                    <div class="circle-clipper left">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="gap-patch">
+                        <div class="circle"></div>
+                    </div>
+                    <div class="circle-clipper right">
+                        <div class="circle"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="inner valign-wrapper">
+            <p id="loading-status" class="center-align">少々お待ちください。。。</p>
+        </div>
+    </div>
+    <div id="select-mode-whole-shadow">
+
+    </div>
     <div id="prim-info">
 
     </div>
@@ -60,7 +119,9 @@
                 <h5>配置モード</h5>
                 <p>現在選択中のアイコン：
                     <span id="current-selecting-icon"></span>
-                    <span id="select-symbol" class="map-symbol"><a href="#">配置モードを解除</a></span>
+                    <span id="select-symbol" class="map-symbol">
+                        <a href="#">配置モードを解除</a>
+                    </span>
                 </p>
             </div>
         </div>
@@ -73,11 +134,24 @@
     </div>
 
     <div id="select-mode-div">
-        <h5>選択モード</h5>
-        <p>地名設定</p>
-        <input id="symbolName" type="text" name="name" size="40" maxlength="40">
-        <input id="save-name" type="button" value="名前を反映">
-        <input id="delete-symbol" type="button" value="削除">
+        <div class="row">
+            <div class="input-field col s9">
+                <input id="symbolName" type="text" name="symbolName" size="40" maxlength="40">
+                <label for="symbolName" class="active">
+                    名前
+                </label>
+            </div>
+            <div class="input-field col s3">
+                <input id="symbolFontSize" type="number" name="fontSize" size="3" maxlength="3">
+                <label for="fontSize" class="active">
+                    サイズ
+                </label>
+            </div>
+        </div>
+        <div class="row">
+            <input id="save-name" type="button" value="変更を反映">
+            <input id="delete-symbol" type="button" value="削除">
+        </div>
     </div>
     <!-- Credit -->
     <p>アイコンは

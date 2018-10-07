@@ -1,4 +1,4 @@
-class IconUtil {
+export class IconUtil {
     static getCurrentIconAreaElement(src: string, alt: string): Element {
         let element = document.createElement("span");
         element.classList.add('map-symbol');

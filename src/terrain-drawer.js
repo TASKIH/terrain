@@ -59,13 +59,13 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                 var x = ico.x;
                 var y = ico.y;
                 var text = ico.name;
-                var size = 12;
+                var size = ico.fontSize || 12;
                 var sx = 0.65 * size / 1000 * text.length;
                 var sy = size / 1000;
                 var posslabels = [
                     {
                         text: '',
-                        size: 12,
+                        size: size,
                         x: x + 0.8 * sy,
                         y: y + 0.3 * sy,
                         align: 'start',
@@ -76,7 +76,7 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                     },
                     {
                         text: '',
-                        size: 12,
+                        size: size,
                         x: x - 0.8 * sy,
                         y: y + 0.3 * sy,
                         align: 'end',
@@ -87,7 +87,7 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                     },
                     {
                         text: '',
-                        size: 12,
+                        size: size,
                         x: x,
                         y: y - 0.8 * sy,
                         align: 'middle',
@@ -98,7 +98,7 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                     },
                     {
                         text: '',
-                        size: 12,
+                        size: size,
                         x: x,
                         y: y + 1.2 * sy,
                         align: 'middle',
@@ -437,7 +437,7 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                 .attr('xlink:href', function (d) { return d.src; })
                 .attr('id', function (d) { return util_1.TerrainUtil.getIconId(d.id); })
                 .on('mousedown', (elem) => {
-                eh.onIconClick(elem);
+                eh.onClickSymbolOnMap(elem, d3.event);
             })
                 .raise();
         }
