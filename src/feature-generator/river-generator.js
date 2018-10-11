@@ -8,10 +8,10 @@ define(["require", "exports", "../terrain-interfaces", "../util"], function (req
             const executedPointIds = new Set();
             while (curCount <= count) {
                 // 全体の1/4を消化したのに完成していない = 順当な開始位置がないとしてClose
-                if (executedPointIds.size * 4 >= mesh.voronoiPoints.length) {
+                if (executedPointIds.size * 4 >= mesh.terrainPoints.length) {
                     break;
                 }
-                const randIdx = Math.floor(util_1.TerrainCalcUtil.runif(0, mesh.voronoiPoints.length - 1));
+                const randIdx = Math.floor(util_1.TerrainCalcUtil.runif(0, mesh.terrainPoints.length - 1));
                 if (h[randIdx] <= 0 || executedPointIds.has(randIdx)) {
                     continue;
                 }

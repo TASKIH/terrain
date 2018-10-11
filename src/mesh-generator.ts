@@ -1,4 +1,4 @@
-import { MapExtent, MapMesh, Edge, TerrainPoint, TerrainPointContainer, VoronoiSiteContainer } from "./terrain-interfaces";
+import { MapExtent, MapMesh, Edge, TerrainPoint, TerrainPointContainer, DelaunayRelation } from "./terrain-interfaces";
 import * as d3 from 'd3';
 import { TerrainCalcUtil } from "./util";
 import { defaultExtent } from "./terrain-generator";
@@ -57,25 +57,32 @@ export class MeshGenerator {
             return {
                 point: point,
                 connectingPoints: [],
-                relatedVoronoiSites: [],
+                delaunayRelations: [],
                 height: 0,
                 robustness: 0
             }
     }
     static generateVoronoiSiteContainer(
-        edge: VoronoiEdge<[number, number]>,
-        site: VoronoiSite<[number, number]>,
-        terrainPointIndex: number
-    ): VoronoiSiteContainer {
-        return Object.assign({terrainPointIndex: terrainPointIndex,
-        edge: edge}, site);
+        voronoiEdge: VoronoiEdge<[number, number]>,
+        srcSite: VoronoiSite<[number, number]>,
+        destSite: VoronoiSite<[number, number]>,
+        srcPointIndex: number,
+        destPointIndex: number,
+    ): DelaunayRelation {
+        return Object.assign({
+            srcPointIndex: srcPointIndex,
+            destPointIndex: destPointIndex,
+            srcVoronoiSite: srcSite,
+            destVoronoiSite: destSite,
+            voronoiEdge: voronoiEdge,}
+        );
     }
 
     static makeMesh(pts: [number, number][], extent?: MapExtent): MapMesh {
         extent = extent || defaultExtent;
         var vor: VoronoiDiagram<[number, number]> = MeshGenerator.generateVoronoiDiagram(pts, extent);
         var pointToIdDict: {[key:string]: number} = {};
-        var voronoiPoints: TerrainPoint[] = [];
+        var delaunayPoints: TerrainPoint[] = [];
         var pointDict: {[key: number]: TerrainPointContainer} = {};
 
         var edges: Edge[] = [];
@@ -84,77 +91,69 @@ export class MeshGenerator {
             var edge = vor.edges[i];
             if (edge == undefined) continue;
 
-            var e0Id = pointToIdDict[edge[0].toString()];
-            var e1Id = pointToIdDict[edge[1].toString()];
+            var delaunayPoint1Id = pointToIdDict[edge[0].toString()];
+            var delaunayPoint2Id = pointToIdDict[edge[1].toString()];
             
-            if (e0Id == undefined) {
-                e0Id = voronoiPoints.length;
-                pointToIdDict[edge[0].toString()] = e0Id;
+            if (delaunayPoint1Id == undefined) {
+                delaunayPoint1Id = delaunayPoints.length;
+                pointToIdDict[edge[0].toString()] = delaunayPoint1Id;
                 const newPoint = {
-                    id: e0Id,
+                    id: delaunayPoint1Id,
                     x: edge[0][0],
                     y: edge[0][1],
                     height: 0
                 };
 
-                pointDict[e0Id] = MeshGenerator.newTerrainPointContainer(newPoint);
-                voronoiPoints.push(newPoint);
+                pointDict[delaunayPoint1Id] = MeshGenerator.newTerrainPointContainer(newPoint);
+                delaunayPoints.push(newPoint);
             }
-            if (e1Id == undefined) {
-                e1Id = voronoiPoints.length;
-                pointToIdDict[edge[1].toString()] = e1Id;
+            if (delaunayPoint2Id == undefined) {
+                delaunayPoint2Id = delaunayPoints.length;
+                pointToIdDict[edge[1].toString()] = delaunayPoint2Id;
                 const newPoint = {
-                    id: e1Id,
+                    id: delaunayPoint2Id,
                     x: edge[1][0],
                     y: edge[1][1],
                     height: 0
                 }
 
-                pointDict[e1Id] = MeshGenerator.newTerrainPointContainer(newPoint);
-                voronoiPoints.push(newPoint);
+                pointDict[delaunayPoint2Id] = MeshGenerator.newTerrainPointContainer(newPoint);
+                delaunayPoints.push(newPoint);
 
             }
-            pointDict[e0Id].connectingPoints.push(pointDict[e1Id].point);
+            pointDict[delaunayPoint1Id].connectingPoints.push(pointDict[delaunayPoint2Id].point);
 
-            pointDict[e1Id].connectingPoints.push(pointDict[e0Id].point);
+            pointDict[delaunayPoint2Id].connectingPoints.push(pointDict[delaunayPoint1Id].point);
 
-            const leftSite: VoronoiSiteContainer = 
-            MeshGenerator.generateVoronoiSiteContainer(edge, edge.left, e1Id);
-            
-            let rightSite: VoronoiSiteContainer | undefined = undefined;
             if (edge.right) {
-                rightSite = 
-                MeshGenerator.generateVoronoiSiteContainer(edge, edge.right, e0Id);
-            }
+                const e0Relation: DelaunayRelation = 
+                MeshGenerator.generateVoronoiSiteContainer(edge, edge.left, edge.right, delaunayPoint1Id, delaunayPoint2Id);
+                const p0DelaunayRelations = pointDict[delaunayPoint1Id].delaunayRelations;
+                if (!p0DelaunayRelations.find(e => 
+                    e.destPointIndex === delaunayPoint2Id)) {
+                    p0DelaunayRelations.push(e0Relation);
+                }
 
+                const e1Relation: DelaunayRelation = 
+                MeshGenerator.generateVoronoiSiteContainer(edge, edge.right, edge.left, delaunayPoint2Id, delaunayPoint1Id);
+
+                const p1DelaunayRelations = pointDict[delaunayPoint2Id].delaunayRelations;
+                if (!p1DelaunayRelations.find(e => 
+                    e.destPointIndex === delaunayPoint1Id)) {
+                    p1DelaunayRelations.push(e1Relation);
+                }
+            }
+            
             edges.push({
-                    index1: e0Id,
-                    index2: e1Id,
-                    left: edge.left,
-                    right: edge.right
+                    terminalPoint1Id: delaunayPoint1Id,
+                    terminalPoint2Id: delaunayPoint2Id,
+                    voronoiSite1: edge.left,
+                    voronoiSite2: edge.right
             });
-
-            if (leftSite.terrainPointIndex !== e0Id && pointDict[e0Id].relatedVoronoiSites.indexOf(leftSite) === -1) {
-                pointDict[e0Id].relatedVoronoiSites.push(leftSite);
-            }
-            if (rightSite && rightSite.terrainPointIndex !== e0Id && pointDict[e0Id].relatedVoronoiSites.indexOf(rightSite!) === -1) {
-                pointDict[e0Id].relatedVoronoiSites.push(rightSite!);
-            }
-
-            if (leftSite.terrainPointIndex !== e1Id && 
-                pointDict[e1Id].relatedVoronoiSites.indexOf(leftSite) === -1) {
-
-                pointDict[e1Id].relatedVoronoiSites.push(leftSite);
-            }
-            if (rightSite && 
-                rightSite.terrainPointIndex !== e1Id && 
-                pointDict[e1Id].relatedVoronoiSites.indexOf(rightSite!) === -1) {
-                pointDict[e1Id].relatedVoronoiSites.push(rightSite!);
-            }
         }
 
         var mesh: MapMesh = {
-            voronoiPoints: voronoiPoints,
+            terrainPoints: delaunayPoints,
             pointDict: pointDict,
             edges: edges,
             extent: extent,
@@ -163,7 +162,7 @@ export class MeshGenerator {
         };
 
         mesh.pointMapFunction = function (f: (param : TerrainPoint) => [number, number]) {
-            var mapped = voronoiPoints.map(f);
+            var mapped = delaunayPoints.map(f);
             return mapped;
         };
 

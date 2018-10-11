@@ -55,7 +55,7 @@ const eventListeners: MapEventListener[] = [
 
                 case EventKind.WholeMapChanged:
                     TerrainGenerator.setShadows(CurrentStatus.render!.mesh!, CurrentStatus.render!.h!);
-                    TerrainDrawer.visualizeVoronoi(primSVG, CurrentStatus.render!.mesh!, CurrentStatus.render!.h!, mapEventHandler, -1, 1, 'prim-info', true);
+                    TerrainDrawer.visualizeTriangles(primSVG, CurrentStatus.render!.mesh!, CurrentStatus.render!.h!, mapEventHandler, -1, 1, 'prim-info', true);
                     CurrentStatus.render!.coasts = TerrainDrawer.generateContour(CurrentStatus.render!.mesh!, CurrentStatus.render!.h!, 0);
 
                     TerrainDrawer.drawPaths(primSVG, 'river', CurrentStatus.render!.rivers);
@@ -136,7 +136,7 @@ export function drawTerrainControll() {
     function primDraw() {
         const myRender = CurrentStatus.render!;
         TerrainGenerator.setShadows(myRender.mesh!, myRender.h);
-        TerrainDrawer.visualizeVoronoi(primSVG, myRender.mesh!, myRender.h, mapEventHandler, -1, 1, 'prim-info', true);
+        TerrainDrawer.visualizeTriangles(primSVG, myRender.mesh!, myRender.h, mapEventHandler, -1, 1, 'prim-info', true);
         // TerrainDrawer.visualizeSlopes(primSVG, myRender);
         if (myRender.rivers) {
             TerrainDrawer.drawPaths(primSVG, 'river', myRender.rivers);

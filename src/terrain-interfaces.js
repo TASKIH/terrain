@@ -20,8 +20,8 @@ define(["require", "exports"], function (require, exports) {
         EventKind[EventKind["LabelChanged"] = 1] = "LabelChanged";
         EventKind[EventKind["WholeMapChanged"] = 2] = "WholeMapChanged";
     })(EventKind = exports.EventKind || (exports.EventKind = {}));
-    class VoronoiSiteContainerArray extends Array {
+    class DelaunayRelationArray extends Array {
     }
-    exports.VoronoiSiteContainerArray = VoronoiSiteContainerArray;
+    exports.DelaunayRelationArray = DelaunayRelationArray;
     exports.COAST_LINE_HEIGHT = 0;
 });

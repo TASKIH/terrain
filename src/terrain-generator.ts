@@ -17,7 +17,7 @@ export var defaultExtent = {
 export class TerrainGenerator {
     static generateZeroHeights(mesh: MapMesh): TerrainHeights {
         var z: TerrainHeights = [];
-        for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+        for (var i = 0; i < mesh.terrainPoints.length; i++) {
             z[i] = 0;
         }
         z.heightRange = [-1, 1];
@@ -77,8 +77,8 @@ export class TerrainGenerator {
             mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
         }
         var newvals = TerrainGenerator.generateZeroHeights(mesh);
-        for (var i = 0; i < mesh.voronoiPoints.length; i++) {
-            var p = mesh.voronoiPoints[i];
+        for (var i = 0; i < mesh.terrainPoints.length; i++) {
+            var p = mesh.terrainPoints[i];
             for (var j = 0; j < n; j++) {
                 var m = mounts[j];
                 const distanceFromOrigin = Math.sqrt((p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]));
@@ -96,7 +96,7 @@ export class TerrainGenerator {
      */
     static erodeSimply(mesh: MapMesh, h: TerrainHeights, eroseRate: number): TerrainHeights {
         let newHeights = h;
-        mesh.voronoiPoints.forEach(e => {
+        mesh.terrainPoints.forEach(e => {
             const myHeight = newHeights[e.id];
             mesh.pointDict[e.id].connectingPoints.forEach(rel => {
                 const nextHeight = newHeights[rel.id];
@@ -272,9 +272,9 @@ export class TerrainGenerator {
     static trislope(mesh: MapMesh, h: TerrainHeights, i: number): [number, number] {
         var nbs = TerrainCalcUtil.getNeighbourIds(mesh, i);
         if (nbs.length != 3) return [0,0];
-        var p0 = mesh.voronoiPoints[nbs[0]];
-        var p1 = mesh.voronoiPoints[nbs[1]];
-        var p2 = mesh.voronoiPoints[nbs[2]];
+        var p0 = mesh.terrainPoints[nbs[0]];
+        var p1 = mesh.terrainPoints[nbs[1]];
+        var p2 = mesh.terrainPoints[nbs[2]];
     
         var deltaXFrom1To0 = p1.x - p0.x;
         var deltaXFrom2To0 = p2.x - p0.x;
@@ -306,9 +306,9 @@ export class TerrainGenerator {
             }
         }
         if (leftPoint) {
-            return this.getNearestUpperLeftPoint(mesh, leftPoint, mesh.pointDict[leftPoint.id].connectingPoints);
+            return leftPoint;
         } else if (topPoint) {
-            return this.getNearestUpperLeftPoint(mesh, topPoint, mesh.pointDict[topPoint.id].connectingPoints);
+            return topPoint;
         }
         return undefined;
     }
@@ -375,11 +375,11 @@ export class TerrainGenerator {
             }
             const targetEdges: VoronoiEdge<[number, number]>[] = [];
 
-            trCntPt.relatedVoronoiSites.forEach(rvs => {
-                if (h[rvs.terrainPointIndex] > COAST_LINE_HEIGHT) {
+            trCntPt.delaunayRelations.forEach(rvs => {
+                if (h[rvs.destPointIndex] > COAST_LINE_HEIGHT) {
                     return;
                 }
-                targetEdges.push(rvs.edge);
+                targetEdges.push(rvs.voronoiEdge);
             });
             if (targetEdges.length != 2) {
                 return false;
@@ -416,7 +416,7 @@ export class TerrainGenerator {
         }
 
         var newh = TerrainGenerator.generateZeroHeights(mesh);
-        mesh.voronoiPoints.forEach(e => {
+        mesh.terrainPoints.forEach(e => {
             if (isTargetMesh(e)) {
                 // 沈める
                 const randValue = TerrainCalcUtil.runif( COAST_LINE_HEIGHT + 1e-5, 0.1);

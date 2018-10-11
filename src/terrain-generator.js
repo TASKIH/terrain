@@ -17,7 +17,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
     class TerrainGenerator {
         static generateZeroHeights(mesh) {
             var z = [];
-            for (var i = 0; i < mesh.voronoiPoints.length; i++) {
+            for (var i = 0; i < mesh.terrainPoints.length; i++) {
                 z[i] = 0;
             }
             z.heightRange = [-1, 1];
@@ -70,8 +70,8 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
                 mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
             }
             var newvals = TerrainGenerator.generateZeroHeights(mesh);
-            for (var i = 0; i < mesh.voronoiPoints.length; i++) {
-                var p = mesh.voronoiPoints[i];
+            for (var i = 0; i < mesh.terrainPoints.length; i++) {
+                var p = mesh.terrainPoints[i];
                 for (var j = 0; j < n; j++) {
                     var m = mounts[j];
                     const distanceFromOrigin = Math.sqrt((p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]));
@@ -88,7 +88,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
          */
         static erodeSimply(mesh, h, eroseRate) {
             let newHeights = h;
-            mesh.voronoiPoints.forEach(e => {
+            mesh.terrainPoints.forEach(e => {
                 const myHeight = newHeights[e.id];
                 mesh.pointDict[e.id].connectingPoints.forEach(rel => {
                     const nextHeight = newHeights[rel.id];
@@ -259,9 +259,9 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
             var nbs = util_1.TerrainCalcUtil.getNeighbourIds(mesh, i);
             if (nbs.length != 3)
                 return [0, 0];
-            var p0 = mesh.voronoiPoints[nbs[0]];
-            var p1 = mesh.voronoiPoints[nbs[1]];
-            var p2 = mesh.voronoiPoints[nbs[2]];
+            var p0 = mesh.terrainPoints[nbs[0]];
+            var p1 = mesh.terrainPoints[nbs[1]];
+            var p2 = mesh.terrainPoints[nbs[2]];
             var deltaXFrom1To0 = p1.x - p0.x;
             var deltaXFrom2To0 = p2.x - p0.x;
             var deltaYFrom1To0 = p1.y - p0.y;
@@ -291,10 +291,10 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
                 }
             }
             if (leftPoint) {
-                return this.getNearestUpperLeftPoint(mesh, leftPoint, mesh.pointDict[leftPoint.id].connectingPoints);
+                return leftPoint;
             }
             else if (topPoint) {
-                return this.getNearestUpperLeftPoint(mesh, topPoint, mesh.pointDict[topPoint.id].connectingPoints);
+                return topPoint;
             }
             return undefined;
         }
@@ -354,11 +354,11 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
                     }
                 }
                 const targetEdges = [];
-                trCntPt.relatedVoronoiSites.forEach(rvs => {
-                    if (h[rvs.terrainPointIndex] > terrain_interfaces_1.COAST_LINE_HEIGHT) {
+                trCntPt.delaunayRelations.forEach(rvs => {
+                    if (h[rvs.destPointIndex] > terrain_interfaces_1.COAST_LINE_HEIGHT) {
                         return;
                     }
-                    targetEdges.push(rvs.edge);
+                    targetEdges.push(rvs.voronoiEdge);
                 });
                 if (targetEdges.length != 2) {
                     return false;
@@ -395,7 +395,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
                 return (Math.abs(angle) < MIN_ANGLE);
             };
             var newh = TerrainGenerator.generateZeroHeights(mesh);
-            mesh.voronoiPoints.forEach(e => {
+            mesh.terrainPoints.forEach(e => {
                 if (isTargetMesh(e)) {
                     // 沈める
                     const randValue = util_1.TerrainCalcUtil.runif(terrain_interfaces_1.COAST_LINE_HEIGHT + 1e-5, 0.1);

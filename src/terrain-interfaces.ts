@@ -31,10 +31,10 @@ export interface MapExtent {
 }
 
 export interface Edge {
-    index1: number;
-    index2: number;
-    left: VoronoiSite<[number, number]> | null;
-    right: VoronoiSite<[number, number]> | null;
+    terminalPoint1Id: number;
+    terminalPoint2Id: number;
+    voronoiSite1: VoronoiSite<[number, number]> | null;
+    voronoiSite2: VoronoiSite<[number, number]> | null;
 }
 
 export interface River {
@@ -50,16 +50,19 @@ export interface TerrainPoint {
 
     height: number;
 }
-export interface VoronoiSiteContainer extends VoronoiSite<[number, number]> {
-    edge: VoronoiEdge<[number, number]>;
-    terrainPointIndex: number;
+export interface DelaunayRelation {
+    voronoiEdge: VoronoiEdge<[number, number]>;
+    srcPointIndex: number;
+    destPointIndex: number;
+    srcVoronoiSite: VoronoiSite<[number, number]>;
+    destVoronoiSite: VoronoiSite<[number, number]>;
 }
-export class VoronoiSiteContainerArray extends Array<VoronoiSiteContainer> {
+export class DelaunayRelationArray extends Array<DelaunayRelation> {
 }
 export interface TerrainPointContainer {
     point: TerrainPoint;
     connectingPoints: TerrainPoint[];
-    relatedVoronoiSites: VoronoiSiteContainerArray;
+    delaunayRelations: DelaunayRelationArray;
     // 地盤の強固さ
     robustness: number;
     shadow?: ShadowLevel;
@@ -68,7 +71,7 @@ export interface TerrainPointContainer {
 }
 
 export interface MapMesh {
-    voronoiPoints: TerrainPoint[];
+    terrainPoints: TerrainPoint[];
     pointDict: {[key: number]: TerrainPointContainer};
 
     edges: Edge[];

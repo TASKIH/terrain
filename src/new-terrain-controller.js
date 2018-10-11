@@ -39,7 +39,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
                         break;
                     case terrain_interfaces_1.EventKind.WholeMapChanged:
                         terrain_generator_1.TerrainGenerator.setShadows(status_store_1.CurrentStatus.render.mesh, status_store_1.CurrentStatus.render.h);
-                        terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primSVG, status_store_1.CurrentStatus.render.mesh, status_store_1.CurrentStatus.render.h, mapEventHandler, -1, 1, 'prim-info', true);
+                        terrain_drawer_1.TerrainDrawer.visualizeTriangles(primSVG, status_store_1.CurrentStatus.render.mesh, status_store_1.CurrentStatus.render.h, mapEventHandler, -1, 1, 'prim-info', true);
                         status_store_1.CurrentStatus.render.coasts = terrain_drawer_1.TerrainDrawer.generateContour(status_store_1.CurrentStatus.render.mesh, status_store_1.CurrentStatus.render.h, 0);
                         terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'river', status_store_1.CurrentStatus.render.rivers);
                         terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'coast', status_store_1.CurrentStatus.render.coasts);
@@ -115,7 +115,7 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./mesh-generator", 
         function primDraw() {
             const myRender = status_store_1.CurrentStatus.render;
             terrain_generator_1.TerrainGenerator.setShadows(myRender.mesh, myRender.h);
-            terrain_drawer_1.TerrainDrawer.visualizeVoronoi(primSVG, myRender.mesh, myRender.h, mapEventHandler, -1, 1, 'prim-info', true);
+            terrain_drawer_1.TerrainDrawer.visualizeTriangles(primSVG, myRender.mesh, myRender.h, mapEventHandler, -1, 1, 'prim-info', true);
             // TerrainDrawer.visualizeSlopes(primSVG, myRender);
             if (myRender.rivers) {
                 terrain_drawer_1.TerrainDrawer.drawPaths(primSVG, 'river', myRender.rivers);

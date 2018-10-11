@@ -6,7 +6,7 @@ export class WaterErosionExecutor {
     static resetWaterFlow(mesh: MapMesh): {[key: number]: Water} {
         const waters:{[key: number]: Water} = {};
 
-        mesh.voronoiPoints.forEach(e => {
+        mesh.terrainPoints.forEach(e => {
             waters[e.id] = {
                 amount: 0,
                 deadEnd: false,
@@ -98,7 +98,7 @@ export class WaterErosionExecutor {
 
 
         // 高い順に並び変える
-        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+        let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
             return h[b.id] - h[a.id];
         }).map(e => e);
 
@@ -140,7 +140,7 @@ export class WaterErosionExecutor {
         let waters: {[key: number]: Water} = {};
 
         // 高い順に並び変える
-        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+        let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
             return h[b.id] - h[a.id];
         }).map(e => e);
 
@@ -244,7 +244,7 @@ export class WaterErosionExecutor {
         var newh = TerrainGenerator.generateZeroHeights(mesh);
 
         // 高い順に並び変える
-        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+        let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
             return h[b.id] - h[a.id];
         });
 
@@ -273,7 +273,7 @@ export class WaterErosionExecutor {
         var newh = TerrainGenerator.generateZeroHeights(mesh);
 
         // 高い順に並び変える
-        let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+        let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
         return h[b.id] - h[a.id];
         });
 

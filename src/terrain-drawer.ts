@@ -143,28 +143,29 @@ export class TerrainDrawer {
             }
             return edge.left.toString() + '-' + edge.right.toString();
         }
-        for (let i = 0; i < mesh.voronoiPoints.length; i++) { 
-            let point = mesh.voronoiPoints[i];
+        for (let i = 0; i < mesh.terrainPoints.length; i++) { 
+            let point = mesh.terrainPoints[i];
 
-            let connectingSites = mesh.pointDict[point.id].relatedVoronoiSites;
+            const curPointHeight = h[point.id];
+            let connectingSites = mesh.pointDict[point.id].delaunayRelations;
+
             for (let j = 0; j < connectingSites.length; j++) {
                 let site = connectingSites[j];
 
-                const curPointHeight = h[point.id];
-                const nextSiteHeight = h[site.terrainPointIndex];
+                const nextSiteHeight = h[site.destPointIndex];
 
                 if ((curPointHeight > level && nextSiteHeight <= level) ||
                     (curPointHeight <= level && nextSiteHeight > level)) {
-                        if(!site.edge.right) {
+                        if(!site.voronoiEdge.right) {
                             continue;
                         }
-                        let edgeKey = edgeKeyGenerator(site.edge);
+                        let edgeKey = edgeKeyGenerator(site.voronoiEdge);
 
                         if (transactedDataDict[edgeKey]) {
                             continue;
                         }
-                        edges.push([site.edge.left, site.edge.right]);
-                        transactedDataDict[edgeKey] = site.edge;
+                        edges.push([site.voronoiEdge.left, site.voronoiEdge.right]);
+                        transactedDataDict[edgeKey] = site.voronoiEdge;
                     }
             }
         }
@@ -187,12 +188,12 @@ export class TerrainDrawer {
         var p = d3.path();
 
         let idx = 0;
-        path.relatedVoronoiSites.forEach((e, i) => {
+        path.delaunayRelations.forEach((e, i) => {
             if (i === 0){
-                p.moveTo(e[0], e[1]);
+                p.moveTo(e.srcVoronoiSite[0], e.srcVoronoiSite[1]);
             }
             else {
-                p.lineTo(e[0], e[1]);
+                p.lineTo(e.srcVoronoiSite[0], e.srcVoronoiSite[1]);
             }
         });
         p.closePath();
@@ -209,22 +210,22 @@ export class TerrainDrawer {
         return p.toString();
     }
     
-    static genVoronoiInfo(h: TerrainHeights, elem: any) {
+    static genVoronoiInfo(h: TerrainHeights, elem: TerrainPointContainer) {
         let result =
         'id:' + elem.point.id + '<br>' +
         'x:' + elem.point.x + '<br>' + 
         'y:' + elem.point.y + '<br>' + 
         'height:' + h[elem.point.id] + '<br>';
-        for(let i = 0;i < elem.relatedVoronoiSites.length; i++) {
-            let next = elem.relatedVoronoiSites[i];
+        for(let i = 0;i < elem.delaunayRelations.length; i++) {
+            let next = elem.delaunayRelations[i];
 
             console.log(next);
-            result += 'next ' + next.terrainPointIndex + 'height' + h[next.terrainPointIndex] + '<br>';
+            result += 'next ' + next.destPointIndex + 'height' + h[next.destPointIndex] + '<br>';
         }
         
         return result;
     }
-    static visualizeVoronoi(svg: any, mesh: MapMesh, field: TerrainHeights, ev: MapEventHandler, lo?: number, hi?: number, showDataId?: string, doColorize?: boolean) {
+    static visualizeTriangles(svg: any, mesh: MapMesh, field: TerrainHeights, ev: MapEventHandler, lo?: number, hi?: number, showDataId?: string, doColorize?: boolean) {
         if (hi == undefined) hi = (d3.max(field) || 0) + 1e-9;
         if (lo == undefined) lo = (d3.min(field) || 0) - 1e-9;
 

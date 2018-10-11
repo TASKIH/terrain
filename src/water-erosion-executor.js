@@ -4,7 +4,7 @@ define(["require", "exports", "./water-recorder", "./terrain-interfaces", "./ter
     class WaterErosionExecutor {
         static resetWaterFlow(mesh) {
             const waters = {};
-            mesh.voronoiPoints.forEach(e => {
+            mesh.terrainPoints.forEach(e => {
                 waters[e.id] = {
                     amount: 0,
                     deadEnd: false,
@@ -73,7 +73,7 @@ define(["require", "exports", "./water-recorder", "./terrain-interfaces", "./ter
         static calcWaterFlowRate(mesh, h, initWaterRate) {
             const waterFlowRates = {};
             // 高い順に並び変える
-            let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             }).map(e => e);
             heightOrderedVoronois.forEach(vor => {
@@ -105,7 +105,7 @@ define(["require", "exports", "./water-recorder", "./terrain-interfaces", "./ter
         static calcWaterFlow(mesh, h, rainfall, flowableAmount) {
             let waters = {};
             // 高い順に並び変える
-            let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             }).map(e => e);
             const getResult = (h, waters) => {
@@ -195,7 +195,7 @@ define(["require", "exports", "./water-recorder", "./terrain-interfaces", "./ter
         static erodeByWater(mesh, h, waters, recorder, erodeRate) {
             var newh = terrain_generator_1.TerrainGenerator.generateZeroHeights(mesh);
             // 高い順に並び変える
-            let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             });
             const flowSummary = recorder.getSummaryWater();
@@ -217,7 +217,7 @@ define(["require", "exports", "./water-recorder", "./terrain-interfaces", "./ter
         static erodeByWaterRate(mesh, h, waterRate, erodeRate) {
             var newh = terrain_generator_1.TerrainGenerator.generateZeroHeights(mesh);
             // 高い順に並び変える
-            let heightOrderedVoronois = mesh.voronoiPoints.sort((a, b) => {
+            let heightOrderedVoronois = mesh.terrainPoints.sort((a, b) => {
                 return h[b.id] - h[a.id];
             });
             heightOrderedVoronois.forEach(e => {

@@ -100,8 +100,8 @@ export class TerrainCalcUtil {
 
     // マップの近隣にある領域かどうか
     static isNearEdge(mesh: MapMesh, i: number): boolean {
-        var x = mesh.voronoiPoints[i].x;
-        var y = mesh.voronoiPoints[i].y;
+        var x = mesh.terrainPoints[i].x;
+        var y = mesh.terrainPoints[i].y;
         var w = mesh.extent.width;
         var h = mesh.extent.height;
         var margin = mesh.extent.margin;
@@ -110,8 +110,8 @@ export class TerrainCalcUtil {
 
     // マップの端に隣接する領域かどうか
     static isNextEdge(mesh: MapMesh, i: number): boolean {
-        var x = mesh.voronoiPoints[i].x;
-        var y = mesh.voronoiPoints[i].y;
+        var x = mesh.terrainPoints[i].x;
+        var y = mesh.terrainPoints[i].y;
         var w = mesh.extent.width;
         var h = mesh.extent.height;
         const marginW =  (w - (w/2)) / 100;
@@ -130,8 +130,8 @@ export class TerrainCalcUtil {
     }
 
     static getDistance(mesh: MapMesh, i: number, j: number): number {
-        var p = mesh.voronoiPoints[i];
-        var q = mesh.voronoiPoints[j];
+        var p = mesh.terrainPoints[i];
+        var q = mesh.terrainPoints[j];
         return Math.sqrt((p.x - q.x) * (p.x - q.x) + (p.y - q.y) * (p.y - q.y));
     }
 
