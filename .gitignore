@@ -1,2 +1,21 @@
 
 node_modules
+src/water-recorder.js
+src/water-erosion-executor.js
+src/util.js
+src/terrain-interfaces.js
+src/terrain-generator.js
+src/terrain-feature-generator.js
+src/terrain-drawer.js
+src/status-store.js
+src/new-terrain-controller.js
+src/mesh-generator.js
+src/language.js
+src/loading-handler.js
+src/icon-files.js
+src/icon-displayer.js
+src/event-handler.js
+src/icons/icon-displayer.js
+src/icons/icon-files.js
+src/icons/icon-util.js
+src/feature-generator/river-generator.js
