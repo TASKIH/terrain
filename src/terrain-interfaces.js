@@ -20,6 +20,13 @@ define(["require", "exports"], function (require, exports) {
         EventKind[EventKind["LabelChanged"] = 1] = "LabelChanged";
         EventKind[EventKind["WholeMapChanged"] = 2] = "WholeMapChanged";
     })(EventKind = exports.EventKind || (exports.EventKind = {}));
+    var TerrainControllType;
+    (function (TerrainControllType) {
+        TerrainControllType[TerrainControllType["UpHill"] = 0] = "UpHill";
+        TerrainControllType[TerrainControllType["DownHill"] = 1] = "DownHill";
+        TerrainControllType[TerrainControllType["UpMountain"] = 2] = "UpMountain";
+        TerrainControllType[TerrainControllType["DownMountain"] = 3] = "DownMountain";
+    })(TerrainControllType = exports.TerrainControllType || (exports.TerrainControllType = {}));
     class DelaunayRelationArray extends Array {
     }
     exports.DelaunayRelationArray = DelaunayRelationArray;

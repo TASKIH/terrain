@@ -1,6 +1,6 @@
 import * as d3 from 'd3';
 import {
-    MapRender, MapMesh, TerrainHeights, MergeMethod, TerrainPoint, MapExtent, MapEventListener, EventKind
+    MapRender, MapMesh, TerrainHeights, MergeMethod, TerrainPoint, MapExtent, MapEventListener, EventKind, TerrainControllType, TerrainControlIcon
 } from './terrain-interfaces';
 import { MeshGenerator } from './mesh-generator';
 import { TerrainCalcUtil } from './util';
@@ -28,7 +28,7 @@ CurrentStatus.onControlStatusChangeListeners.push(e => {
 });
 
 
-var primCtrlDiv = d3.select("div#prim-ctrl");
+var primCtrlDiv = d3.select("div#terrain");
 var primDiv = d3.select("div#prim");
 var primSVG = addSVG(primDiv);
 
@@ -148,14 +148,7 @@ export function drawTerrainControll() {
     primDraw();
 
     primCtrlDiv.append("button")
-        .text("Reset to flat")
-        .on("click", function () {
-            const myRender = CurrentStatus.render!;
-            myRender.h = TerrainGenerator.generateZeroHeights(myRender.mesh!);
-            primDraw();
-        });
-
-    primCtrlDiv.append("button")
+        .attr('class', 'btn')
         .text("パンゲアの生成")
         .on("click", function () {
             LoadingHandler.setLoadingVisibility(true, 'パンゲアを生成中...');
@@ -176,6 +169,7 @@ export function drawTerrainControll() {
         });
 
     primCtrlDiv.append("button")
+        .attr('class', 'btn')
         .text("大陸の生成")
         .on("click", function () {
             LoadingHandler.setLoadingVisibility(true, '大陸を生成中...');
@@ -193,6 +187,7 @@ export function drawTerrainControll() {
         });
 
     primCtrlDiv.append("button")
+        .attr('class', 'btn')
         .text("地方図の生成")
         .on("click", function () {
             LoadingHandler.setLoadingVisibility(true, '地方図を生成中...');
@@ -269,58 +264,128 @@ export function drawTerrainControll() {
         myRender.rivers = TerrainCalcUtil.mergeSegments(flowPoints).map(TerrainGenerator.relaxPath);
     }
 
-    primCtrlDiv.append("button")
-        .text("地形の高さを見る")
-        .on("click", function () {
-            primDraw();
-        });
 
-    primCtrlDiv.append("button")
-        .text("単純な浸食を実行")
-        .on("click", function () {
-            const myRender = CurrentStatus.render!;
-            myRender.h = TerrainGenerator.erodeSimply(myRender.mesh!, myRender.h, 0.2);
-            primDraw();
-        });
+    const getTerrainIconImg = (iconType: TerrainControllType): TerrainControlIcon => {
+        switch(iconType) {
+            case TerrainControllType.UpHill:
+                return {
+                    imgSrc: './resources/terrain/up_hill.png',
+                    imgAlt: '丘の生成',
+                    title: '丘の生成',
+                    topHeight: '0.05',
+                    radius: '200'
+                };
+            case TerrainControllType.DownHill:
+            return {
+                imgSrc: './resources/terrain/down_hill.png',
+                imgAlt: '谷の生成',
+                title: '谷の生成',
+                topHeight: '-0.05',
+                radius: '200'
+            };
+            case TerrainControllType.UpMountain:
+            return {
+                imgSrc: './resources/terrain/up_mountain.png',
+                imgAlt: '絶壁の生成',
+                title: '絶壁の生成',
+                topHeight: '0.1',
+                radius: '10'
+            };
+            case TerrainControllType.DownMountain:
+            return {
+                imgSrc: './resources/terrain/down_mountain.png',
+                imgAlt: '断崖の生成',
+                title: '断崖の生成',
+                topHeight: '-0.1',
+                radius: '10'
+            };
+        }
+    }
+    const generateTerrainControllIcon = (iconType: TerrainControllType) => {
+        let element = document.createElement("span");
+        element.classList.add('map-symbol');
 
+        const ctrl = getTerrainIconImg(iconType);
 
-    primCtrlDiv.append("button")
-        .text("海岸線の整理")
-        .on("click", function () {
-            const myRender = CurrentStatus.render!;
-            myRender.h = TerrainGenerator.cleanCoast(myRender.mesh!, myRender.h, 1);
-            primDraw();
-        });
+        let img = document.createElement('img');
+        img.src = ctrl.imgSrc;
+        img.alt = ctrl.imgAlt;
+        img.title = ctrl.title;
+        img.setAttribute('data-icon-type', 'terrain');
+        img.setAttribute('data-top-height', ctrl.topHeight);
+        img.setAttribute('data-radius', ctrl.radius);
 
-    primCtrlDiv.append("button")
-        .text("不自然なメッシュを沈める")
-        .on("click", function () {
-            const myRender = CurrentStatus.render!;
-            myRender.h = TerrainGenerator.sinkUnnaturalCoastSideMesh(myRender.mesh!, myRender.h);
-            primDraw();
-        });
-
-    primCtrlDiv.append("button")
-        .text("Relax")
-        .on("click", function () {
-            const myRender = CurrentStatus.render!;
-            myRender.h = TerrainGenerator.relax(myRender.mesh!, myRender.h);
-            primDraw();
-        });
-
-    primCtrlDiv.append("button")
-        .text("水による浸食")
-        .on("click", function () {
-            const myRender = CurrentStatus.render!;
-            for (let i = 0; i < 5; i++) {
-
+        img.addEventListener("mousedown", (e: any) => {
+            if (e && e.target) {
+                mapEventHandler.onSelectSymbolOnIconList(e);
             }
-            const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(myRender.mesh!, myRender.h, 0.1);
-            drawWaterFlow(myRender.mesh!, myRender.h, waterFlowRate);
-
-            myRender.h = WaterErosionExecutor.erodeByWaterRate(myRender.mesh!, myRender.h, waterFlowRate, 0.01);
-            primDraw();
         });
 
+        element.appendChild(img);
+        return element;
+    }
+    const drawTerrainControllers = () => {
+        let targetElem = document.getElementById('terrain');
+        if (targetElem) {
+            targetElem.appendChild(generateTerrainControllIcon(TerrainControllType.UpHill));
+            targetElem.appendChild(generateTerrainControllIcon(TerrainControllType.DownHill));
+            targetElem.appendChild(generateTerrainControllIcon(TerrainControllType.UpMountain));
+            targetElem.appendChild(generateTerrainControllIcon(TerrainControllType.DownMountain));
+        }
+    };
+
+    primCtrlDiv.append("div").attr('class', 'divider');
+    drawTerrainControllers();
+
+    primCtrlDiv.append("div").attr('class', 'divider');
+
+    primCtrlDiv.append("button")
+        .attr('class', 'btn')
+        .text("大地をなだらかにする")
+        .on("click", function () {
+            LoadingHandler.setLoadingVisibility(true, '生成中...');
+
+            setTimeout(function(){
+                const myRender = CurrentStatus.render!;
+                myRender.h = TerrainGenerator.erodeSimply(myRender.mesh!, myRender.h, 0.2);
+                primDraw();
+                LoadingHandler.setLoadingVisibility(false, '生成中...');
+            }, 50);
+        });
+
+
+    primCtrlDiv.append("button")
+        .attr('class', 'btn')
+        .text("大地を侵食させる")
+        .on("click", function () {
+            LoadingHandler.setLoadingVisibility(true, '生成中...');
+
+            setTimeout(function(){
+                const myRender = CurrentStatus.render!;
+                for (let i = 0; i < 5; i++) {
+
+                }
+                const waterFlowRate = WaterErosionExecutor.calcWaterFlowRate(myRender.mesh!, myRender.h, 0.1);
+                drawWaterFlow(myRender.mesh!, myRender.h, waterFlowRate);
+
+                myRender.h = WaterErosionExecutor.erodeByWaterRate(myRender.mesh!, myRender.h, waterFlowRate, 0.01);
+                primDraw();
+                LoadingHandler.setLoadingVisibility(false, '生成中...');
+            }, 50);
+        });
+
+    primCtrlDiv.append("button")
+        .attr('class', 'btn')
+        .text("海岸線を綺麗にする")
+        .on("click", function () {
+            LoadingHandler.setLoadingVisibility(true, '生成中...');
+
+            setTimeout(function(){
+                const myRender = CurrentStatus.render!;
+                myRender.h = TerrainGenerator.cleanCoast(myRender.mesh!, myRender.h, 1);
+                primDraw();
+                LoadingHandler.setLoadingVisibility(false, '生成中...');
+            }, 50);
+        });
     LoadingHandler.setLoadingVisibility(false);
 }

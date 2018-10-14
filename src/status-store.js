@@ -12,6 +12,8 @@ define(["require", "exports"], function (require, exports) {
             this.maxIconId = 0;
             this.currentIconPath = "";
             this.currentIconAlt = "";
+            this.currentIconType = "";
+            this.iconOption = {};
             this.onControlStatusChangeListeners = [];
         }
         get controlStatus() {

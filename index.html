@@ -10,12 +10,14 @@
     <!-- Optional if you want blur -->
     <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/stackblur-canvas/1.4.1/stackblur.min.js"></script>
     <script type="text/javascript" src="lib/canvg_g.js"></script>
+    
     <!-- Main canvg code -->
     <!-- <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/canvg/1.5/canvg.min.js"></script> -->
     <script data-main="src/main" src="lib/require.js"></script>
     <link rel="stylesheet" href="terrain.css">
     <!-- Compiled and minified CSS -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/css/materialize.min.css">
+    <link href="https://fonts.googleapis.com/icon?family=Material+Icons" rel="stylesheet">
 
 </head>
 
@@ -73,28 +75,36 @@
             </div>
         </div>
         <div class="inner valign-wrapper">
-            <p id="loading-status" class="center-align">少々お待ちください。。。</p>
+            <p id="loading-status" class="center-align shadow-text-wrapper">少々お待ちください。。。</p>
         </div>
     </div>
     <div id="select-mode-whole-shadow">
 
     </div>
-    <div id="prim-info">
+    <div id="prim" class="ctrl-container">
 
     </div>
-    <div id="prim-ctrl">
-    </div>
-    <div id="prim">
-
-    </div>
-    <div id="feature-ctrl">
+    <div id="feature-ctrl" class="ctrl-container">
         <div class="row">
+            <div class="col s12" id="symbolNameDiv"> 
+                <div id="place-mode-div">
+                    <p>現在選択中のアイコン：
+                        <span id="current-selecting-icon"></span>
+                        <span id="select-symbol" class="map-symbol">
+                            <a href="#">配置モードを解除</a>
+                        </span>
+                    </p>
+                </div>
+            </div>
             <div class="col s12">
                 <ul id="icon-tabs" class="tabs">
                     <li class="tab col s2">
+                        <a href="#terrain">地形</a>
+                    </li>
+                    <li class="tab col s2">
                         <a href="#building">建物</a>
                     </li>
-                    <li class="tab col s3">
+                    <li class="tab col s2">
                         <a href="#items">アイテム</a>
                     </li>
                     <li class="tab col s2">
@@ -103,37 +113,69 @@
                     <li class="tab col s2">
                         <a href="#nature">自然</a>
                     </li>
-                    <li class="tab col s3">
+                    <li class="tab col s2">
                         <a href="#jobs">職業・種族</a>
                     </li>
                 </ul>
             </div>
+            <div id="terrain" class="ctrl-list col s12"></div>
             <div id="building" class="icon-list col s12"></div>
             <div id="items" class="icon-list col s12"></div>
             <div id="weapons" class="icon-list col s12"></div>
             <div id="nature" class="icon-list col s12"></div>
             <div id="jobs" class="icon-list col s12"></div>
         </div>
-        <div class="row" id="symbolNameDiv">
-            <div class="col s12" id="place-mode-div">
-                <h5>配置モード</h5>
-                <p>現在選択中のアイコン：
-                    <span id="current-selecting-icon"></span>
-                    <span id="select-symbol" class="map-symbol">
-                        <a href="#">配置モードを解除</a>
-                    </span>
-                </p>
-            </div>
-        </div>
     </div>
-    <div id="save-load-controller">
-        <h3>世界地図のセーブ / ロード</h3>
-        <input id="save-map" type="button" value="セーブ">
-        <input type="file" id="load-map" name="file" value="ロード" />
+    <div>
+        <ul class="collapsible" data-collapsible="accordion">
+            <li>
+                <div class="collapsible-header"><i class="material-icons">help</i>使い方</div>
+                <div class="collapsible-body">
+                    <h4>基本地図の作り方</h4>
+                    <p>「地形」タブを開くと、基本的な地図を作るためのボタンが表示されます。</p>
+                    <ul>
+                        <li>パンゲア：1つの大きな大陸による地図になりやすい設定</li>
+                        <li>大陸：複数の大陸による地図になりやすい設定</li>
+                        <li>地方図：拡大図のような地図になりやすい設定</li>
+                    </ul>
+                    <p>押してみて、基本的な世界地図を作りましょう。</p>
+                    <h4>地図の高度調整</h4>
+                    <p>「Up/Down」などのボタンを押して地図上をクリックすると地図の高度を調整できます。</p>
+                    <p>Upボタンは標高が上がり、Downボタンは標高が下がります。三角形のボタンは、強調した角度で調整されます。</p>
+                    <h4>地図の全体調整</h4>
+                    <p>「なだらかにする」「浸食させる」などのボタンによって、世界地図全体の調整を行えます。<br/>
+                        例えばより尖った地図が欲しいときは、浸食ボタンを何度か押した後、「なだらかにする」「海岸線を綺麗にする」などで調整します。
+                    </p>
+                    <h4>建物の配置</h4>
+                    <p>建物から職業・種族タブを開くと、地図上に配置可能なアイコンが表示されます。
+                        アイコンを選択して、地図上に配置してください。
+                    </p>
+                    <h4>ラベルの調整</h4>
+                    <p>建物の名前を変えたいときは、地図上の下にある「配置モードを解除」リンクをクリックして、地図上のアイコンをクリックしてください。名前とフォントサイズを変えることができます。</p>
+                    <h4>データの保存/読み込み</h4>
+                    <p>このページの下方に保存と読み込み機能があります。お気に入りの地図ができたら保存してみてください。</p>
+                </div>
+            </li>
+        </ul>
+    </div>
+    <div class="divider"></div>
+    <div id="save-load-controller" class="ctrl-container">
+        <h3>セーブ/ロード</h3>
+        <p>データは、.jsonという拡張子のファイルでダウンロードされます。<br/>
+        再び同じ地図を読み込みたいときは、「ロード」から.jsonファイルを読み込んでください。</p>
+        <h4>セーブ</h4>
+        <input id="save-map" type="button" value="データを保存してダウンロード">
+        <br/>
+        <h4>ロード</h4>
+        <p>ファイルを選択してください。</p>
+        <input type="file" id="load-map" name="file" />
+        <br/>
+        <h4>画像形式に変換</h4>
+        <p>.png形式のファイルとしてもダウンロードできます。</p>
         <input id="download-image" type="button" value="画像としてダウンロード">
     </div>
 
-    <div id="select-mode-div">
+    <div id="select-mode-div" class="ctrl-container">
         <div class="row">
             <div class="input-field col s9">
                 <input id="symbolName" type="text" name="symbolName" size="40" maxlength="40">
@@ -153,9 +195,12 @@
             <input id="delete-symbol" type="button" value="削除">
         </div>
     </div>
-    <!-- Credit -->
-    <p>アイコンは
-        <a href="https://game-icons.net/">Game-icons.net</a>様が配布されている素材を使用しております。</p>
+    <div class="divider"></div>
+    <div class="ctrl-container">
+            <!-- Credit -->
+            <p>アイコンは
+                <a href="https://game-icons.net/">Game-icons.net</a>様が配布されている素材を使用しております。</p>
+    </div>
     <!-- Compiled and minified JavaScript -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/materialize/1.0.0/js/materialize.min.js"></script>
     <script>

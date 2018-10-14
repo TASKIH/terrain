@@ -39,6 +39,9 @@ text.region {
 }
 */
 
+body > .ctrl-container {
+    margin-left: 20px;
+}
 text {
     font-family: "Palatino Linotype", "Book Antiqua", Palatino, 'Hiragino Kaku Gothic ProN', 'ヒラギノ角ゴ ProN W3', sans-serif, serif;
 }
@@ -48,7 +51,6 @@ text {
 
 }
 svg {
-    float: right;
     background-color: white;
 }
 svg.select-mode image.icon:hover,
@@ -58,7 +60,9 @@ svg.select-mode image.icon.now-selecting {
 	transition-duration: 0.3s;	/*変化に掛かる時間*/
     cursor: pointer;
 }
-
+#terrain > .btn {
+    margin: 10px; 
+}
 #place-mode-div {
     visibility: collapse;
 }
@@ -68,6 +72,9 @@ svg.place-mode {
 }
 
 .icon-list .map-symbol {
+    cursor: pointer;
+}
+.ctrl-list .map-symbol {
     cursor: pointer;
 }
 
@@ -119,6 +126,7 @@ svg.place-mode {
     margin: auto;
 }
 #loading-status {
+    width: 100%;
     margin-top: 110px;
-    margin-left: 64px;
+    background-color: rgba(240, 240, 240, 0.8);
 }

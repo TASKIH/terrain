@@ -29,6 +29,19 @@ export interface MapExtent {
     height: number;
     margin: number;
 }
+export interface TerrainControlIcon {
+    imgSrc: string;
+    imgAlt: string;
+    title: string;
+    topHeight: string;
+    radius: string;
+}
+export enum TerrainControllType {
+    UpHill,
+    DownHill,
+    UpMountain,
+    DownMountain
+}
 
 export interface Edge {
     terminalPoint1Id: number;

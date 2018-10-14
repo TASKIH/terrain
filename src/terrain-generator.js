@@ -70,13 +70,22 @@ define(["require", "exports", "d3", "./terrain-interfaces", "./util", "js-priori
                 mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
             }
             var newvals = TerrainGenerator.generateZeroHeights(mesh);
+            var mounted = [];
+            for (var j = 0; j < n; j++) {
+                var m = mounts[j];
+                mounted.push(this.calcMountHeights(mesh, peakHeight, radius, m[0], m[1]));
+            }
+            mounted.forEach((e) => {
+                newvals = this.mergeHeights(mesh, terrain_interfaces_1.MergeMethod.Add, newvals, e);
+            });
+            return newvals;
+        }
+        static calcMountHeights(mesh, peakHeight, radius, x, y) {
+            var newvals = TerrainGenerator.generateZeroHeights(mesh);
             for (var i = 0; i < mesh.terrainPoints.length; i++) {
                 var p = mesh.terrainPoints[i];
-                for (var j = 0; j < n; j++) {
-                    var m = mounts[j];
-                    const distanceFromOrigin = Math.sqrt((p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]));
-                    newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
-                }
+                const distanceFromOrigin = Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
+                newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2)) * peakHeight;
             }
             return newvals;
         }

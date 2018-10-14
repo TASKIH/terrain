@@ -19,6 +19,8 @@ export class CurrentStatusStore {
     maxIconId: number = 0;
     currentIconPath: string = "";
     currentIconAlt: string = "";
+    currentIconType: string = "";
+    iconOption: any = {};
     render?: MapRender;
 
     onControlStatusChangeListeners: ((ev: ControlStatus) => void)[] = []

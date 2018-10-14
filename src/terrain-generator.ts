@@ -76,18 +76,29 @@ export class TerrainGenerator {
         for (var i = 0; i < n; i++) {
             mounts.push([validWidth * (Math.random() - 0.5) + margin, validHeight * (Math.random() - 0.5) + margin]);
         }
+
         var newvals = TerrainGenerator.generateZeroHeights(mesh);
-        for (var i = 0; i < mesh.terrainPoints.length; i++) {
-            var p = mesh.terrainPoints[i];
-            for (var j = 0; j < n; j++) {
-                var m = mounts[j];
-                const distanceFromOrigin = Math.sqrt((p.x - m[0]) * (p.x - m[0]) + (p.y - m[1]) * (p.y - m[1]));
-                newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2) ) * peakHeight;
-            }
+        var mounted = [];
+        for (var j = 0; j < n; j++) {
+            var m = mounts[j];
+            mounted.push(this.calcMountHeights(mesh, peakHeight, radius, m[0], m[1]));
         }
+
+        mounted.forEach((e) => {
+            newvals = this.mergeHeights(mesh, MergeMethod.Add, newvals, e);
+        });
         return newvals;
     }
 
+    static calcMountHeights(mesh: MapMesh, peakHeight: number, radius: number, x: number, y: number): TerrainHeights {
+        var newvals = TerrainGenerator.generateZeroHeights(mesh);
+        for (var i = 0; i < mesh.terrainPoints.length; i++) {
+            var p = mesh.terrainPoints[i];
+            const distanceFromOrigin = Math.sqrt((p.x - x) * (p.x - x) + (p.y - y) * (p.y - y));
+            newvals[p.id] += Math.exp((-1 * Math.pow(distanceFromOrigin, 2)) / Math.pow(radius, 2) ) * peakHeight;
+        }
+        return newvals;
+    }
     /**
      * 浸食・風化を実行
      * @param mesh: MapのMesh

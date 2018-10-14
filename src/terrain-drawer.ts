@@ -248,10 +248,13 @@ export class TerrainDrawer {
             .attr('d', TerrainDrawer.makeD3PathByPointContainer)
             .on('mousedown', (elem: any) => {
                 if (showDataId) {
-                    document.getElementById(showDataId)!.innerHTML =
-                        '<div>' +
-                        TerrainDrawer.genVoronoiInfo(field, elem)+
-                        '</div>';
+                    const element = document.getElementById(showDataId);
+                    if (element) {
+                        element.innerHTML =
+                            '<div>' +
+                            TerrainDrawer.genVoronoiInfo(field, elem)+
+                            '</div>';
+                    }
                 }
                 ev.onMeshClick(elem.point.x, elem.point.y);
             });

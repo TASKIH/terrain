@@ -231,10 +231,13 @@ define(["require", "exports", "./terrain-interfaces", "./util", "./language", "d
                 .attr('d', TerrainDrawer.makeD3PathByPointContainer)
                 .on('mousedown', (elem) => {
                 if (showDataId) {
-                    document.getElementById(showDataId).innerHTML =
-                        '<div>' +
-                            TerrainDrawer.genVoronoiInfo(field, elem) +
-                            '</div>';
+                    const element = document.getElementById(showDataId);
+                    if (element) {
+                        element.innerHTML =
+                            '<div>' +
+                                TerrainDrawer.genVoronoiInfo(field, elem) +
+                                '</div>';
+                    }
                 }
                 ev.onMeshClick(elem.point.x, elem.point.y);
             });

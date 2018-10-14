@@ -11,8 +11,10 @@ requirejs.config({
 requirejs(["new-terrain-controller", "domReady"], function(ctrl, domReady, canvg) {
 
     domReady(() => {
+        var elems = document.querySelectorAll('.collapsible');
+        var instances = M.Collapsible.init(elems, options);
         ctrl.drawTerrainControll();
-
+        
         document.getElementById("select-symbol").addEventListener("click", ctrl.onSelectSymbolClick);
         document.getElementById("save-name").addEventListener("click", ctrl.onSymbolChangeClick);
         document.getElementById("delete-symbol").addEventListener("click", ctrl.onSymbolDeleteClick);
